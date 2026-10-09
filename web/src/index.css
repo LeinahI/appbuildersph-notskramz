@@ -150,6 +150,106 @@
     backdrop-filter: blur(6px);
   }
 
+  /* Google-style type-by-voice: full-bleed dark scrim + large mic. */
+  .voice-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: max(2rem, env(safe-area-inset-top)) max(2rem, env(safe-area-inset-right))
+      max(2rem, env(safe-area-inset-bottom)) max(2rem, env(safe-area-inset-left));
+    background: rgb(0 0 0 / 0.72);
+    color: #f3f4f3;
+  }
+
+  .voice-overlay-prompt {
+    margin: 0;
+    flex: 1;
+    font-size: clamp(1.75rem, 5vw, 2.75rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .voice-overlay-prompt--live {
+    font-size: clamp(1.25rem, 3.5vw, 2rem);
+    font-weight: 400;
+    color: #e8ebe9;
+  }
+
+  .voice-overlay-mic {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: min(28vw, 8.5rem);
+    height: min(28vw, 8.5rem);
+    border: 0;
+    border-radius: 9999px;
+    background: #fff;
+    color: #c62828;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .voice-overlay-mic-icon {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 42%;
+    height: 42%;
+  }
+
+  .voice-overlay-mic-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .voice-overlay-ripple {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    border: 2px solid rgb(255 255 255 / 0.45);
+    pointer-events: none;
+  }
+
+  .voice-overlay-mic--listening .voice-overlay-ripple {
+    animation: voice-ripple 1.8s ease-out infinite;
+  }
+
+  .voice-overlay-mic--listening .voice-overlay-ripple--delay {
+    animation-delay: 0.6s;
+  }
+
+  @keyframes voice-ripple {
+    0% {
+      transform: scale(1);
+      opacity: 0.55;
+    }
+    100% {
+      transform: scale(1.55);
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .voice-overlay-mic--listening .voice-overlay-ripple {
+      animation: none;
+      opacity: 0.35;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .voice-overlay {
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+    }
+  }
+
   .chat-history-list {
     max-height: 40dvh;
     overflow-y: auto;
