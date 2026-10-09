@@ -54,7 +54,7 @@ Preferences are saved only in this browser on this origin and shared with its ot
 
 ## Toast messages
 
-Farmer and admin pages share Sileo notifications for photo/voice availability, display-preference resets, and explicitly discarded registration drafts. Brief notices last 10 seconds; voice errors stay until dismissed. Use **Isara** or **Close** to dismiss a toast. Question-save errors, AI-request failures, listening progress, and registration validation remain inline.
+Farmer and admin pages share Sileo notifications for photo/voice availability, display-preference resets, and explicitly discarded registration drafts. Success confirmations auto-dismiss after 3 seconds, information after 5 seconds; voice errors stay until dismissed. Hovering pauses dismissal; moving away restarts the full timeout. Use **Isara** or **Close** to dismiss a toast early. Question-save errors, AI-request failures, listening progress, and registration validation remain inline.
 
 Toasts inherit saved text size, weight, and contrast. Larger text, narrow screens, keyboard focus, and system accessibility preferences use a wrapping card layout. Notifications move inside the active native dialog so its backdrop does not hide or disable them. No notification confirms an unimplemented backend operation.
 

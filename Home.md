@@ -18,6 +18,8 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-toast-auto-dismiss-implementation]] - applied 3-second success and 5-second information toasts with sticky errors; build and 135 frontend tests pass, browser timing QA remains open
+- [[2026-10-10-toast-auto-dismiss-review]] - reviewed existing timers and hover behavior; proposed 3-second confirmations and 5-second information notices, pending approval
 - [[2026-10-10-stable-preferences-dialog]] - removed preference clutter and kept farmer/admin modal frames stable during text resizing; build and 134 frontend tests pass, browser QA remains open
 - [[2026-10-10-sileo-toast-implementation]] - implemented preference-aware Sileo notifications across farmer/admin entries; 132 frontend tests pass, browser QA remains open
 - [[2026-10-10-remove-registration-display-settings]] - removed preference controls from registration drawer; saved appearance still applies, build and 132 frontend tests pass

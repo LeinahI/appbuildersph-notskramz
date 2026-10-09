@@ -190,6 +190,8 @@
   },
   "active": "3e0a5b422b1ff231",
   "lastOpenFiles": [
+    "2026-10-10-toast-auto-dismiss-implementation.md",
+    "2026-10-10-toast-auto-dismiss-review.md",
     "2026-10-10-stable-preferences-dialog.md",
     "2026-10-10-sileo-toast-implementation.md",
     "2026-10-10-remove-registration-display-settings.md",
@@ -213,8 +215,6 @@
     "2026-10-09-gemma-english-to-bicolano.md",
     "2026-10-09-gemma-hub-explainer.md",
     "2026-10-09-gemma-llamacpp-speed.md",
-    "2026-10-09-laya-webgpu-speed.md",
-    "2026-10-09-push-all-to-main.md",
-    "2026-10-09-ui-stack-evaluation.md"
+    "2026-10-09-laya-webgpu-speed.md"
   ]
 }

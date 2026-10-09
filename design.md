@@ -61,7 +61,7 @@ Ugatan is a mobile-first, offline-capable adviser for rice and corn farmers. The
 ### Notifications
 
 - Use the shared `notify` helper and `ToastHost` for brief event feedback on farmer and admin pages. Keep validation, important failures, progress, and agricultural safety content inline.
-- Toasts inherit display preferences and use localized copy, visible 48 px dismissal targets, and top placement clear of the composer. Brief notices last 10 seconds; errors remain until dismissed.
+- Toasts inherit display preferences and use localized copy, visible 48 px dismissal targets, and top placement clear of the composer. Short success confirmations auto-dismiss after 3 seconds; information after 5 seconds; errors remain until dismissed. Retain early dismissal and Sileo's hover pause. Essential information must also remain available without a timer; a fixed timeout alone is not an accessibility guarantee.
 - The host follows the active native dialog. Enlarged text, narrow viewports, keyboard focus, high contrast, and reduced motion use a wrapping card rather than fixed SVG geometry.
 
 ### Display preferences

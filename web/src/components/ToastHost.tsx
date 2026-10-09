@@ -10,10 +10,11 @@ export function notify({ title, description, type = 'info', language = 'tl' }: {
   type?: 'info' | 'success' | 'error';
   language?: 'tl' | 'en';
 }) {
+  const duration = type === 'error' ? null : type === 'success' ? 3000 : 5000;
   const id = sileo[type]({
-    title, description, duration: type === 'error' ? null : 10000,
+    title, description, duration,
     fill: 'var(--color-paper)',
-    autopilot: { expand: 1, collapse: 10000 },
+    autopilot: { expand: 1, collapse: duration ?? 10000 },
     button: { title: language === 'tl' ? 'Isara' : 'Close', onClick: () => sileo.dismiss(id) },
   });
   return id;
