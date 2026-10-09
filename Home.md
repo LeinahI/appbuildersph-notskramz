@@ -16,11 +16,19 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-merge-main-android-no-login]] - merged main (chat search, rails) into the no-login Android work; dropped ws sync, kept /search
 - [[2026-10-10-android-app-setup-no-login]] - Android APK from the hub, first-run setup with success alert, no farmer login, Gemma needs WebGPU
 - [[2026-10-10-setup-one-ai-progress]] - setup shows one "Ugatan AI" with a single download percent that never resets
-
+- [[2026-10-10-chat-search-virtual]] - `/search` Dexie keyword search + scroll-to-match; TanStack Query/Virtual on results and chat thread
+- [[2026-10-10-new-chat-highlight]] - New chat `bg-soft` only on draft; not when a UUID conversation is open
+- [[2026-10-10-draft-chat-stays-empty]] - bare `/chat` no longer auto-selects last-active; New chat stays draft
+- [[2026-10-10-defer-conversation-create]] - New chat / + stays on draft `/chat`; conversation created on first message only
+- [[2026-10-10-delete-conversation-confirm-modal]] - sidebar Delete uses shared chat-history confirm dialog instead of window.confirm
+- [[2026-10-10-resolve-main-merge-conflicts]] - resolved 4 conflicts merging main into implementing-guardrails; kept rails + answerOnPhone
+- [[2026-10-10-prompt-leak-two-layer-rails]] - TL/EN extract blocked at input; model persona leaks hard-replaced with INJECTION_REPLY
+- [[2026-10-10-prompt-injection-defense-map]] - mapped injection/leak rails: Tagalog "ulitin/instruksyon/blockquote" miss input rail; no output prompt-leak strip; Laya is matcher-only
+- [[2026-10-10-other-crop-ask-guardrail]] - other-crop asks (maliban sa palay/mais) refuse before ASK canned reply
 - [[2026-10-10-merge-offline-login-into-main]] - merged the offline/split-login branch into main; split login kept, deep links and logout dialog kept
-
 - [[2026-10-10-logout-confirm-modal]] - farmer + admin Log out opens a confirm dialog before signing out
 - [[2026-10-10-chat-conversation-urls]] - farmer chats use `/chat/:conversationId` deep links; bare `/chat` redirects to last active
 - [[2026-10-10-branch-and-pr]] - pending work committed on `offline-farmer-login-photo-eval` and opened as a PR

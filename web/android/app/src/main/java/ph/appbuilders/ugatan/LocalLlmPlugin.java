@@ -161,6 +161,8 @@ public class LocalLlmPlugin extends Plugin {
     @PluginMethod
     public void load(PluginCall call) {
         String wanted = call.getString("backend", "cpu");
+        // CPU threads. On a phone with 4 fast and 4 slow cores, using all 8 makes the fast ones wait on the slow ones.
+        Integer threads = call.getInt("threads", 4);
         engineJobs.execute(() -> {
             try {
                 if (engine != null) {
@@ -169,7 +171,7 @@ public class LocalLlmPlugin extends Plugin {
                 }
                 File file = modelFile();
                 if (!file.isFile()) throw new IOException("The model is not on this phone yet.");
-                Backend backend = "gpu".equals(wanted) ? new Backend.GPU() : new Backend.CPU();
+                Backend backend = "gpu".equals(wanted) ? new Backend.GPU() : new Backend.CPU(threads != null && threads > 0 ? threads : null, null);
                 // Library defaults (from its bytecode) for what is left out: no audio backend, no image limit. The vision
                 // part runs on the CPU and loads on the first photo; the cache folder speeds up later starts.
                 EngineConfig config = new EngineConfig(file.getAbsolutePath(), backend, new Backend.CPU(), null, MAX_TOKENS, null,

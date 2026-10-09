@@ -37,7 +37,8 @@ export async function listLocalConversations(q?: string): Promise<ConversationRo
   return sortConversations(rows);
 }
 
-export async function ensureActiveConversation(): Promise<ConversationRow> {
+/** Last-active or latest local chat, or null when the farmer is on a draft (no row yet). */
+export async function ensureActiveConversation(): Promise<ConversationRow | null> {
   const activeId = loadActiveConversationId();
   if (activeId) {
     const existing = await db.conversations.get(activeId);
@@ -48,7 +49,8 @@ export async function ensureActiveConversation(): Promise<ConversationRow> {
     saveActiveConversationId(all[0].id);
     return all[0];
   }
-  return createLocalConversation('Bagong usapan');
+  saveActiveConversationId('');
+  return null;
 }
 
 /** Deep-link path for a conversation, or bare `/chat` when no id is known. */
@@ -57,15 +59,15 @@ export function chatHref(id?: string): string {
   return resolved ? `/chat/${resolved}` : '/chat';
 }
 
-/** Load by URL id when present; otherwise last-active / latest / create. */
-export async function resolveConversation(id: string | undefined): Promise<ConversationRow> {
-  if (id) {
-    const existing = await db.conversations.get(id);
-    if (existing) {
-      saveActiveConversationId(existing.id);
-      return existing;
-    }
+/** Load by URL id when present; bare `/chat` (no id) is always a draft — never auto-select. */
+export async function resolveConversation(id: string | undefined): Promise<ConversationRow | null> {
+  if (!id) return null;
+  const existing = await db.conversations.get(id);
+  if (existing) {
+    saveActiveConversationId(existing.id);
+    return existing;
   }
+  // Unknown deep-link id: fall back for delete-nav / stale URLs; bare `/chat` never reaches here.
   return ensureActiveConversation();
 }
 

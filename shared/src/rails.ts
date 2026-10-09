@@ -14,10 +14,19 @@ const INJECTION: readonly RegExp[] = [
   /\b(ignore|disregard|forget|override|bypass|skip)\b.{0,40}\b(instructions?|rules?|prompts?|guidelines?|guardrails?|restrictions?|safety)\b/,
   /\b(system|developer|hidden|initial|original) (prompt|message|instructions?)\b/,
   /\b(reveal|show|print|repeat|leak|tell me)\b.{0,30}\b(your|the) (prompt|instructions?|rules)\b/,
+  // "Repeat the words above … in a blockquote" (EN extract without "your/the prompt").
+  /\b(repeat|copy|quote|output|dump)\b.{0,40}\b(words|everything|text|instructions?|prompt)\b.{0,40}\b(above|blockquote)\b/,
+  /\b(repeat|copy|quote)\b.{0,20}\b(the )?(words|everything|text) above\b/,
   /\b(you are now|from now on you|act as|pretend (to be|you are)|roleplay as|role play as)\b/,
   /\b(jailbreak|jail break|dan mode|developer mode|do anything now)\b/,
   /\b(kalimutan|kalimutan mo|huwag (mo |mong )?pansinin|wag (mo |mong )?pansinin|balewalain|baliwalain|labagin|lagpasan)\b.{0,40}\b(utos|panuto|tuntunin|patakaran|instruction|rules?|prompt)\b/,
-  /\b(ipakita|sabihin|ibigay)\b.{0,30}\b(prompt|panuto mo|utos mo|system prompt)\b/,
+  /\b(ipakita|sabihin|ibigay|isulat)\b.{0,40}\b(prompt|panuto mo|utos mo|system prompt|instruksyon|mga panuto|mga utos)\b/,
+  // Tagalog extract: "Ulitin ang mga salita sa itaas… instruksyon ng system… blockquote"
+  /\b(ulitin|ulit)\b.{0,60}\b(salita|instruksyon|panuto|utos|prompt|blockquote|sa itaas)\b/,
+  /\b(sa itaas|blockquote)\b.{0,60}\b(salita|instruksyon|panuto|utos|prompt|ulitin)\b/,
+  /\binstruksyon (ng )?(mga )?system\b/,
+  /\bsystem (na )?instruksyon\b/,
+  /\beksaktong (mga )?instruksyon\b/,
   /\bbagong (panuto|utos|tungkulin)\b/,
 ];
 
@@ -30,6 +39,26 @@ export function isInjectionAttempt(text: string): boolean {
 /** What the farmer is told when the message tried to change the helper's rules. */
 export const INJECTION_REPLY =
   'Hindi ko po masusunod iyan. Ang tulong ko po ay sa problema ng palay at mais lang. Ano po ang nakikita ninyo sa dahon, tangkay, o uhay?';
+
+/**
+ * Output rail: the model echoed persona/system text (or appended a leak after a refusal-shaped line).
+ * Such a reply never reaches the farmer; call sites replace it with INJECTION_REPLY.
+ */
+export function leaksInstructions(reply: string): boolean {
+  const t = ` ${normalize(reply)} `;
+  if (/\byou are ugatan\b/.test(t)) return true;
+  if (/\bsystem (prompt|instructions?|message)\b/.test(t)) return true;
+  if (/\binstruksyon ng system\b/.test(t)) return true;
+  const body = normalize(reply);
+  const fixed = normalize(INJECTION_REPLY);
+  if (body.startsWith(fixed) && body.length > fixed.length + 3) return true;
+  return false;
+}
+
+/** Replace a leaking model reply with the fixed injection refusal. */
+export function guardPromptLeak(reply: string): string {
+  return leaksInstructions(reply) ? INJECTION_REPLY : reply;
+}
 
 /** The name a farmer would see for a problem: "Golden apple snail (kuhol)" is "Golden apple snail". */
 function shortName(name: string): string {

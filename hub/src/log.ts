@@ -12,6 +12,7 @@ export type LogEvent =
   | { event: 'escalation'; uid: string; reason: 'no-match' | 'not-sure' }
   | { event: 'explanation'; uid: string; status: string; chars: number }
   | { event: 'guardrail'; uid: string; rail: 'grounding'; names: string[] }
+  | { event: 'guardrail'; uid: string; rail: 'injection-output' }
   | { event: 'error'; where: string; message: string };
 
 export interface Logger {

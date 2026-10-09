@@ -10,6 +10,7 @@ import {
 } from '@ugatan/shared';
 import type { ReactNode } from 'react';
 import type { Labels } from '../config/labels';
+import { HighlightedText } from './HighlightedText';
 
 export interface AnswerViewProps {
   matches: readonly KnowledgeEntry[];
@@ -27,6 +28,8 @@ export interface AnswerViewProps {
   fallback?: string;
   /** Language of the card text. Tagalog and Cebuano use the translated notes when they exist; anything else shows the English. */
   language?: string;
+  /** When set (from search), keyword matches in the model reply are marked. */
+  highlightNeedle?: string;
 }
 
 const SUBHEAD = 'mt-4 mb-1.5 text-xs font-bold uppercase tracking-wide text-label';
@@ -44,7 +47,7 @@ function inlineBold(text: string): ReactNode[] {
  * matched notes show as "Tugma" only when the match passed the confidence threshold. The pesticide notice ends
  * only a reply that gives treatment advice.
  */
-export function AnswerView({ matches, clear, labels, explanation, explanationStatus, waitingForHub, thinking, matchedOn = [], fallback, language = 'en' }: AnswerViewProps) {
+export function AnswerView({ matches, clear, labels, explanation, explanationStatus, waitingForHub, thinking, matchedOn = [], fallback, language = 'en', highlightNeedle = '' }: AnswerViewProps) {
   const explanationText = explanation?.trim() ?? '';
   const explanationSafe = explanationText !== '' && findViolations(explanationText).length === 0;
   // Unsafe text is never shown, even if the caller did not mark it as blocked.
@@ -67,7 +70,11 @@ export function AnswerView({ matches, clear, labels, explanation, explanationSta
 
       {(explanationSafe || showStatus) && (
         <div>
-          {explanationSafe && <p className="m-0 whitespace-pre-wrap">{inlineBold(explanationText)}</p>}
+          {explanationSafe && (
+            <p className="m-0 whitespace-pre-wrap">
+              {highlightNeedle ? <HighlightedText text={explanationText} needle={highlightNeedle} /> : inlineBold(explanationText)}
+            </p>
+          )}
           {thinking && !explanationSafe && (
             <p className="m-0 flex gap-1 text-muted" role="status" aria-label={labels.phoneAiLoading}>
               {[0, 1, 2].map((i) => (

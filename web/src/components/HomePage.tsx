@@ -1,4 +1,4 @@
-import { useEffect, useRef, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, type FormEvent, type ReactNode, type Ref } from 'react';
 import { DEFAULT_UI_LANGUAGE, type Labels } from '../config/labels';
 import { photoSrc } from '../lib/photo';
 import { VoiceInput } from './VoiceInput';
@@ -27,6 +27,8 @@ export interface HomePageProps {
   onPhotoFile: (file: File | undefined) => void;
   onRemovePhoto: () => void;
   onNotice: (notice: string) => void;
+  /** Scroll parent for the chat thread virtualizer. */
+  mainRef?: Ref<HTMLElement>;
 }
 
 export function HomePage(props: HomePageProps) {
@@ -109,7 +111,7 @@ export function HomePage(props: HomePageProps) {
         </div>
       </header>
 
-      <main className='chat-main'>
+      <main ref={props.mainRef} className='chat-main'>
         {props.children ? (
           <div className='chat-content py-6 md:py-10'>{props.children}</div>
         ) : (
