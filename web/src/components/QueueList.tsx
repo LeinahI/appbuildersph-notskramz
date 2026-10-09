@@ -5,19 +5,22 @@ interface QueueListProps {
   items: QueuedQuestion[];
   labels: Labels;
   locale: string;
+  onSelect: (question: QueuedQuestion) => void;
 }
 
-export function QueueList({ items, labels, locale }: QueueListProps) {
-  if (items.length === 0) return <p className='text-[0.85rem] text-muted'>{labels.nothingYet}</p>;
+export function QueueList({ items, labels, locale, onSelect }: QueueListProps) {
+  if (items.length === 0) return <p className='my-3 text-sm text-mist'>{labels.nothingYet}</p>;
   return (
-    <ul className='m-0 grid list-none gap-2.5 p-0'>
+    <ul className='m-0 grid list-none gap-1 p-0'>
       {items.map((question) => (
-        <li key={question.uid} className='border-b border-rule pb-2'>
-          <div className='text-[0.85rem] text-muted'>
-            {new Date(question.createdAt).toLocaleString(locale)} ·{' '}
-            {question.status === 'answered' ? labels.answered : labels.queued}
-          </div>
-          <div>{question.text}</div>
+        <li key={question.uid}>
+          <button type='button' className='chat-history-item' onClick={() => onSelect(question)}>
+            <time dateTime={question.createdAt} className='text-xs leading-5 text-mist'>
+              {new Date(question.createdAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
+            </time>
+            <span className='font-semibold leading-6'>{question.text}</span>
+            <span className='text-xs leading-5 text-mist'>{labels.historySaved}</span>
+          </button>
         </li>
       ))}
     </ul>

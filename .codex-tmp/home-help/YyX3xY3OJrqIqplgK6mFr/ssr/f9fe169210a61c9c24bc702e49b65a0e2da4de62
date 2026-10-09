@@ -1,0 +1,18 @@
+const __vite_ssr_import_0__ = await __vite_ssr_import__("vitest", {"importedNames":["describe","expect","it"]});
+const __vite_ssr_import_1__ = await __vite_ssr_import__("/src/explain/gemma.ts", {"importedNames":["trimToSentence"]});
+
+
+__vite_ssr_import_0__.describe("trimToSentence", () => {
+  __vite_ssr_import_0__.it("cuts a capped answer back to the last full sentence", () => {
+    __vite_ssr_import_0__.expect(__vite_ssr_import_1__.trimToSentence("1. Iwasan ang sobrang nitrogen.\n2. Ayusin ang drainage.\n3. Pumili ng lumalaba")).toBe(
+      "1. Iwasan ang sobrang nitrogen.\n2. Ayusin ang drainage."
+    );
+  });
+  __vite_ssr_import_0__.it("keeps the text when there is no sentence boundary worth cutting at", () => {
+    __vite_ssr_import_0__.expect(__vite_ssr_import_1__.trimToSentence("Isang mahabang pangungusap na walang tuldok")).toBe("Isang mahabang pangungusap na walang tuldok");
+    __vite_ssr_import_0__.expect(__vite_ssr_import_1__.trimToSentence("Oo. tapos ang isang napakahabang bahagi na hindi natapos")).toContain("napakahabang");
+  });
+});
+
+//# sourceMappingSource=vite-node
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBQUEsQ0FBQTs7QUFBcUM7QUFDTjtBQUUvQiwrQkFBUyxrQkFBa0IsTUFBTTtBQUMvQiwyQkFBRyx1REFBdUQsTUFBTTtBQUM5RCxpQ0FBTyxxQ0FBZSxpRkFBaUYsQ0FBQyxFQUFFO0FBQUEsTUFDeEc7QUFBQSxJQUNGO0FBQUEsRUFDRixDQUFDO0FBRUQsMkJBQUcsc0VBQXNFLE1BQU07QUFDN0UsaUNBQU8scUNBQWUsNkNBQTZDLENBQUMsRUFBRSxLQUFLLDZDQUE2QztBQUN4SCxpQ0FBTyxxQ0FBZSwwREFBMEQsQ0FBQyxFQUFFLFVBQVUsY0FBYztBQUFBLEVBQzdHLENBQUM7QUFDSCxDQUFDIiwibmFtZXMiOltdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJnZW1tYS10cmltLnRlc3QudHMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgZGVzY3JpYmUsIGV4cGVjdCwgaXQgfSBmcm9tICd2aXRlc3QnO1xuaW1wb3J0IHsgdHJpbVRvU2VudGVuY2UgfSBmcm9tICcuLi9zcmMvZXhwbGFpbi9nZW1tYSc7XG5cbmRlc2NyaWJlKCd0cmltVG9TZW50ZW5jZScsICgpID0+IHtcbiAgaXQoJ2N1dHMgYSBjYXBwZWQgYW5zd2VyIGJhY2sgdG8gdGhlIGxhc3QgZnVsbCBzZW50ZW5jZScsICgpID0+IHtcbiAgICBleHBlY3QodHJpbVRvU2VudGVuY2UoJzEuIEl3YXNhbiBhbmcgc29icmFuZyBuaXRyb2dlbi5cXG4yLiBBeXVzaW4gYW5nIGRyYWluYWdlLlxcbjMuIFB1bWlsaSBuZyBsdW1hbGFiYScpKS50b0JlKFxuICAgICAgJzEuIEl3YXNhbiBhbmcgc29icmFuZyBuaXRyb2dlbi5cXG4yLiBBeXVzaW4gYW5nIGRyYWluYWdlLicsXG4gICAgKTtcbiAgfSk7XG5cbiAgaXQoJ2tlZXBzIHRoZSB0ZXh0IHdoZW4gdGhlcmUgaXMgbm8gc2VudGVuY2UgYm91bmRhcnkgd29ydGggY3V0dGluZyBhdCcsICgpID0+IHtcbiAgICBleHBlY3QodHJpbVRvU2VudGVuY2UoJ0lzYW5nIG1haGFiYW5nIHBhbmd1bmd1c2FwIG5hIHdhbGFuZyB0dWxkb2snKSkudG9CZSgnSXNhbmcgbWFoYWJhbmcgcGFuZ3VuZ3VzYXAgbmEgd2FsYW5nIHR1bGRvaycpO1xuICAgIGV4cGVjdCh0cmltVG9TZW50ZW5jZSgnT28uIHRhcG9zIGFuZyBpc2FuZyBuYXBha2FoYWJhbmcgYmFoYWdpIG5hIGhpbmRpIG5hdGFwb3MnKSkudG9Db250YWluKCduYXBha2FoYWJhbmcnKTtcbiAgfSk7XG59KTtcbiJdLCJmaWxlIjoiRDovSGFja2F0aG9uL2FwcGJ1aWxkZXJzcGgtbm90c2tyYW16L2h1Yi90ZXN0L2dlbW1hLXRyaW0udGVzdC50cyJ9

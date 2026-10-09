@@ -1,0 +1,12 @@
+function oneAtATime() {
+  let queue = Promise.resolve();
+  return (job) => {
+    const run = queue.then(job);
+    queue = run.catch(() => void 0);
+    return run;
+  };
+}
+Object.defineProperty(__vite_ssr_exports__, "oneAtATime", { enumerable: true, configurable: true, get(){ return oneAtATime }});
+
+//# sourceMappingSource=vite-node
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBQ08sU0FBUyxhQUF1RDtBQUNyRSxNQUFJLFFBQTBCLFFBQVEsUUFBUTtBQUM5QyxTQUFPLENBQUMsUUFBUTtBQUNkLFVBQU0sTUFBTSxNQUFNLEtBQUssR0FBRztBQUMxQixZQUFRLElBQUksTUFBTSxNQUFNLE1BQVM7QUFDakMsV0FBTztBQUFBLEVBQ1Q7QUFDRjsrSEFBQSIsIm5hbWVzIjpbXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsicXVldWUudHMiXSwic291cmNlc0NvbnRlbnQiOlsiLyoqIFJ1bnMgb25lIGpvYiBhdCBhIHRpbWUsIGluIGFycml2YWwgb3JkZXIuIE9uZSBtb2RlbCBvbiBvbmUgZGV2aWNlOiBwYXJhbGxlbCByZXF1ZXN0cyBvbmx5IHNsb3cgZWFjaCBvdGhlci4gKi9cbmV4cG9ydCBmdW5jdGlvbiBvbmVBdEFUaW1lKCk6IDxUPihqb2I6ICgpID0+IFByb21pc2U8VD4pID0+IFByb21pc2U8VD4ge1xuICBsZXQgcXVldWU6IFByb21pc2U8dW5rbm93bj4gPSBQcm9taXNlLnJlc29sdmUoKTtcbiAgcmV0dXJuIChqb2IpID0+IHtcbiAgICBjb25zdCBydW4gPSBxdWV1ZS50aGVuKGpvYik7XG4gICAgcXVldWUgPSBydW4uY2F0Y2goKCkgPT4gdW5kZWZpbmVkKTtcbiAgICByZXR1cm4gcnVuO1xuICB9O1xufVxuIl0sImZpbGUiOiIvc3JjL2V4cGxhaW4vcXVldWUudHMifQ==

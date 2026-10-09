@@ -45,6 +45,8 @@ export function HomePage(props: HomePageProps) {
           className='chat-icon-button'
           aria-label={labels.historyLabel}
           title={labels.historyLabel}
+          aria-haspopup='dialog'
+          aria-controls='ugatan-history-dialog'
           onClick={props.onHistory}
         >
           <img className='size-6' src='/home/history.svg' alt='' />
@@ -57,15 +59,17 @@ export function HomePage(props: HomePageProps) {
           alt={labels.appName}
         />
         <div className='flex items-center gap-1 md:ml-auto'>
-        <button
-          type='button'
-          className='chat-icon-button bg-leaf-soft'
-          aria-label={labels.newConversationLabel}
-          title={labels.newConversationLabel}
-          onClick={props.onNewConversation}
-        >
-          <img className='size-6' src='/home/new-chat.svg' alt='' />
-        </button>
+          <button
+            type='button'
+            className='chat-icon-button bg-leaf-soft'
+            aria-label={labels.newConversationLabel}
+            title={labels.newConversationLabel}
+            aria-haspopup='dialog'
+            aria-controls='ugatan-history-dialog'
+            onClick={props.onNewConversation}
+          >
+            <img className='size-6' src='/home/new-chat.svg' alt='' />
+          </button>
           <button
             type='button'
             className='chat-icon-button'

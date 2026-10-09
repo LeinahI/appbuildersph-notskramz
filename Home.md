@@ -18,6 +18,12 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-09-admin-english-login-chat-fixes]] - translated admin UI to English, aligned the password icon field, removed login preview button, and wired home new-chat to its modal; 102 frontend tests pass
+- [[2026-10-09-admin-frontend]] - built responsive Tagalog admin frontend without an age cutoff or dummy records; build/frontend checks pass, browser QA and hub model checks remain open
+- [[2026-10-09-admin-ui-ux-scope]] - inspected admin Figma frames and proposed responsive pages/dialogs; frontend approval and backend integrations remain pending
+- [[2026-10-09-chat-and-help-dialogs]] - responsive saved-chat dialog and concise Tulong; build and frontend tests pass, browser QA and hub model checks remain open
+- [[2026-10-09-ugatan-help-tagalog]] - restored the local AI help modal, removed language selection, and added the Tagalog introduction and supplied icon
+- [[2026-10-09-home-page-design-guide]] - added an implementation-facing guide for the current Ugatan Home Page UI/UX
 - [[2026-10-09-home-page-refinements]] - simplified the home UI, added logo and voice controls, and widened desktop chat; rendered QA remains open
 - [[2026-10-09-home-page-browser-qa-blocked]] - local page served successfully, but responsive and keyboard QA remain blocked without a connected browser
 - [[2026-10-09-ugatan-home-page-implementation]] - implemented the responsive, localized Figma Home frontend; browser comparison remains open

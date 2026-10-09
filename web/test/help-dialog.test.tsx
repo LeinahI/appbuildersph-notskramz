@@ -19,12 +19,12 @@ describe('Tagalog help dialog', () => {
     expect(html).toContain('id="ugatan-help-dialog"');
     expect(html).toContain('aria-labelledby="ugatan-help-heading"');
     expect(html).toContain('aria-describedby="ugatan-help-description"');
-    expect(html).toContain('Ilarawan ang problema.');
-    expect(html).toContain('Ipadala ang tanong.');
-    expect(html).toContain('Basahin ang gabay.');
-    expect(html).toContain('Gamitin ang mga icon.');
+    expect(html).toContain('Ilarawan ang pananim');
+    expect(html).toContain('pataas na arrow para ipadala');
+    expect(html).toContain('Basahin ang gabay');
+    expect((html.match(/<li /g) ?? []).length).toBe(3);
     expect(html).toContain('aria-label="Isara ang tulong"');
-    expect((html.match(/method="dialog"/g) ?? []).length).toBe(2);
+    expect((html.match(/method="dialog"/g) ?? []).length).toBe(1);
   });
 
   it('discloses the model download and does not prepare AI when the dialog renders', () => {
@@ -39,7 +39,7 @@ describe('Tagalog help dialog', () => {
   it.each([
     ['loading', 'Nagda-download at naghahanda.'],
     ['ready', 'Handa na ang AI.'],
-    ['error', 'Hindi maihanda ang AI sa device na ito ngayon.'],
+    ['error', 'Hindi maihanda ang AI ngayon.'],
   ] as const)('explains the %s state without exposing a duplicate prepare action', (status, message) => {
     const { html } = renderHelp(status);
     expect(html).toContain(message);
@@ -49,8 +49,8 @@ describe('Tagalog help dialog', () => {
 
   it('states photo/voice limits and preserves the exact pesticide disclaimer', () => {
     const { html } = renderHelp();
-    expect(html).toContain('Hindi pa magagamit ang larawan para suriin ang pananim.');
-    expect(html).toContain('maaaring kailangan nito ng internet');
+    expect(html).toContain('Hindi pa magagamit ang pagsusuri ng larawan.');
+    expect(html).toContain('maaaring kailangan ng internet');
     expect(html).toContain('hindi tiyak na diagnosis');
     expect(html).toContain(DISCLAIMER);
   });

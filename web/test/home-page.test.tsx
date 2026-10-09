@@ -55,7 +55,7 @@ describe('Ugatan home page', () => {
 
   it('labels the icon-only camera, microphone, history, new-chat, help, and send actions', () => {
     const html = renderToStaticMarkup(createElement(HomePage, props()));
-    for (const label of ['Mga nakaraang usapan', 'Bagong usapan', 'Larawan', 'Magsalita', 'Ipadala ang tanong', 'Tulong']) {
+    for (const label of ['Mga usapan', 'Bagong usapan', 'Larawan', 'Magsalita', 'Ipadala ang tanong', 'Tulong']) {
       expect(html).toContain(`aria-label="${label}"`);
     }
     expect(html).toContain('aria-pressed="false"');
@@ -134,4 +134,14 @@ it('connects the Tulong button to opening its dialog', () => {
   expect(help?.props['aria-controls']).toBe('ugatan-help-dialog');
   help?.props.onClick();
   expect(onHelp).toHaveBeenCalledOnce();
+});
+
+it('identifies the new-chat control as opening the existing chat dialog', () => {
+  const onNewConversation = vi.fn();
+  const page = HomePage({ ...props(), onNewConversation });
+  const newChat = findElement(page, (element) => element.props['aria-label'] === 'Bagong usapan');
+  expect(newChat?.props['aria-haspopup']).toBe('dialog');
+  expect(newChat?.props['aria-controls']).toBe('ugatan-history-dialog');
+  newChat?.props.onClick();
+  expect(onNewConversation).toHaveBeenCalledOnce();
 });

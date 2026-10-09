@@ -8,8 +8,8 @@ import {
 import { AnswerView } from './components/AnswerView';
 import { HomePage } from './components/HomePage';
 import { HelpDialog } from './components/HelpDialog';
-import { QueueList } from './components/QueueList';
-import { KNOWLEDGE } from './config/knowledge';
+import { ConversationDialog } from './components/ConversationDialog';
+import { KNOWLEDGE, KNOWLEDGE_BY_ID } from './config/knowledge';
 import { DEFAULT_UI_LANGUAGE, L, localeFor } from './config/labels';
 import { loadHubUrl } from './config/hub';
 import { db, newId, type QueuedQuestion } from './lib/db';
@@ -17,6 +17,7 @@ import { phoneAi, type PhoneAiState } from './lib/llm';
 import { hubReachable, syncQueue } from './lib/sync';
 
 interface Current {
+  uid: string;
   id?: number;
   text: string;
   entries: KnowledgeEntry[];
@@ -33,6 +34,7 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [currentRecord, setCurrentRecord] = useState<QueuedQuestion | null>(null);
   const historyDialog = useRef<HTMLDialogElement>(null);
+  const activeQuestion = useRef<string | null>(null);
   const helpDialog = useRef<HTMLDialogElement>(null);
   const [ai, setAi] = useState<PhoneAiState>({ status: 'idle', device: '', progress: '', error: '' });
   const labels = L;
@@ -42,13 +44,13 @@ export default function App() {
       const recent = await db.questions.orderBy('id').reverse().limit(20).toArray();
       setHistory(recent);
       if (current?.id !== undefined) {
-        setCurrentRecord((await db.questions.get(current.id)) ?? null);
+        const record = (await db.questions.get(current.id)) ?? null;
+        if (activeQuestion.current === current.uid) setCurrentRecord(record);
       }
     } catch {
       // IndexedDB can be blocked. The immediate offline answer still works.
     }
   }, [current?.id]);
-
 
   useEffect(() => {
     document.documentElement.lang = DEFAULT_UI_LANGUAGE;
@@ -75,14 +77,16 @@ export default function App() {
 
   async function ask(question: string, entries: KnowledgeEntry[], clear: boolean) {
     const trimmed = question.trim();
-    setCurrent({ text: trimmed, entries, clear });
+    const uid = newId();
+    activeQuestion.current = uid;
+    setCurrent({ uid, text: trimmed, entries, clear });
     setCurrentRecord(null);
     setNotice('');
 
     let id: number | undefined;
     try {
       id = await db.questions.add({
-        uid: newId(),
+        uid,
         crop,
         text: trimmed,
         createdAt: new Date().toISOString(),
@@ -91,9 +95,9 @@ export default function App() {
         clear,
       });
     } catch {
-      setNotice(labels.saveError);
+      if (activeQuestion.current === uid) setNotice(labels.saveError);
     }
-    setCurrent((value) => (value ? { ...value, id } : value));
+    setCurrent((value) => (value?.uid === uid ? { ...value, id } : value));
 
     if (phoneAi.ready && id !== undefined) {
       try {
@@ -107,7 +111,7 @@ export default function App() {
           answeredAt: new Date().toISOString(),
         });
       } catch {
-        setNotice(labels.aiRequestError);
+        if (activeQuestion.current === uid) setNotice(labels.aiRequestError);
       }
     } else if (hubUrl && (await hubReachable(hubUrl))) {
       await syncNow();
@@ -127,14 +131,41 @@ export default function App() {
   }
 
   function newConversation() {
+    activeQuestion.current = null;
     setConversationKey((value) => value + 1);
     setText('');
     setCurrent(null);
     setCurrentRecord(null);
     setNotice('');
+    closeHistoryAndFocus();
+  }
+
+  function openConversation(record: QueuedQuestion) {
+    activeQuestion.current = record.uid;
+    setConversationKey((value) => value + 1);
+    setText('');
+    setNotice('');
+    setCurrent({
+      uid: record.uid,
+      id: record.id,
+      text: record.text,
+      entries: record.matchIds.flatMap((id) => {
+        const entry = KNOWLEDGE_BY_ID.get(id);
+        return entry ? [entry] : [];
+      }),
+      clear: record.clear,
+    });
+    setCurrentRecord(record);
+    closeHistoryAndFocus();
+  }
+
+  function closeHistoryAndFocus() {
+    historyDialog.current?.close();
+    requestAnimationFrame(() => document.getElementById('ugatan-question')?.focus());
   }
 
   function showHistory() {
+    void refresh();
     historyDialog.current?.showModal();
   }
 
@@ -181,30 +212,21 @@ export default function App() {
         onSubmit={() => submitQuestion(text)}
         onHistory={showHistory}
         onHelp={() => helpDialog.current?.showModal()}
-        onNewConversation={newConversation}
+        onNewConversation={showHistory}
         onPhoto={() => setNotice(labels.photoUnavailable)}
         onNotice={setNotice}
       >
         {answer}
       </HomePage>
       <HelpDialog ref={helpDialog} ai={ai} onPrepareAi={prepareAi} />
-      <dialog ref={historyDialog} className='chat-history' aria-labelledby='ugatan-history-heading'>
-        <div className='mb-4 flex items-center justify-between gap-4'>
-          <h2 id='ugatan-history-heading' className='m-0 text-xl font-semibold'>{labels.historyLabel}</h2>
-          <button
-            type='button'
-            className='chat-icon-button'
-            aria-label={labels.closeHistory}
-            title={labels.closeHistory}
-            onClick={() => historyDialog.current?.close()}
-          >
-            <svg className='size-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.7' strokeLinecap='round' aria-hidden='true'>
-              <path d='m6 6 12 12M6 18 18 6' />
-            </svg>
-          </button>
-        </div>
-        <QueueList items={history} labels={labels} locale={locale} />
-      </dialog>
+      <ConversationDialog
+        ref={historyDialog}
+        items={history}
+        labels={labels}
+        locale={locale}
+        onNewConversation={newConversation}
+        onSelect={openConversation}
+      />
     </>
   );
 }

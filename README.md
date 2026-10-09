@@ -27,7 +27,7 @@ pnpm dev
 
 Open http://localhost:5173. Keyword matching works right away. Offline reloads (no network after the first load) apply to the built site, not to `pnpm dev`, where the service worker is off.
 
-The phone AI runtime is optional. The simplified home page currently has no model-preparation control; keyword matching and curated notes work without it. Preparing the runtime downloads Gemma 4 E2B (`onnx-community/gemma-4-E2B-it-ONNX`, q4f16, text-only) from Hugging Face. It is about 3.1 GB, so the first time it needs a network. The phone tries WebGPU first and falls back to WebAssembly on the CPU, which is slower. The model is held in memory, so a page reload starts at idle and the button shows again.
+The phone AI runtime is optional. Open **Tulong** and tap **Ihanda ang AI** to prepare it; the dialog explains the first download before you start. Keyword matching and curated notes work without it. Preparing the runtime downloads Gemma 4 E2B (`onnx-community/gemma-4-E2B-it-ONNX`, q4f16, text-only) from Hugging Face. It is about 3.1 GB, so the first time it needs a network. The phone tries WebGPU first and falls back to WebAssembly on the CPU, which is slower. The model is held in memory, so a page reload starts at idle and the button shows again.
 
 To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`). `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. A previously saved address on that phone still overrides it. The home page no longer exposes hub settings or manual sync controls.
 
@@ -37,6 +37,14 @@ Build and preview the static site. The repo does not yet set up how phones load 
 pnpm build
 pnpm --filter @ugatan/web preview
 ```
+
+## Admin UI preview
+
+Open `/admin.html` on the web dev or preview server for the English login layout. The admin entry is separate from the farmer home page. There is no preview button on login; for frontend QA, open `/admin.html#overview` directly. This is not authenticated access.
+
+This is frontend only: login, registration persistence, ID reading, duplicate checks, QR generation/redemption, and access changes are not connected. These controls explain the missing integration rather than simulating success. No credentials, ID images, sample users, or personal records are stored.
+
+Manual registration supports consent, draft validation, review, editing, and explicit discard. There is no minimum-age eligibility rule. Drafts live in memory and are lost on reload; the browser is asked to warn before leaving an unfinished draft. Record and QR previews do not create accounts or grant access.
 
 ## Run the hub
 
