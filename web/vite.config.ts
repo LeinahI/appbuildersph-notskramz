@@ -49,9 +49,9 @@ export default defineConfig(({ mode }) => ({
       // the knowledge base, and the fonts are bundled, the phone model comes from the hub, and the runtime from /ort/.
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Ugatan: Offline na Payo para sa Palay at Mais',
+        name: 'Ugatan: Offline na tagapayo para sa Palay at Mais',
         short_name: 'Ugatan',
-        description: 'Offline na payo para sa palay at mais. Walang account, walang server.',
+        description: 'Offline na tagapayo para sa palay at mais. Walang account, walang server.',
         lang: 'tl',
         start_url: '.',
         scope: '.',

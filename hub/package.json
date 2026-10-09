@@ -14,7 +14,8 @@
     "eval:chat": "tsx ../eval/chat.ts",
     "test": "vitest run",
     "eval:voice": "tsx ../eval/voice.ts",
-    "eval:photo": "tsx ../eval/photo.ts"
+    "eval:photo": "tsx ../eval/photo.ts",
+    "benchmark:landing": "tsx scripts/landing-benchmarks.ts"
   },
   "dependencies": {
     "@huggingface/transformers": "4.3.0",

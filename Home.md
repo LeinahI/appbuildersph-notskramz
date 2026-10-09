@@ -16,6 +16,9 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-admin-frontend-at-admin]] - `/admin` serves FrontEnd AdminApp (overview/users/qr/activity), not old top-nav portal
+- [[2026-10-10-landing-gpu-machine-note]] - Landing benchmarks label from `node-llama-cpp inspect gpu` (Vulkan · RTX 3060)
+- [[2026-10-10-landing-benchmarks]] - Browser `/` landing (GSAP/Motion) + hub `benchmark:landing` → real `benchmarks.json`
 - [[2026-10-10-push-all-to-main]] - committed and pushed all pending work to main
 - [[2026-10-10-natural-ai-replies]] - palay guides in Tagalog/Bisaya/English, steps on "ano gagawin ko", no repeated questions, plant-part filter, Claude-like style, `pnpm eval:chat` with 20 made-up chats
 - [[2026-10-10-hub-serves-litert-model]] - hub now reads PHONE_LITERT_FILE from hub/.env (and .env.example) so it serves the on-phone Gemma .litertlm; served file checked on the hub, phone download untested
