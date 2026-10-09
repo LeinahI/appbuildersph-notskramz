@@ -20,6 +20,7 @@ Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Ne
 - [[2026-10-09-chat-behaviour-20-chats]] - 320-message real-model chat test with fixes after each chat: fixed lines for pesticide, health, office, and growing questions, no re-matching of answered problems, problem name always said
 - [[2026-10-09-open-source-guardrail-patterns]] - input rail for prompt injection, grounding check on replies, wider dosage guard
 - [[2026-10-09-merge-frontend-branch]] - pulled the FrontEnd branch's Figma home UI (green theme, logo, Tulong and history dialogs, tl/en/ceb labels) into the chat, photo, voice, and hub flow; web typecheck and 81 web tests pass
+- [[2026-10-09-voice-languages]] - voice measured on real Tagalog and Cebuano speech (about 8% and 11% character error), silence trimming and auto-stop on the phone, 8-bit weights as a setting; farm words and real farmers untested
 - [[2026-10-09-voice-input]] - mic button now records and the hub writes the words down with the local Gemma 4 audio model (works offline at localhost:3000); only English test speech tried, Tagalog and Cebuano untested
 - [[2026-10-09-photo-recognition]] - farmers can attach a plant photo: the hub reads it with the local Gemma 4 vision model and matches on the signs; works at localhost:3000, accuracy on real photos not tested
 - [[2026-10-09-admin-farmer-registration-plan]] - research only: hub has no admin or QR access yet; four decisions needed before building

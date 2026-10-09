@@ -140,12 +140,27 @@ HUB_VOICE=on
 GEMMA_MODEL_DIR=E:/models/gemma-4-E2B-it-ONNX
 ```
 
-- **Phone.** The mic button records with the browser's `MediaRecorder`, converts the audio to 16 kHz mono (`web/src/lib/recorder.ts`), and sends it to `POST /transcribe` as `{ "audio": "<base64 16-bit PCM>" }`. Tap the mic again to stop. It stops by itself at 30 seconds. The response is `{ "status": "ok" | "empty" | "unreadable" | "unavailable", "text": "..." }`. The prompt asks for the words as spoken, in the language spoken, with no translation (`TRANSCRIBE_PROMPT` in `shared/src/prompt.ts`).
+- **Phone.** The mic button records with the browser's `MediaRecorder`, converts the audio to 16 kHz mono (`web/src/lib/recorder.ts`), and sends it to `POST /transcribe` as `{ "audio": "<base64 16-bit PCM>" }`. It stops by itself 1.6 s after the farmer stops talking, or at 30 seconds, and a tap on the mic stops it sooner. Before sending, the phone cuts the silence from the start and end, raises a quiet voice (at most 8 times), and says "no speech" itself when it hears only room noise (`web/src/lib/speech.ts`), so the hub reads seconds of speech and not a long silence. The response is `{ "status": "ok" | "empty" | "unreadable" | "unavailable", "text": "..." }`. The prompt asks for the words as spoken, in the language spoken, with no translation (`TRANSCRIBE_PROMPT` in `shared/src/prompt.ts`).
 - **Fallback.** If the hub is not reachable or has voice off, the button uses the browser's own speech service as before. That one needs internet, and only some browsers have it (see Known issues).
 - **Privacy.** The recording is not stored. The hub log keeps only the length of the recording and of the text, not the words. The words reach the log only if the farmer sends them as a question.
-- **Speed.** A 6 s English recording took about 26 s to transcribe on the dev laptop's CPU (measured 2026-10-09). The phone waits up to 120 s. The first recording after a start may wait for the model to load.
+- **Speed.** A 6 s recording took about 26 s to write down on the dev laptop's CPU when it was idle (measured 2026-10-09). A test with 3 s of silence before the sentence and 20 s of silence after it took 37 s before the phone cut silence, and 18 s after. The phone waits up to 120 s, and the first recording after a start may wait for the model to load.
 - **Browsers allow the microphone only on `localhost` and on https.** A phone that opens the app over plain `http://<laptop-ip>` gets no microphone and the button falls back to browser speech or hides. This is the same problem as "Hub network" in Pending decisions.
-- **Limits.** Tested only with synthetic English speech. No Tagalog, Taglish, or Cebuano recording has been tried, and no farmer's voice, phone microphone, or field noise. The model card lists Filipino among its trained languages but gives no accuracy for it. See Pending decisions.
+
+### How well it writes Tagalog and Cebuano
+
+Measured on 2026-10-09 with `pnpm eval:voice` on real recordings: Google FLEURS read speech, Filipino and Cebuano, each clip with the correct text. Fetch clips with `python -I eval/fetch-fleurs.py eval/voice-clips fil_ph 25000000` (and `ceb_ph`); the script reads only the first 25 MB of each archive. Word error rate counts a word wrong if one letter is off, so the character error rate is shown too.
+
+| Weights | Tagalog, word / character error | Cebuano, word / character error | Memory |
+| --- | --- | --- | --- |
+| `q4f16` (the default, 4-bit) | 40.0% / 7.9% | 29.5% / 10.9% | about 3 GB |
+| `quantized` (8-bit) | 13.3% / 3.2% | 25.0% / 8.5% | about 6 GB |
+
+Two clips per language, the same prompt, so these are small numbers and not final. What they show:
+
+- **The model hears both languages.** Most errors are near spellings ("nakatagdan" for "nakatakda", "mantes" for "martes"). The farmer sees the text and can fix it before sending, and for a question the hub's hybrid matcher reads the words through Gemma's English step, which copes with misspellings (see "Languages and reworded questions").
+- **Naming the language in the prompt did not help.** The model card's prompt with "Tagalog" or "Cebuano" written in gave the same text within one word on both languages, so the hub keeps one prompt for every language and does not need to be told which one the farmer speaks. Taglish and Cebuano mixed with English need no setting either.
+- **8-bit weights are more exact, but too big to default.** Loading them failed with "bad allocation" when 0.9 GB of memory was free. Set `MULTIMODAL_DTYPE=quantized` on a hub machine with plenty of free memory. Raising only the audio encoder (`AUDIO_DTYPE`) gave 64% word error on the first Tagalog clip, between the 4-bit 79% and the full 8-bit 29%, so the text part matters most. Neither the all-8-bit nor the audio-only run was repeated on a quiet machine.
+- **Not measured:** farm words (FLEURS is Wikipedia sentences, and this machine has no Tagalog or Cebuano voice to make farm sentences), real farmers' voices, phone microphones, noise, and Taglish. Collect real recordings with the correct text, put them in `eval/voice-clips/<config>/` in the same layout, and run `pnpm eval:voice` again.
 
 ## How matching and Gemma split the work
 
@@ -208,6 +223,7 @@ From the repository root:
 | `pnpm dev` | Starts the web app. |
 | `pnpm build` | Builds shared, web, and hub. |
 | `pnpm test` | Builds, then runs all tests. |
+| `pnpm eval:voice` | Scores the hub's speech writing on recordings with the correct text: word and character error rate per language. Needs clips (see "Voice") and `GEMMA_MODEL_DIR`. Add `-- --dtype quantized` to compare weights. |
 | `pnpm eval` | Scores keyword matching on `eval/descriptions.csv`. Also scores Laya and hybrid when `LAYA_MODEL_DIR` is set, or with `--allow-download`. Pass `-- --file <name>` to score another CSV in `eval/`. Add `--describe` to also score hybrid with Gemma's English first (needs `GEMMA_GGUF`). The `lang` column is `en`, `tl`, `taglish`, or `ceb` (Cebuano/Bisaya). |
 
 `make install`, `make build`, and `make test` call the same pnpm commands. They need GNU make on the PATH, which Windows does not include by default.
@@ -251,7 +267,7 @@ These need a person to decide. The code does not guess them.
   - Gemma's answer stays Taglish for every language. Whether Cebuano farmers should get Cebuano answers is a team decision.
 - **Hub network.** A web app served over https cannot call a plain-http hub on the LAN (browsers block it as mixed content). Options: serve the app from the hub, or give the hub a trusted https address.
 - **Node version.** Node 20 reached end of life on 2026-04-30. Plan on Node 22 or 24. The hub itself needs Node 20.12 or later (`process.loadEnvFile`). The `engines` fields in `package.json` and `hub/package.json` still say `>=20`, which also allows 20.0 to 20.11; changing them is a team decision.
-- **Voice accuracy.** Nobody has measured the hub's speech writing on Tagalog, Taglish, or Cebuano. Before the farmers rely on it: record real farmers on real phones (quiet and noisy, short and long), write the correct text by hand, and compare it with what `/transcribe` returns, per language. Decide whether Cebuano needs its own prompt, and whether the 30-second limit is enough.
+- **Voice accuracy.** Measured only on read Wikipedia sentences (see "How well it writes Tagalog and Cebuano"): about 8% character error in Tagalog and 11% in Cebuano with the default weights, from two clips each. Not measured on farm words, real farmers, phone microphones, noise, or Taglish. Before the farmers rely on it: record real farmers on real phones (quiet and noisy, short and long), write the correct text by hand, and score it with `pnpm eval:voice`. Decide whether the 3 GB extra memory for 8-bit weights is worth it on the hub machine, and whether the 30-second limit is enough.
 - **Photo accuracy.** Nobody has measured how well Gemma's description of a real photo leads to the right problem. Before the farmers rely on it: collect labeled field photos (rice and corn, each problem in `knowledge/`, plus healthy plants and non-crop photos), run them through `/ask`, and score `photo` and `matchIds`. Decide whether the 280-token limit is acceptable, whether the E4B model (not run) is worth the extra time, and whether a hub without a spare CPU should leave `HUB_VISION` off.
 - **Remote repository.** `origin` is set to `https://github.com/LeinahI/appbuildersph-notskramz.git`. Whether that is the team's shared repo is not recorded here.
 
