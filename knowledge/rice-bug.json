@@ -30,6 +30,48 @@
       "Grasshoppers that eat the eggs"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Nananatiling maliit, kulubot, may batik, o walang laman ang butil matapos sipsipin ng surot ang gatas nito",
+        "Payat na kayumanggi o berdeng surot sa uhay mula pamumulaklak hanggang yugto ng gatas, at mabaho ang palayan"
+      ],
+      "actions": [
+        "Magbunot ng damo sa palayan at sa pilapil, lalo na sa nakatiwangwang na lupa sa malapit, dahil doon sila nakatira bago lumipad sa palay",
+        "Magtanim nang kasabay ng mga kapitbahay para hindi tumagal ang pamumulaklak ng mga uhay",
+        "Silipin ang mga uhay tuwing madaling-araw o hapon simula bago mamulaklak",
+        "Kung kaunti ang surot, saluhin sila sa lambat sa madaling-araw o hapon at sirain",
+        "Itanong sa agriculturist ang tungkol sa bait trap ng PhilRice: lambat na may dinurog na kuhol na isinasabit sa itaas ng palay sa panahon ng pamumulaklak"
+      ],
+      "callExpertIf": "Maraming surot sa mga uhay habang namumulaklak o maraming butil ang walang laman",
+      "stageNote": "mula pamumulaklak hanggang yugto ng gatas at malambot na butil (soft dough)",
+      "biological": [
+        "Maliliit na putakti na umaatake sa itlog",
+        "Mga gagamba",
+        "Mga tipaklong na kumakain ng itlog"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Magpabilin nga gamay, kunot, adunay mansa, o walay sulod ang lugas human supsopon sa insekto ang gatas niini",
+        "Niwang nga kape o berde nga insekto sa uhay gikan sa pagpamulak hangtod sa yugto sa gatas, ug baho ang basakan"
+      ],
+      "actions": [
+        "Hawani ang sagbot sa basakan ug sa pilapil, labi na sa biniyaan nga yuta duol, tungod kay didto sila nagpuyo sa dili pa molupad sa humay",
+        "Pagtanom dungan sa mga silingan aron dili magdugay ang pagpamulak sa mga uhay",
+        "Susiha ang mga uhay matag sayo sa buntag o hapon sugod sa dili pa mamulak",
+        "Kung gamay ra ang insekto, saluda sila sa pukot sayo sa buntag o hapon ug patya",
+        "Pangutana sa agriculturist bahin sa bait trap sa PhilRice: pukot nga adunay dinugmok nga kuhol nga gibitay ibabaw sa humay inig pagpamulak"
+      ],
+      "callExpertIf": "Daghang insekto sa mga uhay samtang namulak o daghang lugas ang walay sulod",
+      "stageNote": "gikan sa pagpamulak hangtod sa yugto sa gatas ug humok nga lugas (soft dough)",
+      "biological": [
+        "Gagmay nga wasp nga moatake sa itlog",
+        "Mga lawa-lawa",
+        "Mga grasshopper nga mokaon sa itlog"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

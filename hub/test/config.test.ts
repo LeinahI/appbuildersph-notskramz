@@ -25,7 +25,7 @@ describe('loadConfig', () => {
 
   it('accepts Laya once both team decisions are set', () => {
     const c = loadConfig(
-      { HUB_MATCHER: 'laya', LAYA_PASS_MARK: '0.7', LAYA_CONFIDENCE_THRESHOLD: '0.5' },
+      { HUB_MATCHER: 'laya', LAYA_PASS_MARK: '0.7', LAYA_CONFIDENCE_THRESHOLD: '0.5', LAYA_MODEL_DIR: 'models/laya' },
       '/repo/hub',
     );
     expect(c.matcher).toBe('laya');
@@ -38,8 +38,19 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ HUB_MATCHER: 'hybrid', LAYA_PASS_MARK: '0.7' }, '/repo/hub')).toThrow(
       /LAYA_CONFIDENCE_THRESHOLD/,
     );
-    const c = loadConfig({ HUB_MATCHER: 'hybrid', LAYA_PASS_MARK: '0.7', LAYA_CONFIDENCE_THRESHOLD: '0.5' }, '/repo/hub');
+    const c = loadConfig(
+      { HUB_MATCHER: 'hybrid', LAYA_PASS_MARK: '0.7', LAYA_CONFIDENCE_THRESHOLD: '0.5', LAYA_MODEL_DIR: 'models/laya' },
+      '/repo/hub',
+    );
     expect(c.matcher).toBe('hybrid');
+  });
+
+  it('refuses Laya without a local bundle, so the hub never downloads its weights', () => {
+    for (const matcher of ['laya', 'hybrid']) {
+      expect(() => loadConfig({ HUB_MATCHER: matcher, LAYA_PASS_MARK: '0.7', LAYA_CONFIDENCE_THRESHOLD: '0.5' }, '/repo/hub')).toThrow(
+        /LAYA_MODEL_DIR/,
+      );
+    }
   });
 
   it('rejects an unknown matcher or explainer', () => {

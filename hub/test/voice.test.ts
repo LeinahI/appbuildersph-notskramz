@@ -133,7 +133,7 @@ describe('POST /transcribe', () => {
       knowledge,
       logger: { write() {} },
       transcriber,
-      info: { matcher: 'keyword', explainer: 'off', vision: 'off', voice: transcriber ? 'on' : 'off' },
+      info: { matcher: 'keyword', explainer: 'off', vision: 'off', voice: transcriber ? 'on' : 'off', phoneModel: 'off' },
     });
     return new Promise((resolve) =>
       server.listen(0, '127.0.0.1', () => resolve({ server, base: `http://127.0.0.1:${(server.address() as AddressInfo).port}` })),

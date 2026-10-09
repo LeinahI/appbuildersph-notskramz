@@ -33,6 +33,54 @@
       "Spiders"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Dahong nakarolyo o nakatiklop nang pahaba na parang tubo, na may berdeng uod sa loob",
+        "Puti at naaaninag na guhit sa dahon kung saan nakayod ang berdeng bahagi",
+        "Kapag maraming sirang dahon, parang napaso ang palayan"
+      ],
+      "actions": [
+        "Putulin ang mga damo sa pilapil at sa palayan, dahil doon nagtatago ang mga gamu-gamo",
+        "Gumamit ng balanseng abono at iwasan ang sobrang nitrogen",
+        "Iwasang magtanim sa malililim na lugar",
+        "Huwag hayaang tumubo muli ang pinagputulan (walang ratoon); araruhin o bahain ang pinagputulan pagkatapos ng ani",
+        "Iwasan ang di-kailangang pag-spray ng malawakang pamatay-insekto, para mabuhay ang mga putakti at gagamba na kumakain ng uod"
+      ],
+      "callExpertIf": "Maraming dahon ang nakatiklop, lalo na ang pinakamataas na dahon habang nabubuo ang uhay",
+      "stageNote": "mula pagpupunla hanggang pamumulaklak; nakakabawi ang palay sa maagang pinsala, pero ang pinsala sa pinakamataas na dahon sa booting ay nakakabawas ng ani",
+      "biological": [
+        "Trichogramma, maliliit na putakti na umaatake sa itlog",
+        "Mga putakti na umaatake sa uod",
+        "Mga ladybug",
+        "Mga mirid bug",
+        "Mga gagamba"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Dahon nga nalukot o napiko pataas nga daw tubo, nga adunay berde nga ulod sa sulod",
+        "Puti ug lagpaw nga gilis sa dahon diin gikiskis ang berde nga bahin",
+        "Kung daghang nadaot nga dahon, daw napaso ang basakan"
+      ],
+      "actions": [
+        "Putla ang mga sagbot sa pilapil ug sa basakan, tungod kay didto motago ang mga moth (anunugba)",
+        "Gamit og balanse nga abono ug likayi ang sobra nga nitrogen",
+        "Likayi ang pagtanom sa malandong nga lugar",
+        "Ayaw tugoti nga motubo pag-usab ang dagami (walay ratoon); daruha o bahaa ang dagami human sa ani",
+        "Likayi ang dili kinahanglan nga broad-spectrum nga spray, aron mabuhi ang mga wasp ug lawa-lawa nga mokaon sa ulod"
+      ],
+      "callExpertIf": "Daghang dahon ang napiko, labi na ang pinakataas nga dahon samtang nagporma ang uhay",
+      "stageNote": "gikan sa pagsemilya hangtod sa pagpamulak; makabawi ang humay sa sayo nga kadaot, apan ang kadaot sa pinakataas nga dahon inig booting makapakunhod sa ani",
+      "biological": [
+        "Trichogramma, gagmay nga wasp nga moatake sa itlog",
+        "Mga wasp nga moatake sa ulod",
+        "Mga ladybug",
+        "Mga mirid bug",
+        "Mga lawa-lawa"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

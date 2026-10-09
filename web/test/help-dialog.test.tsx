@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { DISCLAIMER } from '@ugatan/shared';
 import { HelpDialog } from '../src/components/HelpDialog';
-import type { PhoneAiStatus } from '../src/lib/llm';
+import { phoneAiFit, type MemoryFit, type PhoneAiStatus } from '../src/lib/llm';
 
 function renderHelp(status: PhoneAiStatus = 'idle', onPrepareAi = vi.fn()) {
   const html = renderToStaticMarkup(createElement(HelpDialog, {
@@ -29,7 +29,8 @@ describe('Tagalog help dialog', () => {
 
   it('discloses the model download and does not prepare AI when the dialog renders', () => {
     const { html, onPrepareAi } = renderHelp();
-    expect(html).toContain('3.1 GB');
+    expect(html).toContain('3.4 GB');
+    expect(html).toContain('1.7 GB');
     expect(html).toContain('internet');
     expect(html).toContain('Wi-Fi');
     expect(html).toContain('Ihanda ang AI');
@@ -49,10 +50,42 @@ describe('Tagalog help dialog', () => {
 
   it('states what the photo and voice controls need and preserves the exact pesticide disclaimer', () => {
     const { html } = renderHelp();
-    expect(html).toContain('ang hub ang bumabasa nito');
+    expect(html).toContain('binabasa ito ng AI sa device');
     expect(html).not.toContain('Hindi pa magagamit ang larawan');
-    expect(html).toContain('maaaring kailangan nito ng internet');
+    expect(html).toContain('Ang hub ang nagsusulat nito sa Wi-Fi ng hub, walang internet');
     expect(html).toContain('hindi tiyak na diagnosis');
     expect(html).toContain(DISCLAIMER);
+  });
+});
+
+describe('phone AI and device memory', () => {
+  const render = (fit: MemoryFit) =>
+    renderToStaticMarkup(createElement(HelpDialog, { ai: { status: 'idle', device: '', progress: '', error: '' }, fit, onPrepareAi: vi.fn() }));
+
+  it('reads the memory the browser reports', () => {
+    expect(phoneAiFit(8)).toBe('fits');
+    expect(phoneAiFit(4)).toBe('too-small');
+    expect(phoneAiFit(2)).toBe('too-small');
+    expect(phoneAiFit(undefined)).toBe('unknown');
+    expect(phoneAiFit(0)).toBe('unknown');
+  });
+
+  it('never offers the download on a phone without the memory, and points to the notes', () => {
+    const html = render('too-small');
+    expect(html).not.toContain('Ihanda ang AI');
+    expect(html).toContain('Kulang ang memorya');
+    expect(html).toContain('nakahandang gabay');
+  });
+
+  it('offers it with a warning when the browser does not say', () => {
+    const html = render('unknown');
+    expect(html).toContain('Ihanda ang AI');
+    expect(html).toContain('Hindi masabi ng browser');
+  });
+
+  it('offers it plainly on a phone with the memory', () => {
+    const html = render('fits');
+    expect(html).toContain('Ihanda ang AI');
+    expect(html).not.toContain('Hindi masabi ng browser');
   });
 });

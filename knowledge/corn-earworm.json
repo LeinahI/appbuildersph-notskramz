@@ -30,6 +30,50 @@
       "The fungus Beauveria bassiana"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Kinain ang buhok at butil sa dulo ng bunga, na may maraming dumi",
+        "Berde hanggang kayumangging uod, madalas may guhit, sa loob ng dulo ng bunga",
+        "Inaamag na butil sa sirang dulo; bago nito, kinain na dahon at tassel"
+      ],
+      "actions": [
+        "Silipin ang dulo ng bunga at ang buhok habang lumalabas ang buhok, at pulutin ang mga uod",
+        "Magtanim nang kasabay ng mga kapitbahay, at iwasang magtanim ng ibang pananim na tinitirhan nila sa tabi ng mais",
+        "Itanong sa agriculturist ang tungkol sa light trap o pheromone trap para mabantayan ang mga gamu-gamo",
+        "Protektahan ang mga ladybug at gagamba: iwasan ang di-kailangang pag-spray ng malawakang pamatay-insekto"
+      ],
+      "callExpertIf": "Maraming bunga ang sira sa dulo o kumakalat ang pinsala",
+      "stageNote": "mula sa yugto ng ubod hanggang sa paglabas ng buhok, karaniwan sa dulo ng bunga at sa mga butil",
+      "biological": [
+        "Trichogramma, maliliit na putakti na umaatake sa itlog",
+        "Mga ladybug",
+        "Mga gagamba",
+        "Ang fungus na Beauveria bassiana"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Gikaon ang buhok ug lugas sa tumoy sa bunga, nga adunay daghang hugaw",
+        "Berde hangtod kape nga ulod, kasagaran adunay gilis, sulod sa tumoy sa bunga",
+        "Inagup-op nga lugas sa nadaot nga tumoy; sa una pa, gikaon nga dahon ug tassel"
+      ],
+      "actions": [
+        "Susiha ang tumoy sa bunga ug ang buhok samtang nagagawas ang buhok, ug pupuha ang mga ulod",
+        "Pagtanom dungan sa mga silingan, ug likayi ang pagtanom og ubang tanom nga ilang puy-anan tupad sa mais",
+        "Pangutana sa agriculturist bahin sa light trap o pheromone trap aron mabantayan ang mga moth (anunugba)",
+        "Panalipdi ang mga ladybug ug lawa-lawa pinaagi sa paglikay sa dili kinahanglan nga broad-spectrum nga spray"
+      ],
+      "callExpertIf": "Daghang bunga ang nadaot sa tumoy o mikaylap ang kadaot",
+      "stageNote": "gikan sa yugto sa ubod hangtod sa paggawas sa buhok, kasagaran sa tumoy sa bunga ug sa mga lugas",
+      "biological": [
+        "Trichogramma, gagmay nga wasp nga moatake sa itlog",
+        "Mga ladybug",
+        "Mga lawa-lawa",
+        "Ang fungus nga Beauveria bassiana"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

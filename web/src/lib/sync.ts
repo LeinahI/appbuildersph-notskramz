@@ -76,13 +76,30 @@ export async function syncQueue(hubUrl: string): Promise<{ sent: number; failed:
 }
 
 /** What the hub can read besides text, from its health check. Null when the hub does not answer. */
-export async function hubCapabilities(hubUrl: string): Promise<{ vision: boolean; voice: boolean } | null> {
+export interface HubCapabilities {
+  vision: boolean;
+  voice: boolean;
+  /** The hub serves the phone's Gemma files. */
+  phoneModel: boolean;
+  /** The hub serves Laya's bundle to phones, with the team's confidence threshold. */
+  phoneLaya: boolean;
+  layaThreshold: number | null;
+}
+
+export async function hubCapabilities(hubUrl: string): Promise<HubCapabilities | null> {
   if (!hubUrl) return null;
   try {
     const res = await fetch(`${hubUrl}/health`, { signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
     if (!res.ok) return null;
-    const info = (await res.json()) as { vision?: string; voice?: string };
-    return { vision: info.vision === 'on', voice: info.voice === 'on' };
+    const info = (await res.json()) as { vision?: string; voice?: string; phoneModel?: string; phoneLaya?: string; layaThreshold?: number };
+    const threshold = typeof info.layaThreshold === 'number' ? info.layaThreshold : null;
+    return {
+      vision: info.vision === 'on',
+      voice: info.voice === 'on',
+      phoneModel: info.phoneModel === 'on',
+      phoneLaya: info.phoneLaya === 'on' && threshold !== null,
+      layaThreshold: threshold,
+    };
   } catch {
     return null;
   }

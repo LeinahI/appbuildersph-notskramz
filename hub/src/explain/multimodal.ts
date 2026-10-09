@@ -1,5 +1,5 @@
 import { basename, dirname } from 'node:path';
-import { NO_SIGNS, OTHER_CROP, TRANSCRIBE_PROMPT, buildPhotoMessages, readPhotoForm } from '@ugatan/shared';
+import { TRANSCRIBE_PROMPT, buildPhotoMessages, type ChatMessage } from '@ugatan/shared';
 import type { AudioTranscriber, ImageDescriber } from './index.js';
 import { oneAtATime } from './queue.js';
 
@@ -17,6 +17,8 @@ export interface GemmaMultimodalOptions {
   audioDtype?: string;
   /** Cap on the filled-in photo form. Eleven short lines fit inside it. */
   imageMaxNewTokens: number;
+  /** The photo question. Defaults to buildPhotoMessages in shared; the photo eval passes others to compare them. */
+  photoMessages?: (note: string, crop: string) => ChatMessage[];
   /** Cap on a transcript. 30 seconds of speech is at most about 100 words. */
   audioMaxNewTokens: number;
 }
@@ -83,20 +85,14 @@ export function createGemmaMultimodal(opts: GemmaMultimodalOptions): GemmaMultim
 
   async function describeImage(image: Uint8Array, note: string, crop: string): Promise<string | null> {
     const { load_image } = await load();
-    const [system, user] = buildPhotoMessages(note, crop);
+    const [system, user] = (opts.photoMessages ?? buildPhotoMessages)(note, crop);
     const messages = [
       { role: 'system', content: system!.content },
       { role: 'user', content: [{ type: 'image' }, { type: 'text', text: user!.content }] },
     ];
     const photo = await load_image(new Blob([image], { type: 'image/jpeg' }));
-    const raw = await generate(messages, { image: photo }, opts.imageMaxNewTokens);
-    // The model fills in a form, and the description is written from its picks in the knowledge base's words.
-    // An answer that is not a form is passed on as it is, and read as free text.
-    const form = readPhotoForm(raw);
-    if (!form) return raw;
-    if (form.kind === 'not-plant') return OTHER_CROP;
-    if (form.kind === 'no-signs') return NO_SIGNS;
-    return form.english;
+    // The model's answer to the photo form. The hub reads it with photoSignsOf in shared.
+    return generate(messages, { image: photo }, opts.imageMaxNewTokens);
   }
 
   async function transcribe(samples: Float32Array): Promise<string | null> {

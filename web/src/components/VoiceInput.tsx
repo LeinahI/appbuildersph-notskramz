@@ -1,37 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { localeFor, type Labels, type UiLanguage } from '../config/labels';
+import type { Labels, UiLanguage } from '../config/labels';
 import { hubCapabilities, transcribeOnHub } from '../lib/sync';
 import { canRecord, startRecorder, type Recorder } from '../lib/recorder';
 
-// The Web Speech API is missing from TypeScript's DOM types, so the parts used here are typed by hand.
-interface SpeechResultEvent {
-  results: ArrayLike<ArrayLike<{ transcript: string }>>;
-}
-
-interface SpeechRecognitionLike {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  onresult: ((event: SpeechResultEvent) => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-}
-
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
-
-function speechRecognitionCtor(): SpeechRecognitionCtor | null {
-  if (typeof window === 'undefined') return null;
-  const w = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
-type Mode = 'idle' | 'recording' | 'working' | 'browser';
+type Mode = 'idle' | 'recording' | 'working';
 
 interface VoiceInputProps {
   labels: Labels;
@@ -44,14 +16,13 @@ interface VoiceInputProps {
 /**
  * Mic button for the composer. Speaks the question into the text box, and the farmer checks the words before sending.
  *
- * With a hub that transcribes speech, the phone records (up to 30 seconds) and the hub's local audio model writes it
- * down: no internet, and it reads Tagalog, Taglish, Cebuano, and English. Without one, it uses the browser's speech
- * service, which needs internet. The button always shows, and says why when the device has neither.
+ * Local only: the phone records (up to 30 seconds) and the hub's audio model writes it down over the hub's Wi-Fi. It
+ * reads Tagalog, Taglish, Cebuano, and English. The browser's own speech service is never used, because it sends the
+ * audio to the internet. Without a hub that transcribes, the button says so and the farmer types instead.
  */
 export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice }: VoiceInputProps) {
   const [mode, setMode] = useState<Mode>('idle');
   const [hubVoice, setHubVoice] = useState(false);
-  const recognition = useRef<SpeechRecognitionLike | null>(null);
   const recorder = useRef<Recorder | null>(null);
   const transcriptCallback = useRef(onTranscript);
   transcriptCallback.current = onTranscript;
@@ -70,58 +41,10 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice }:
   useEffect(() => {
     setMode('idle');
     return () => {
-      const rec = recognition.current;
-      if (rec) {
-        rec.onresult = rec.onerror = rec.onend = null;
-        rec.abort();
-        recognition.current = null;
-      }
       recorder.current?.cancel();
       recorder.current = null;
     };
   }, [language]);
-
-  const hubRecording = hubVoice && canRecord();
-
-  function startBrowser() {
-    const Ctor = speechRecognitionCtor();
-    if (!Ctor) {
-      onNotice(labels.voiceUnavailable);
-      return;
-    }
-    try {
-      const rec = new Ctor();
-      rec.lang = language === 'tl' ? 'fil-PH' : localeFor(language);
-      rec.interimResults = false;
-      rec.continuous = false;
-      let failed = false;
-      rec.onresult = (event) => {
-        const text = Array.from(event.results, (result) => (result[0]?.transcript ?? '').trim())
-          .filter(Boolean)
-          .join(' ')
-          .trim();
-        if (text) transcriptCallback.current(text);
-      };
-      rec.onerror = (event) => {
-        failed = true;
-        setMode('idle');
-        onNotice(event.error === 'aborted' ? '' : labels.voiceError);
-      };
-      rec.onend = () => {
-        recognition.current = null;
-        setMode('idle');
-        if (!failed) onNotice('');
-      };
-      recognition.current = rec;
-      rec.start();
-      setMode('browser');
-      onNotice(labels.voiceListening);
-    } catch {
-      recognition.current = null;
-      setMode('idle');
-      onNotice(labels.voiceError);
-    }
-  }
 
   async function finishRecording() {
     const active = recorder.current;
@@ -165,29 +88,36 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice }:
     }
   }
 
-  function onClick() {
-    if (mode === 'recording') void finishRecording();
-    else if (mode === 'browser') recognition.current?.stop();
-    else if (mode === 'idle') {
-      onNotice('');
-      // The hub's own audio model is preferred: it works offline.
-      if (hubRecording) void startRecording();
-      else startBrowser();
+  async function onClick() {
+    if (mode === 'recording') {
+      void finishRecording();
+      return;
     }
+    if (mode !== 'idle') return;
+    onNotice('');
+    if (!canRecord()) {
+      onNotice(labels.voiceDenied);
+      return;
+    }
+    // Ask the hub again: the farmer may have joined its Wi-Fi since the page opened.
+    const voice = hubVoice || (await hubCapabilities(hubUrl))?.voice === true;
+    if (voice !== hubVoice) setHubVoice(voice);
+    if (voice) void startRecording();
+    else onNotice(labels.voiceUnavailable);
   }
 
-  const listening = mode === 'recording' || mode === 'browser';
+  const listening = mode === 'recording';
   const working = mode === 'working';
   return (
     <button
       type='button'
       className={`chat-icon-button ${listening ? 'animate-pulse bg-leaf text-white' : ''} ${working ? 'opacity-50' : ''}`}
-      onClick={onClick}
+      onClick={() => void onClick()}
       disabled={working}
       aria-label={working ? labels.voiceWorking : listening ? labels.voiceStop : labels.voiceStart}
       aria-pressed={listening}
       aria-busy={working}
-      title={listening ? labels.voiceStop : `${labels.voiceStart}. ${hubRecording ? labels.voiceHubHint : labels.voiceHint}`}
+      title={listening ? labels.voiceStop : `${labels.voiceStart}. ${hubVoice ? labels.voiceHubHint : labels.voiceHint}`}
     >
       {listening ? (
         <svg className='size-5' viewBox='0 0 24 24' fill='currentColor' aria-hidden='true'>

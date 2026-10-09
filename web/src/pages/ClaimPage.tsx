@@ -59,7 +59,7 @@ export default function ClaimPage() {
         {existing && status !== 'working' ? (
           <p className="text-xs text-muted">Previous link on this device: user {existing.userId.slice(0, 8)}…</p>
         ) : null}
-        <Link to={existing ? '/chat' : '/'} className="pill-btn inline-block no-underline">
+        <Link to={existing ? '/chat' : '/login'} className="pill-btn inline-block no-underline">
           {existing ? 'Open chat' : 'Back to login'}
         </Link>
       </div>

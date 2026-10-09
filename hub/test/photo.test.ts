@@ -206,3 +206,27 @@ describe('a question with a photo', () => {
     expect(res).not.toHaveProperty('photoSigns');
   });
 });
+
+describe("a photo with no sign in the farmer's words", () => {
+  it('is not sure from one picked sign, even when that sign carries several keywords', async () => {
+    // "Wet-looking stripes on the leaf edges" alone hits three bacterial leaf blight keywords.
+    const { res, explainer } = await ask(fakeVision('rice\nwet-looking stripes on the leaf edges'), { text: 'ano ang mali' });
+    expect(res.matchIds[0]).toBe('bacterial-leaf-blight');
+    expect(res.clear).toBe(false);
+    expect(explainer.explained[0]!.clear).toBe(false);
+  });
+
+  it('is sure when two different picked signs point to the same problem', async () => {
+    const vision = fakeVision('corn\nragged holes\nyoung leaves in the whorl\nsawdust-like droppings');
+    const { res } = await ask(vision, { text: 'ano ang mali' });
+    expect(res.matchIds[0]).toBe('fall-armyworm');
+    expect(res.clear).toBe(true);
+  });
+
+  it("leaves the farmer's own sign words to the matcher as usual", async () => {
+    const { res } = await ask(fakeVision('rice\nwet-looking stripes on the leaf edges'), { text: 'tuyo ang gilid ng dahon ng palay, may guhit' });
+    expect(res.matchIds[0]).toBe('bacterial-leaf-blight');
+    expect(res.clear).toBe(true);
+  });
+});
+

@@ -5,6 +5,7 @@ import {
   carriesNotice,
   findViolations,
   insectFacts,
+  localizeEntry,
   type KnowledgeEntry,
 } from '@ugatan/shared';
 import type { ReactNode } from 'react';
@@ -24,6 +25,8 @@ export interface AnswerViewProps {
   matchedOn?: readonly string[];
   /** Shown when nothing matched and there is no model reply: a greeting's reply, instead of the no-match line. */
   fallback?: string;
+  /** Language of the card text. Tagalog and Cebuano use the translated notes when they exist; anything else shows the English. */
+  language?: string;
 }
 
 const SUBHEAD = 'mt-3 mb-1 text-sm font-semibold text-label';
@@ -40,7 +43,7 @@ function inlineBold(text: string): ReactNode[] {
  * matched notes show as "Tugma" only when the match passed the confidence threshold. The pesticide notice ends
  * only a reply that gives treatment advice.
  */
-export function AnswerView({ matches, clear, labels, explanation, explanationStatus, waitingForHub, thinking, matchedOn = [], fallback }: AnswerViewProps) {
+export function AnswerView({ matches, clear, labels, explanation, explanationStatus, waitingForHub, thinking, matchedOn = [], fallback, language = 'en' }: AnswerViewProps) {
   const explanationText = explanation?.trim() ?? '';
   const explanationSafe = explanationText !== '' && findViolations(explanationText).length === 0;
   // Unsafe text is never shown, even if the caller did not mark it as blocked.
@@ -94,7 +97,8 @@ export function AnswerView({ matches, clear, labels, explanation, explanationSta
             </p>
           )}
           <div className="mt-2 grid gap-4">
-            {matches.map((r) => {
+            {matches.map((original) => {
+              const r = localizeEntry(original, language);
               const insect = insectFacts(r);
               return (
                 <article key={r.id}>
@@ -143,6 +147,25 @@ export function AnswerView({ matches, clear, labels, explanation, explanationSta
                   <p className="mt-3 mb-0 text-[0.9375rem] text-muted">
                     <strong className="font-semibold text-ink">{labels.consultHeading}</strong> {r.callExpertIf}
                   </p>
+                  {r !== original && (
+                    // The translation is the app's own; the English is the source the notes were written in.
+                    <details className="mt-3 text-sm text-muted">
+                      <summary className="cursor-pointer">{labels.originalEnglish}</summary>
+                      <ul className="m-0 mt-1 list-disc pl-6" lang="en">
+                        {original.signs.map((s) => (
+                          <li key={s}>{s}</li>
+                        ))}
+                      </ul>
+                      <ol className="m-0 mt-1 list-decimal pl-6" lang="en">
+                        {original.actions.map((a) => (
+                          <li key={a}>{a}</li>
+                        ))}
+                      </ol>
+                      <p className="mb-0 mt-1" lang="en">
+                        {original.callExpertIf}
+                      </p>
+                    </details>
+                  )}
                 </article>
               );
             })}

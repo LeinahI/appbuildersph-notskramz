@@ -32,6 +32,52 @@
       "Small wasps that attack the eggs"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Mga bahagi ng palayan na nagiging kulay-kahel o kayumanggi at natutuyo, madalas pabilog (hopperburn)",
+        "Maraming maliliit na kayumangging insekto sa puno ng halaman, lalo na sa masisinsing kumpol",
+        "Itim na amag (sooty mold) o malagkit na honeydew sa puno ng halaman"
+      ],
+      "actions": [
+        "Silipin ang puno ng halaman kung may maliliit na kayumangging insekto, lalo na sa masisinsing kumpol",
+        "Iwasan ang sobrang nitrogen na abono at hatiin ang paglalagay sa ilang beses na mas kaunti",
+        "Huwag hayaang nakababad sa tubig ang palayan nang matagal; sundin ang lokal na payo sa pamamahala ng tubig",
+        "Protektahan ang mga likas na mandaragit gaya ng gagamba at mirid bug: iwasan ang di-kailangang pag-spray ng malawakang pamatay-insekto (broad-spectrum)"
+      ],
+      "callExpertIf": "Mabilis na kumakalat ang pinsala sa palayan o bumabagsak na ang mga halaman",
+      "stageNote": "lahat ng yugto, pinakamalala mula pagsusuwi hanggang pamumulaklak; maaaring lumabas ang hopperburn sa yugto ng gatas",
+      "biological": [
+        "Mga gagamba",
+        "Mga mirid bug na kumakain ng itlog",
+        "Mga ladybug",
+        "Mga tutubi at maliliit na tutubi (damselfly)",
+        "Maliliit na putakti na umaatake sa itlog"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Mga bahin sa basakan nga mahimong kolor-kahel o kape ug mauga, kasagaran lingin (hopperburn)",
+        "Daghang gagmay nga kape nga insekto sa punoan sa tanom, labi na sa dasok nga mga pungpong",
+        "Itom nga agup-op (sooty mold) o pilit nga honeydew sa punoan sa tanom"
+      ],
+      "actions": [
+        "Susiha ang punoan sa tanom kung adunay gagmay nga kape nga insekto, labi na sa dasok nga mga pungpong",
+        "Likayi ang sobra nga nitrogen nga abono ug bahina ang pagbutang sa pipila ka higayon",
+        "Ayaw pasagdi nga magpundo ang tubig sa basakan sa dugay nga panahon; sunda ang lokal nga tambag sa pagdumala sa tubig",
+        "Panalipdi ang mga natural nga manunukob sama sa lawa-lawa ug mirid bug pinaagi sa paglikay sa dili kinahanglan nga broad-spectrum nga spray"
+      ],
+      "callExpertIf": "Paspas nga mikaylap ang kadaot sa basakan o natumba na ang mga tanom",
+      "stageNote": "tanang yugto, labing grabe gikan sa pagsuwi hangtod sa pagpamulak; ang hopperburn mahimong makita sa yugto sa gatas",
+      "biological": [
+        "Mga lawa-lawa",
+        "Mga mirid bug nga mokaon sa itlog",
+        "Mga ladybug",
+        "Mga alindanga ug gagmay nga alindanga (damselfly)",
+        "Gagmay nga wasp nga moatake sa itlog"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

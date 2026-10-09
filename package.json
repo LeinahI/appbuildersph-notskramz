@@ -14,7 +14,8 @@
     "build": "pnpm -r build",
     "test": "pnpm -r build && pnpm -r test",
     "eval": "pnpm --filter @ugatan/hub eval",
-    "eval:voice": "pnpm --filter @ugatan/hub eval:voice"
+    "eval:voice": "pnpm --filter @ugatan/hub eval:voice",
+    "eval:photo": "pnpm --filter @ugatan/hub eval:photo"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

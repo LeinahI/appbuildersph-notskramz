@@ -13,6 +13,32 @@
     "In future seasons, plant varieties recommended for your area as resistant to blast"
   ],
   "callExpertIf": "Lesions reach the stem or the panicle neck, which can cause major grain loss",
+  "translations": {
+    "tl": {
+      "signs": [
+        "Hugis-diyamante o hugis-karayom na batik sa dahon, abo ang gitna at kayumanggi ang gilid",
+        "Nabubulok ang leeg sa puno ng uhay, kaya maaaring hindi malamnan ang butil"
+      ],
+      "actions": [
+        "Iwasan ang sobrang nitrogen at ang masyadong masinsing pagtatanim",
+        "Panatilihing walang damo at maayos ang daluyan ng tubig sa taniman para mabawasan ang halumigmig",
+        "Sa mga susunod na pagtatanim, gumamit ng mga barayting inirerekomenda sa inyong lugar bilang resistant sa blast"
+      ],
+      "callExpertIf": "Umaabot ang batik sa tangkay o sa leeg ng uhay, na maaaring magdulot ng malaking pagkawala ng ani"
+    },
+    "ceb": {
+      "signs": [
+        "Porma-diyamante o porma-dagom nga mansa sa dahon, abohon ang tunga ug kape ang ngilit",
+        "Madunot ang liog sa punoan sa uhay, busa mahimong dili mapuno ang lugas"
+      ],
+      "actions": [
+        "Likayi ang sobra nga nitrogen ug ang dasok kaayo nga pagtanom",
+        "Hupti nga walay sagbot ug maayo ang agianan sa tubig sa uma aron makunhuran ang kaumog",
+        "Sa sunod nga mga pagtanom, gamit og mga barayti nga girekomenda sa inyong lugar nga resistant sa blast"
+      ],
+      "callExpertIf": "Moabot ang mansa sa tukog o sa liog sa uhay, nga mahimong hinungdan sa dakong pagkawala sa ani"
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

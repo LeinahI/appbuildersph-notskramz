@@ -14,6 +14,34 @@
     "Remove and destroy infected plants"
   ],
   "callExpertIf": "Many plants show stripes or stunting, or the disease is spreading quickly",
+  "translations": {
+    "tl": {
+      "signs": [
+        "Dilaw o puting guhit sa haba ng dahon",
+        "Puti at parang bulak na tubo sa ilalim ng dahon tuwing maalinsangang umaga",
+        "Bansot na halaman o kakaibang paglaki ng tassel"
+      ],
+      "actions": [
+        "Gumamit ng certified at resistant na binhi sa susunod na pagtatanim",
+        "Ayusin ang daluyan ng tubig at ang pagitan ng mga halaman para mabawasan ang halumigmig",
+        "Alisin at sirain ang mga halamang may sakit"
+      ],
+      "callExpertIf": "Maraming halaman ang may guhit o bansot, o mabilis na kumakalat ang sakit"
+    },
+    "ceb": {
+      "signs": [
+        "Dalag o puti nga gilis sa gitas-on sa dahon",
+        "Puti ug daw gapas nga tubo sa ilalom sa dahon kung alimuot ang buntag",
+        "Kulang-tubo nga tanom o lahi nga pagtubo sa tassel"
+      ],
+      "actions": [
+        "Gamit og certified ug resistant nga binhi sa sunod nga pagtanom",
+        "Ayoha ang agianan sa tubig ug ang gilay-on sa mga tanom aron makunhuran ang kaumog",
+        "Kuhaa ug gub-a ang mga tanom nga may sakit"
+      ],
+      "callExpertIf": "Daghang tanom ang adunay gilis o kulang-tubo, o paspas nga mikaylap ang sakit"
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }
