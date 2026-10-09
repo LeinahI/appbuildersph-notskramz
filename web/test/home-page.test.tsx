@@ -83,7 +83,7 @@ describe('Ugatan home page', () => {
 
   it('labels the icon-only camera, microphone, history, new-chat, log-out, help, and send actions', () => {
     const html = renderToStaticMarkup(createElement(HomePage, props()));
-    for (const label of ['Mga nakaraang usapan', 'Bagong usapan', 'Log out', 'Larawan', 'Magsalita', 'Ipadala ang tanong', 'Tulong']) {
+    for (const label of ['Mga nakaraang usapan', 'Bagong usapan', 'Mag-log out', 'Larawan', 'Magsalita', 'Ipadala ang tanong', 'Tulong']) {
       expect(html).toContain(`aria-label="${label}"`);
     }
     expect(html).toContain('aria-pressed="false"');

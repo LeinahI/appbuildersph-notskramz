@@ -11,6 +11,8 @@ export interface ExplainInput {
   bestGuess?: boolean;
   /** The signs the hub read from the farmer's photo, in English. `text` then holds the farmer's own words only. */
   photo?: string | null;
+  /** For a match that is not sure: the sign the one question should ask about, chosen by the hub. */
+  askAbout?: string | null;
 }
 
 export interface ExplainResult {
@@ -68,7 +70,7 @@ export interface ImageDescriber {
   readonly name: string;
   /**
    * JPEG bytes in, the model's raw answer out. `note` is what the farmer typed with the photo. Pass the answer to
-   * `photoOutcome` in shared. Null when the model returned nothing.
+   * `photoSignsOf` in shared, which reads the photo form. Null when the model returned nothing.
    */
   describeImage(image: Uint8Array, note: string, crop: Crop | 'any'): Promise<string | null>;
 }

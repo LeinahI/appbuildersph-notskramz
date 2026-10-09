@@ -2,8 +2,12 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import {
   NOT_SURE_TEXT,
   buildChatMessages,
+  buildDescribeMessages,
   buildMessages,
+  buildPhotoMessages,
   cropOfChat,
+  describeOutcome,
+  findViolations,
   fixedReply,
   guardPromptLeak,
   isFinalAnswer,
@@ -11,6 +15,8 @@ import {
   matchKeywords,
   nextFollowUps,
   notesToExplain,
+  photoIsSure,
+  photoSignsOf,
   routeFor,
   sessionNotes,
   sessionText,
@@ -21,6 +27,7 @@ import {
   type ChatTurn,
   type Crop,
   type KnowledgeEntry,
+  type PhotoStatus,
   type Route,
   type TurnOutcome,
 } from '@ugatan/shared';
@@ -32,6 +39,7 @@ import { SymptomPicker } from './components/SymptomPicker';
 import { KNOWLEDGE, KNOWLEDGE_BY_ID } from './config/knowledge';
 import { DEFAULT_UI_LANGUAGE, L, localeFor } from './config/labels';
 import { loadHubUrl } from './config/hub';
+import { clearLocalProfile } from './config/profile';
 import { clearClaimLink } from './config/ws';
 import { db, newId, type ConversationRow, type QueuedQuestion } from './lib/db';
 import {
@@ -45,9 +53,11 @@ import {
   saveActiveConversationId,
   saveConversationThread,
 } from './lib/conversations';
-import { phoneAi, type PhoneAiState } from './lib/llm';
+import { matchOnPhone } from './lib/hybrid';
+import { phoneLaya, type LayaState } from './lib/laya';
+import { phoneAi, phoneAiFit, type PhoneAiState } from './lib/llm';
 import { photoSrc, shrinkPhoto } from './lib/photo';
-import { hubReachable, syncQueue } from './lib/sync';
+import { hubCapabilities, hubReachable, syncQueue } from './lib/sync';
 import { symptomTile } from './symptoms';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -89,6 +99,41 @@ function clipTurn(t: ChatTurn): ChatTurn {
 }
 
 const hasSign = (text: string) => matchKeywords(text, 'any', KNOWLEDGE).matches.length > 0;
+
+/** Cap on the filled-in photo form, as on the hub (VISION_MAX_NEW_TOKENS). */
+const PHOTO_MAX_NEW_TOKENS = 128;
+/** Cap on Gemma's plain-English description of a question, as on the hub. */
+const DESCRIBE_MAX_NEW_TOKENS = 80;
+
+interface PhotoRead {
+  status: PhotoStatus;
+  signs: string | null;
+  picks?: string[];
+}
+
+/**
+ * Reads a photo with the phone's Gemma, through the same form the hub uses. The picks become signs in the knowledge
+ * base's words. Like on the hub, a photo adds signs and never names the problem by itself.
+ */
+async function readPhotoOnPhone(image: string, note: string, crop: Crop | 'any'): Promise<PhotoRead> {
+  try {
+    const raw = await phoneAi.generate(buildPhotoMessages(note, crop), { image, maxNewTokens: PHOTO_MAX_NEW_TOKENS });
+    // Null means the guardrail blocked the model's text, so nothing of it reaches the matcher.
+    if (raw === null) return { status: 'unreadable', signs: null };
+    const outcome = photoSignsOf(raw);
+    if (outcome.kind === 'not-plant') return { status: 'not-plant', signs: null };
+    if (outcome.kind === 'no-signs') return { status: 'no-signs', signs: null };
+    if (findViolations(outcome.english).length > 0) return { status: 'unreadable', signs: null };
+    return { status: 'ok', signs: outcome.english, ...(outcome.picks ? { picks: outcome.picks } : {}) };
+  } catch {
+    return { status: 'unreadable', signs: null };
+  }
+}
+
+/** Gemma's plain-English description of the farmer's words, for the phone's hybrid matcher. */
+async function describeOnPhone(text: string, crop: Crop | 'any'): Promise<string | null> {
+  return describeOutcome(await phoneAi.generate(buildDescribeMessages(text, crop), { maxNewTokens: DESCRIBE_MAX_NEW_TOKENS }));
+}
 
 interface Plan {
   route: Route;
@@ -180,6 +225,16 @@ export default function App() {
   }, []);
 
   useEffect(() => phoneAi.subscribe(setAi), []);
+  const [laya, setLaya] = useState<LayaState>({ status: 'idle', device: '', progress: '', error: '' });
+  useEffect(() => phoneLaya.subscribe(setLaya), []);
+  // Laya loads after Gemma is ready, so the two downloads and loads never hold the phone's memory at once.
+  const layaFrom = useRef<{ hubUrl: string; threshold: number } | null>(null);
+  useEffect(() => {
+    if (ai.status === 'ready' && layaFrom.current) {
+      phoneLaya.load(layaFrom.current.hubUrl, layaFrom.current.threshold);
+      layaFrom.current = null;
+    }
+  }, [ai.status]);
 
   const refresh = useCallback(async () => {
     if (!conversationId) return;
@@ -293,7 +348,6 @@ export default function App() {
 
     const followUps = messages.reduce((n, r) => nextFollowUps(n, outcomeOf(r)), 0);
     const final = isFinalAnswer(followUps);
-    const bestGuess = plan.route === 'match' && plan.entries.length > 0 && !plan.clear && final;
     // The last few turns, as the farmer saw them, so the model answers what the farmer is saying now.
     const turns = messages.slice(-HISTORY_TURNS).map(turnOf).map(clipTurn);
     const record: QueuedQuestion = {
@@ -327,31 +381,12 @@ export default function App() {
     }
     await refresh();
 
-    // Phone AI, if the farmer prepared it. Otherwise the question waits for the hub.
-    // Small talk and no-match questions have no notes to explain, so the hub (or the phone's chat) replies instead.
-    // A photo is read only by the hub, so a question with a photo always waits for it.
-    if (!image && phoneAi.ready && id !== undefined && plan.route === 'match' && plan.entries.length > 0) {
+    // With the phone AI prepared, everything runs on the phone: the photo, the matching (keyword, Gemma's English,
+    // and Laya), and the reply. Nothing waits for the hub. Without it, the question waits for the hub.
+    if (phoneAi.ready && id !== undefined) {
       setBusyId(id);
       try {
-        // Keyword matching decided the problem. The phone model only explains it, and is told when the match is not sure.
-        const given = notesToExplain(plan.entries, plan.clear || bestGuess);
-        const generated = await phoneAi.generate(buildMessages(plan.description, CROP, given, { sure: plan.clear, bestGuess }));
-        // The output rail: a reply that names a problem it was not given notes for is dropped, and the curated notes show instead.
-        const grounded = generated !== null && ungroundedProblems(generated, KNOWLEDGE, given, trimmed).length > 0 ? null : generated;
-        const tidied =
-          grounded === null
-            ? null
-            : plan.clear || bestGuess
-              ? withProblemName(tidyReply(grounded, trimmed), plan.entries[0]!.name, plan.clear)
-              : tidyReply(grounded, trimmed);
-        const raw = tidied === null ? null : guardPromptLeak(tidied);
-        await db.questions.update(id, {
-          status: 'answered',
-          // A sure match or a best guess always says the problem's name.
-          explanation: raw,
-          explanationStatus: raw === null ? 'blocked' : 'phone',
-          answeredAt: new Date().toISOString(),
-        });
+        await answerOnPhone(id, { text: trimmed, plan, picked, image, turns, final });
       } catch (err) {
         setNotice(err instanceof Error ? err.message : String(err));
       } finally {
@@ -364,35 +399,118 @@ export default function App() {
       } finally {
         setBusyId(null);
       }
-    } else if (!image && phoneAi.ready && id !== undefined) {
-      // No match and no hub: the phone model replies to the whole chat and asks what they see.
-      // It stays queued, so the hub still matches it later with Laya.
-      setBusyId(id);
-      try {
-        // A pesticide, health, other-crop, or "who are you" message gets the app's fixed line, never the model's.
-        const fixed = plan.route === 'chat' ? fixedReply(trimmed) : null;
-        const unmatched = plan.route === 'match';
-        const generated =
-          fixed ??
-          (await phoneAi.generate(
-            buildChatMessages(trimmed, turns, undefined, { notes: plan.notes, unmatched, final: unmatched && final, crop: plan.crop }),
-          ));
-        // A chat reply has no notes to explain, so it may name no problem at all. Prompt leaks become INJECTION_REPLY.
-        const grounded = generated !== null && ungroundedProblems(generated, KNOWLEDGE, [], trimmed).length > 0 ? null : generated;
-        const raw = grounded === null ? null : guardPromptLeak(fixed ? grounded : tidyReply(grounded, trimmed));
-        await db.questions.update(id, {
-          explanation: raw,
-          explanationStatus: raw === null ? 'blocked' : 'phone',
-        });
-      } catch (err) {
-        setNotice(err instanceof Error ? err.message : String(err));
-      } finally {
-        setBusyId(null);
-      }
     }
     await refresh();
     void saveConversationThread(conversation.id);
     setListKey((k) => k + 1);
+  }
+
+  /**
+   * The hub's answer steps (hub/src/answer.ts), on the phone. 1. A photo is read and adds its signs to the words.
+   * 2. The matcher decides the problem and whether it is sure: keyword, then Gemma's English, then Laya. 3. Gemma
+   * explains that decision, or, with nothing matched, replies to the chat and asks what the farmer sees.
+   */
+  async function answerOnPhone(
+    id: number,
+    q: { text: string; plan: Plan; picked?: KnowledgeEntry; image?: string; turns: ChatTurn[]; final: boolean },
+  ) {
+    const { text, plan, picked, image, turns, final } = q;
+    const injection = isInjectionAttempt(text);
+    // A tapped picture already is the pick, and a message that tries to change the rules is never matched, so
+    // neither has its photo read.
+    let photo: PhotoRead | null = null;
+    if (image && !picked && !injection) {
+      photo = await readPhotoOnPhone(image, text, plan.crop);
+      await db.questions.update(id, { photo: photo.status, photoSigns: photo.signs });
+      await refresh();
+    }
+    const asked = photo?.status === 'ok' ? `${plan.description.replace(/[.\s]+$/, '')}. ${photo.signs}` : plan.description;
+    // The chat reply hears the photo as a marked English note, so it answers in the farmer's language.
+    const said =
+      photo?.status === 'ok'
+        ? `${text} [The farmer's photo shows, in the app's English: ${photo.signs}]`
+        : photo?.status === 'not-plant'
+          ? `${text} [The farmer sent a photo, but it does not show rice or corn.]`
+          : photo?.status === 'no-signs'
+            ? `${text} [The farmer sent a photo, but it shows no clear sign of a problem.]`
+            : text;
+    const photoShowedNothing = photo?.status === 'not-plant' || photo?.status === 'no-signs';
+    let route: Route = injection
+      ? 'chat'
+      : picked || photo?.status === 'ok'
+        ? 'match'
+        : photoShowedNothing && !hasSign(asked)
+          ? 'chat'
+          : plan.route;
+
+    let entries = plan.entries;
+    let clear = plan.clear;
+    let matchedOn = plan.matchedOn;
+    if (route === 'match' && !picked) {
+      const outcome = await matchOnPhone(asked, plan.crop, {
+        knowledge: KNOWLEDGE,
+        describe: describeOnPhone,
+        ...(phoneLaya.ready ? { laya: (t: string, c: Crop | 'any') => phoneLaya.match(t, c, KNOWLEDGE) } : {}),
+      });
+      if (outcome.noSigns) route = 'chat';
+      entries = entriesFor(outcome.ids);
+      clear = outcome.clear;
+      matchedOn = outcome.matchedOn;
+      // A photo alone is sure only with two picked signs for the problem, as on the hub.
+      const photoOnly = photo?.status === 'ok' && !hasSign(plan.description);
+      if (photoOnly && clear && photo?.picks && !photoIsSure(outcome.ids[0]!, photo.picks, KNOWLEDGE)) clear = false;
+      await db.questions.update(id, {
+        route,
+        matchIds: entries.map((e) => e.id),
+        clear,
+        matchedOn,
+        matcher: phoneLaya.ready ? 'hybrid' : 'keyword',
+      });
+      await refresh();
+    }
+
+    const bestGuess = route === 'match' && entries.length > 0 && !clear && final;
+    if (route === 'match' && entries.length > 0) {
+      // The matcher decided the problem. The phone model only explains it, and is told when the match is not sure.
+      const given = notesToExplain(entries, clear || bestGuess);
+      const generated = await phoneAi.generate(buildMessages(asked, CROP, given, { sure: clear, bestGuess }));
+      // The output rail: a reply that names a problem it was not given notes for is dropped, and the curated notes show instead.
+      const grounded = generated !== null && ungroundedProblems(generated, KNOWLEDGE, given, text).length > 0 ? null : generated;
+      const tidied =
+        grounded === null
+          ? null
+          : clear || bestGuess
+            ? withProblemName(tidyReply(grounded, text), entries[0]!.name, clear)
+            : tidyReply(grounded, text);
+      // Prompt leaks (persona / system text) become INJECTION_REPLY.
+      const raw = tidied === null ? null : guardPromptLeak(tidied);
+      await db.questions.update(id, {
+        status: 'answered',
+        // A sure match or a best guess always says the problem's name.
+        explanation: raw,
+        explanationStatus: raw === null ? 'blocked' : 'phone',
+        answeredAt: new Date().toISOString(),
+      });
+      return;
+    }
+    // Nothing to explain: the phone model replies to the whole chat and asks what they see.
+    // A pesticide, health, other-crop, or "who are you" message gets the app's fixed line, never the model's.
+    const fixed = route === 'chat' ? fixedReply(text) : null;
+    const unmatched = route === 'match';
+    const generated =
+      fixed ??
+      (await phoneAi.generate(
+        buildChatMessages(said, turns, undefined, { notes: plan.notes, unmatched, final: unmatched && final, crop: plan.crop }),
+      ));
+    // A chat reply has no notes to explain, so it may name no problem at all. Prompt leaks become INJECTION_REPLY.
+    const grounded = generated !== null && ungroundedProblems(generated, KNOWLEDGE, [], text).length > 0 ? null : generated;
+    const raw = grounded === null ? null : guardPromptLeak(fixed ? grounded : tidyReply(grounded, text));
+    await db.questions.update(id, {
+      status: 'answered',
+      explanation: raw,
+      explanationStatus: raw === null ? 'blocked' : 'phone',
+      answeredAt: new Date().toISOString(),
+    });
   }
 
   function submit() {
@@ -421,14 +539,28 @@ export default function App() {
 
   function logoutFarmer() {
     clearClaimLink();
-    navigate('/');
+    // The chats stay in this phone's database; signing in again on this phone shows them.
+    clearLocalProfile();
+    navigate('/login');
   }
 
   const empty = messages.length === 0;
 
-  function prepareAi() {
+  const aiFit = phoneAiFit();
+
+  async function prepareAi() {
+    // A phone without the memory never starts the download: the notes work without it.
+    if (aiFit === 'too-small') return;
+    // The model comes from the hub over the Wi-Fi, never from the internet.
+    const caps = await hubCapabilities(hubUrl);
+    if (!caps?.phoneModel) {
+      setAi({ status: 'error', device: '', progress: '', error: L.phoneAiNeedsHub });
+      return;
+    }
+    // Laya is optional: without it the phone matches with keyword and Gemma's English, like a hub with Laya off.
+    if (caps.phoneLaya && caps.layaThreshold !== null) layaFrom.current = { hubUrl, threshold: caps.layaThreshold };
     try {
-      phoneAi.load();
+      phoneAi.load(hubUrl);
     } catch {
       setAi({ status: 'error', device: '', progress: '', error: '' });
     }
@@ -452,6 +584,7 @@ export default function App() {
             <PhotoNote r={r} reading={busyId !== null && busyId === r.id} />
             <AnswerView
               labels={L}
+              language={DEFAULT_UI_LANGUAGE}
               matches={entries}
               clear={clear}
               matchedOn={matchedOn}
@@ -515,7 +648,7 @@ export default function App() {
           {thread}
         </HomePage>
       </div>
-      <HelpDialog ref={helpDialog} ai={ai} onPrepareAi={prepareAi} />
+      <HelpDialog ref={helpDialog} ai={ai} laya={laya} fit={aiFit} onPrepareAi={() => void prepareAi()} />
       <dialog ref={historyDialog} className="chat-history" aria-labelledby="ugatan-history-heading">
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 id="ugatan-history-heading" className="m-0 text-xl font-semibold">{L.historyLabel}</h2>

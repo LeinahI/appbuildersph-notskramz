@@ -19,6 +19,15 @@ export const MAX_HISTORY_TURNS = 30;
  */
 export const MAX_IMAGE_CHARS = 1_400_000;
 
+/**
+ * The phone model's Hugging Face repo name. The phone never downloads from Hugging Face: it asks the hub for
+ * /models/<this>/<file>, and the hub serves the files from its own GEMMA_MODEL_DIR over the local Wi-Fi.
+ */
+export const PHONE_MODEL_REPO = 'onnx-community/gemma-4-E2B-it-ONNX';
+
+/** Where the hub serves its Laya bundle (LAYA_MODEL_DIR) to phones: /models/<this>/<file>. */
+export const PHONE_LAYA_PATH = 'laya';
+
 /** Longest side, in pixels, of a photo the hub will decode. The phone sends less; this stops oversized files. */
 export const MAX_IMAGE_SIDE = 4096;
 

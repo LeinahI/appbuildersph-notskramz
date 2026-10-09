@@ -102,11 +102,17 @@ async function main(): Promise<void> {
     conversations: new ConversationStore(),
     imageDescriber,
     transcriber,
+    modelDir: config.gemmaModelDir,
+    // Laya goes to phones only with the team's threshold, so the phone never decides "sure" on a guess.
+    layaDir: config.layaConfidenceThreshold !== null ? config.layaModelDir : null,
     info: {
       matcher: matcher.name,
       explainer: explainer.name,
       vision: imageDescriber ? 'on' : 'off',
       voice: transcriber ? 'on' : 'off',
+      phoneModel: config.gemmaModelDir ? 'on' : 'off',
+      phoneLaya: config.layaModelDir && config.layaConfidenceThreshold !== null ? 'on' : 'off',
+      ...(config.layaConfidenceThreshold !== null ? { layaThreshold: config.layaConfidenceThreshold } : {}),
     },
   });
   server.listen(config.port, config.host, () => {

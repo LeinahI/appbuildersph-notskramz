@@ -13,6 +13,32 @@
     "Use resistant varieties in future seasons"
   ],
   "callExpertIf": "It is spreading across the whole field or the leaves are drying out quickly",
+  "translations": {
+    "tl": {
+      "signs": [
+        "Mga guhit na parang basa sa gilid ng dahon na nagiging dilaw, pagkatapos ay puti o abo",
+        "Lumalabas na katas ng bacteria, minsan nakikita bilang mga patak sa madaling-araw"
+      ],
+      "actions": [
+        "Iwasan ang pagtilamsik ng tubig mula sa itaas at ang sobrang nitrogen",
+        "Alisin at sirain ang mga halamang malala ang impeksyon, malayo sa taniman",
+        "Gumamit ng mga resistant na barayti sa mga susunod na pagtatanim"
+      ],
+      "callExpertIf": "Kumakalat na ito sa buong taniman o mabilis na natutuyo ang mga dahon"
+    },
+    "ceb": {
+      "signs": [
+        "Mga gilis nga daw basa sa ngilit sa dahon nga mahimong dalag, unya puti o abohon",
+        "Nagaawas nga duga sa bacteria, usahay makita nga mga tulo sa kaadlawon"
+      ],
+      "actions": [
+        "Likayi ang pagtupsi sa tubig gikan sa ibabaw ug ang sobra nga nitrogen",
+        "Kuhaa ug gub-a ang mga tanom nga grabe ang impeksyon, layo sa uma",
+        "Gamit og mga resistant nga barayti sa sunod nga mga pagtanom"
+      ],
+      "callExpertIf": "Mikaylap na kini sa tibuok uma o dali nga nauga ang mga dahon"
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

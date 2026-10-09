@@ -35,7 +35,7 @@ describe('App home composition', () => {
     expect(html).toContain('Piliin ang nakikita mo');
     expect(html).toContain('aria-label="Larawan"');
     expect(html).toContain('aria-label="Magsalita"');
-    expect(html).toContain('aria-label="Log out"');
+    expect(html).toContain('aria-label="Mag-log out"');
     expect(html).toContain('type="file"');
   });
 

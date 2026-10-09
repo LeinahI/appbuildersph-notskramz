@@ -7,6 +7,8 @@ export {
   MAX_IMAGE_CHARS,
   MAX_IMAGE_SIDE,
   MIN_AUDIO_SECONDS,
+  PHONE_LAYA_PATH,
+  PHONE_MODEL_REPO,
   type AskRequest,
   type AskResponse,
   type ChatTurn,
@@ -31,6 +33,7 @@ export {
   SYSTEM_PROMPT,
   buildChatMessages,
   buildDescribeMessages,
+  describeOutcome,
   buildMessages,
   buildPhotoMessages,
   transcriptText,
@@ -55,7 +58,9 @@ export {
   leaksInstructions,
   ungroundedProblems,
 } from './rails.js';
-export { validateEntry, assertValidEntries } from './knowledge.js';
+export { LAYA_INSTRUCTIONS, problemOptions } from './laya.js';
+export { CARD_LANGUAGES, assertValidEntries, localizeEntry, validateEntry } from './knowledge.js';
+
 export {
   MAX_FOLLOW_UPS,
   SESSION_TEXT_CHARS,
@@ -89,4 +94,4 @@ export {
   type ComposeInput,
   type ComposedAnswer,
 } from './answer.js';
-export { PHOTO_FORM, photoFormText, readPhotoForm, type PhotoFormReading } from './photo-form.js';
+export { PHOTO_FORM, photoFormText, photoIsSure, photoSignsOf, readPhotoForm, type PhotoFormReading } from './photo-form.js';

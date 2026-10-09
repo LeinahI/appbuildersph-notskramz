@@ -12,6 +12,30 @@
     "Manage water levels so snails are easier to find and remove after transplanting"
   ],
   "callExpertIf": "Seedlings are being lost across the field during establishment",
+  "translations": {
+    "tl": {
+      "signs": [
+        "Mga batang punla na naputol sa o malapit sa ibabaw ng tubig",
+        "Rosas o kahel na kumpol ng itlog sa tangkay at pader sa itaas ng tubig"
+      ],
+      "actions": [
+        "Pulutin ang mga kuhol at sirain ang mga kumpol ng itlog",
+        "Ayusin ang taas ng tubig para mas madaling makita at maalis ang kuhol pagkatapos maglipat-tanim"
+      ],
+      "callExpertIf": "Nawawala ang mga punla sa buong palayan habang nagsisimula pa ang tanim"
+    },
+    "ceb": {
+      "signs": [
+        "Mga batang semilya nga naputol sa o duol sa ibabaw sa tubig",
+        "Rosas o kahel nga pungpong sa itlog sa tukog ug bungbong ibabaw sa tubig"
+      ],
+      "actions": [
+        "Pupuha ang mga kuhol ug gub-a ang mga pungpong sa itlog",
+        "Ayoha ang gilawmon sa tubig aron mas sayon makita ug makuha ang kuhol human sa pagbalhin-tanom"
+      ],
+      "callExpertIf": "Nawala ang mga semilya sa tibuok basakan samtang nagsugod pa ang tanom"
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

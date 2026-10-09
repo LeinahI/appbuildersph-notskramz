@@ -30,6 +30,48 @@
       "Parasitic wasps"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Kumpol ng maliliit, malambot, at asul-berdeng insekto sa ubod, sa tassel, at sa buhok ng mais",
+        "Malagkit na honeydew at itim na amag; maaaring may mga langgam na naglalakad sa gitna ng mga aphid",
+        "Kulot, dilaw o mapulang dahon at bansot na halaman; mahina ang polinasyon kapag nababalot ang tassel at buhok ng mais"
+      ],
+      "actions": [
+        "Silipin ang ubod at ang tassel linggo-linggo bago at habang naglalabas ng tassel",
+        "Magpalit-tanim ng mais at ng pananim na hindi damo-damuhan (grass), gaya ng mga legume",
+        "Mas napipinsala ang mga halamang tuyot, kaya sundin ang lokal na payo sa pamamahala ng tubig",
+        "Protektahan ang mga ladybug at lacewing: iwasan ang di-kailangang pag-spray ng malawakang pamatay-insekto"
+      ],
+      "callExpertIf": "Makapal na ang balot sa tassel at buhok ng mais, o kumukulot at bumabansot ang mga halaman sa buong taniman",
+      "stageNote": "mula sa yugto ng ubod hanggang sa paglabas ng tassel at buhok",
+      "biological": [
+        "Mga ladybug",
+        "Mga lacewing",
+        "Mga parasitikong putakti"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Pungpong sa gagmay, humok, ug asul-berde nga insekto sa ubod, sa tassel, ug sa buhok sa mais",
+        "Pilit nga honeydew ug itom nga agup-op; mahimong adunay mga hulmigas nga naglakaw taliwala sa mga aphid",
+        "Kulot, dalag o mapula nga dahon ug kulang-tubo nga tanom; dili maayo ang polinasyon kung natabonan ang tassel ug buhok sa mais"
+      ],
+      "actions": [
+        "Susiha ang ubod ug ang tassel matag semana sa dili pa ug samtang nagagawas ang tassel",
+        "Ilisan ang mais og tanom nga dili sagbot-sagbot (grass), sama sa mga legume",
+        "Mas grabe ang kadaot sa mga tanom nga uhaw, busa sunda ang lokal nga tambag sa pagdumala sa tubig",
+        "Panalipdi ang mga ladybug ug lacewing pinaagi sa paglikay sa dili kinahanglan nga broad-spectrum nga spray"
+      ],
+      "callExpertIf": "Baga na ang tabon sa tassel ug buhok sa mais, o nagkulot ug kulang-tubo ang mga tanom sa tibuok uma",
+      "stageNote": "gikan sa yugto sa ubod hangtod sa paggawas sa tassel ug buhok",
+      "biological": [
+        "Mga ladybug",
+        "Mga lacewing",
+        "Mga parasitiko nga wasp"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

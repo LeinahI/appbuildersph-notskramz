@@ -48,18 +48,6 @@ vi.mock('../src/lib/recorder', () => ({
   startRecorder: async () => hooks.recorder,
 }));
 
-class FakeRecognition {
-  lang = '';
-  interimResults = true;
-  continuous = true;
-  onresult: ((event: { results: { transcript: string }[][] }) => void) | null = null;
-  onerror: ((event: { error: string }) => void) | null = null;
-  onend: (() => void) | null = null;
-  start = vi.fn();
-  stop = vi.fn();
-  abort = vi.fn();
-}
-
 const mode = () => hooks.states[0];
 
 function renderVoice(language: UiLanguage = 'tl', onTranscript = vi.fn(), onNotice = vi.fn()) {
@@ -88,72 +76,50 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('composer voice input', () => {
-  it('keeps the microphone visible and explains unsupported browsers on click', () => {
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+describe('composer voice input, local only', () => {
+  it('keeps the microphone visible and says to join the hub Wi-Fi when no hub writes speech', async () => {
+    hooks.canRecord = true;
     const { button, onNotice } = renderVoice();
     expect(button.props['aria-label']).toBe(LABELS.tl.voiceStart);
     button.props.onClick();
-    expect(onNotice).toHaveBeenCalledWith(LABELS.tl.voiceUnavailable);
+    await settle();
+    expect(onNotice).toHaveBeenLastCalledWith(LABELS.tl.voiceUnavailable);
     expect(mode()).toBe('idle');
   });
 
-  it.each([
-    ['tl', 'fil-PH', 'SpeechRecognition'],
-    ['en', 'en-PH', 'webkitSpeechRecognition'],
-    ['ceb', 'ceb-PH', 'SpeechRecognition'],
-  ] as const)('dictates with the %s locale, appends text, and clears listening on end', (language, locale, api) => {
-    const rec = new FakeRecognition();
-    vi.stubGlobal('window', { [api]: function () { return rec; } });
-    const { button, onTranscript, onNotice } = renderVoice(language);
-    button.props.onClick();
-    expect(rec.start).toHaveBeenCalledOnce();
-    expect(rec.lang).toBe(locale);
-    expect(rec.interimResults).toBe(false);
-    expect(mode()).toBe('browser');
-    expect(onNotice).toHaveBeenCalledWith(LABELS[language].voiceListening);
-    rec.onresult?.({ results: [[{ transcript: '  nanilaw ' }], [{ transcript: ' ang dahon  ' }]] });
-    expect(onTranscript).toHaveBeenCalledWith('nanilaw ang dahon');
-    rec.onend?.();
-    expect(mode()).toBe('idle');
-    expect(onNotice).toHaveBeenLastCalledWith('');
+  it('never uses the browser speech service, which sends audio to the internet', async () => {
+    const ctor = vi.fn();
+    vi.stubGlobal('window', { SpeechRecognition: ctor, webkitSpeechRecognition: ctor });
+    hooks.canRecord = true;
+    renderVoice().button.props.onClick();
+    await settle();
+    expect(ctor).not.toHaveBeenCalled();
   });
 
-  it('shows a localized permission error without clearing it when recognition ends', () => {
-    const rec = new FakeRecognition();
-    vi.stubGlobal('window', { SpeechRecognition: function () { return rec; } });
+  it('asks the hub again on a tap, so joining its Wi-Fi after the page opened works', async () => {
+    hooks.canRecord = true;
+    hooks.recorder = { stop: async () => 'pcm', cancel: vi.fn() };
+    const first = renderVoice();
+    await settle();
+    hooks.hubVoice = true;
+    first.button.props.onClick();
+    await settle();
+    expect(mode()).toBe('recording');
+  });
+
+  it('says the microphone is unavailable when the phone cannot record', async () => {
+    hooks.hubVoice = true;
     const { button, onNotice } = renderVoice('en');
     button.props.onClick();
-    rec.onerror?.({ error: 'not-allowed' });
-    rec.onend?.();
+    await settle();
+    expect(onNotice).toHaveBeenLastCalledWith(LABELS.en.voiceDenied);
     expect(mode()).toBe('idle');
-    expect(onNotice).toHaveBeenLastCalledWith(LABELS.en.voiceError);
   });
 
-  it('handles a synchronous start failure', () => {
-    const rec = new FakeRecognition();
-    rec.start.mockImplementation(() => { throw new Error('no microphone'); });
-    vi.stubGlobal('window', { SpeechRecognition: function () { return rec; } });
-    const { button, onNotice } = renderVoice();
-    button.props.onClick();
-    expect(mode()).toBe('idle');
-    expect(onNotice).toHaveBeenLastCalledWith(LABELS.tl.voiceError);
-  });
-
-  it('shows a stop control while listening and aborts with detached handlers on cleanup', () => {
-    const rec = new FakeRecognition();
-    vi.stubGlobal('window', { SpeechRecognition: function () { return rec; } });
-    const first = renderVoice();
-    first.button.props.onClick();
-    const active = renderVoice();
-    expect(active.button.props['aria-label']).toBe(LABELS.tl.voiceStop);
-    expect(active.button.props['aria-pressed']).toBe(true);
-    active.button.props.onClick();
-    expect(rec.stop).toHaveBeenCalledOnce();
-    hooks.cleanups.forEach((cleanup) => cleanup());
-    expect(rec.abort).toHaveBeenCalledOnce();
-    expect(rec.onresult).toBeNull();
-    expect(rec.onerror).toBeNull();
-    expect(rec.onend).toBeNull();
+  it('hints that voice goes through the hub, never the internet', () => {
+    for (const labels of Object.values(LABELS)) expect(labels.voiceHint).toMatch(/hub/);
   });
 });
 

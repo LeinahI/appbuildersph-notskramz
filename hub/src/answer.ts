@@ -19,7 +19,8 @@ import {
   matchKeywords,
   notesForMatch,
   notesToExplain,
-  photoOutcome,
+  photoIsSure,
+  photoSignsOf,
   routeFor,
   sessionText,
   smallTalkReply,
@@ -112,6 +113,8 @@ interface PhotoRead {
   status: PhotoStatus;
   /** Plain English signs, only when status is "ok". */
   signs: string | null;
+  /** The signs picked on the photo form, one sentence each. Absent when the model answered in free text. */
+  picks?: string[];
 }
 
 /**
@@ -129,7 +132,8 @@ async function readPhotoSigns(req: AskRequest, note: string, crop: Crop | 'any',
   }
   const started = Date.now();
   try {
-    const outcome = photoOutcome(await imageDescriber.describeImage(photo.bytes, note, crop));
+    // The model fills in the photo form; its picks become a description in the knowledge base's words.
+    const outcome = photoSignsOf(await imageDescriber.describeImage(photo.bytes, note, crop));
     const ms = Date.now() - started;
     if (outcome.kind === 'not-plant') {
       logger.write({ event: 'photo', uid: req.uid, status: 'not-plant', ms });
@@ -145,11 +149,20 @@ async function readPhotoSigns(req: AskRequest, note: string, crop: Crop | 'any',
       return { status: 'unreadable', signs: null };
     }
     logger.write({ event: 'photo', uid: req.uid, status: 'ok', english: outcome.english, ms });
-    return { status: 'ok', signs: outcome.english };
+    return { status: 'ok', signs: outcome.english, ...(outcome.picks ? { picks: outcome.picks } : {}) };
   } catch (err) {
     logger.write({ event: 'error', where: 'photo', message: err instanceof Error ? err.message : String(err) });
     return { status: 'unreadable', signs: null };
   }
+}
+
+/**
+ * The sign of a problem to ask the farmer about after an unsure photo: the first one whose keywords the photo's
+ * description does not already have. Asking about a sign the photo showed would only repeat it.
+ */
+function signToAsk(entry: KnowledgeEntry, seen: string): string {
+  const shown = new Set(keywordHits(entry, seen));
+  return entry.signs.find((sign) => keywordHits(entry, sign).every((k) => !shown.has(k))) ?? entry.signs[0]!;
 }
 
 /** The farmer's words with what the photo showed. Photos that show nothing useful add a short note for the chat reply only. */
@@ -251,6 +264,11 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
     logger.write({ event: 'match', uid: req.uid, matcher: 'pick', ids: outcome.ids, clear: true });
   } else if (route === 'match') {
     outcome = await matcher.match(description, crop);
+    // A photo alone is sure only with two picked signs for the problem. The farmer's own sign words still count as usual.
+    const photoOnly = photo?.status === 'ok' && !signed(sessionText([...notes, farmerText]));
+    if (photoOnly && outcome.clear && photo.picks && !photoIsSure(outcome.ids[0]!, photo.picks, knowledge)) {
+      outcome = { ...outcome, clear: false };
+    }
     logger.write({
       event: 'match',
       uid: req.uid,
@@ -295,6 +313,8 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
         // The farmer's own words, with the photo's English signs beside them, so the reply keeps the farmer's language.
         text: photo?.status === 'ok' ? sessionText([...notes, farmerText]) : description,
         ...(photo?.status === 'ok' ? { photo: photo.signs } : {}),
+        // A photo that left the match unsure: ask about a sign of the top problem that the photo did not show.
+        ...(photo?.status === 'ok' && !clear && !bestGuess ? { askAbout: signToAsk(entries[0]!, photo.signs ?? '') } : {}),
         crop: explainCrop,
         entries: notesToExplain(entries, clear || bestGuess),
         clear,

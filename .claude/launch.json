@@ -4,14 +4,58 @@
     {
       "name": "hub",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@ugatan/hub", "start"],
+      "runtimeArgs": [
+        "--filter",
+        "@ugatan/hub",
+        "start"
+      ],
       "port": 8787
     },
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@ugatan/web", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@ugatan/web",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "hub-models",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@ugatan/hub",
+        "exec",
+        "tsx",
+        "src/main.ts"
+      ],
+      "port": 8788,
+      "env": {
+        "HUB_PORT": "8788",
+        "HUB_HOST": "127.0.0.1",
+        "HUB_MATCHER": "keyword",
+        "HUB_EXPLAINER": "off",
+        "HUB_VISION": "off",
+        "HUB_VOICE": "off"
+      }
+    },
+    {
+      "name": "web-phone",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@ugatan/web",
+        "exec",
+        "vite",
+        "--port",
+        "3001"
+      ],
+      "port": 3001,
+      "env": {
+        "VITE_HUB_URL": "http://127.0.0.1:8788"
+      }
     }
   ]
 }

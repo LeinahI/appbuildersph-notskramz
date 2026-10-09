@@ -32,6 +32,54 @@
       "Dragonflies and damselflies"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Maliliit at matingkad na berdeng insekto na tumatalon o lumilipad kapag niyugyog ang halaman",
+        "Bansot na halaman na may dilaw hanggang kahel na dahon at kaunting suwi; maaaring tungro ito, isang virus na dala ng leafhopper",
+        "Ang dilaw-kahel na dahon ay maaaring mapagkamalang kulang sa abono, kaya hanapin din ang mga leafhopper"
+      ],
+      "actions": [
+        "Magtanim nang kasabay ng mga kapitbahay at mag-iwan ng pahinga sa pagitan ng mga taniman, para walang matirhan ang leafhopper at tungro",
+        "Maglipat-tanim ng mas matandang punla, mga tatlong linggo o higit pa",
+        "Bunutin at ibaon nang maaga ang mga halamang may senyales ng tungro, habang kaunti pa lang ang mayroon",
+        "Magbunot ng damo sa taniman at sa pilapil, at sirain ang pinagputulan at kusang tumubong palay pagkatapos ng ani",
+        "Iwasan ang sobrang nitrogen na abono",
+        "Itanong sa agriculturist ang mga barayting resistant sa tungro na angkop sa inyong lugar"
+      ],
+      "callExpertIf": "Maraming halaman ang bansot at dilaw-kahel, o kumakalat ang mga senyales sa palayan",
+      "stageNote": "mula punla hanggang panicle initiation (kapag nagsisimulang mabuo ang uhay)",
+      "biological": [
+        "Maliliit na putakti na umaatake sa itlog",
+        "Mga gagamba",
+        "Mga mirid bug at ibang mandaragit na surot",
+        "Mga tutubi at maliliit na tutubi (damselfly)"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Gagmay ug hayag nga berde nga insekto nga molukso o molupad kung uyugon ang tanom",
+        "Kulang-tubo nga tanom nga adunay dalag hangtod kahel nga dahon ug gamay nga suwi; mahimong tungro kini, usa ka virus nga gidala sa leafhopper",
+        "Ang dalag-kahel nga dahon mahimong masipyat nga kulang sa abono, busa pangitaa usab ang mga leafhopper"
+      ],
+      "actions": [
+        "Pagtanom dungan sa mga silingan ug pagbilin og pahulay tali sa mga tanom, aron walay kapuy-an ang leafhopper ug tungro",
+        "Ibalhin-tanom ang mas tigulang nga semilya, mga tulo ka semana o labaw pa",
+        "Ibton ug ilubong dayon ang mga tanom nga adunay timailhan sa tungro, samtang pipila pa lang",
+        "Hawani ang sagbot sa uma ug sa pilapil, ug gub-a ang dagami ug mga kusang mitubo nga humay human sa ani",
+        "Likayi ang sobra nga nitrogen nga abono",
+        "Pangutana sa agriculturist bahin sa mga barayti nga resistant sa tungro nga haom sa inyong lugar"
+      ],
+      "callExpertIf": "Daghang tanom ang kulang-tubo ug dalag-kahel, o mikaylap ang mga timailhan sa basakan",
+      "stageNote": "gikan sa semilya hangtod sa panicle initiation (inig sugod pagporma sa uhay)",
+      "biological": [
+        "Gagmay nga wasp nga moatake sa itlog",
+        "Mga lawa-lawa",
+        "Mga mirid bug ug ubang manunukob nga insekto",
+        "Mga alindanga ug gagmay nga alindanga (damselfly)"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

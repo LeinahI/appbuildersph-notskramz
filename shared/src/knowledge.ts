@@ -1,5 +1,5 @@
 import { findViolations } from './guard.js';
-import type { KnowledgeEntry } from './types.js';
+import type { CardLanguage, EntryTranslation, KnowledgeEntry } from './types.js';
 
 const ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -28,6 +28,71 @@ function checkInsect(value: unknown, errors: string[]): string[] {
   return [i.commonName, i.scientificName, i.stageNote, ...(isTextList(i.localNames) ? i.localNames : []), ...(isTextList(i.biological) ? i.biological : [])].filter(
     (s): s is string => typeof s === 'string',
   );
+}
+
+export const CARD_LANGUAGES: readonly CardLanguage[] = ['tl', 'ceb'];
+
+const lengthOf = (value: unknown) => (Array.isArray(value) ? value.length : -1);
+
+/**
+ * Problems with the optional translations. Each language must carry the same signs, steps, and natural enemies as the
+ * English, item for item, so a farmer never gets fewer steps in their language. Returns the text for the guardrail.
+ */
+function checkTranslations(e: Record<string, unknown>, errors: string[]): string[] {
+  const value = e.translations;
+  if (value === undefined) return [];
+  if (typeof value !== 'object' || value === null) {
+    errors.push('translations must be an object');
+    return [];
+  }
+  const text: string[] = [];
+  const insect = typeof e.insect === 'object' && e.insect !== null ? (e.insect as Record<string, unknown>) : null;
+  for (const [lang, raw] of Object.entries(value)) {
+    if (!CARD_LANGUAGES.includes(lang as CardLanguage)) {
+      errors.push(`translations.${lang}: language must be one of ${CARD_LANGUAGES.join(', ')}`);
+      continue;
+    }
+    if (typeof raw !== 'object' || raw === null) {
+      errors.push(`translations.${lang} must be an object`);
+      continue;
+    }
+    const t = raw as Record<string, unknown>;
+    for (const field of ['signs', 'actions'] as const) {
+      if (!isTextList(t[field])) errors.push(`translations.${lang}.${field} must be a non-empty list of strings`);
+      else if (t[field].length !== lengthOf(e[field])) errors.push(`translations.${lang}.${field} must have one item per English item`);
+    }
+    if (typeof t.callExpertIf !== 'string' || !t.callExpertIf.trim()) errors.push(`translations.${lang}.callExpertIf is required`);
+    if (insect) {
+      if (typeof t.stageNote !== 'string' || !t.stageNote.trim()) errors.push(`translations.${lang}.stageNote is required for an insect`);
+      if (!isTextList(t.biological)) errors.push(`translations.${lang}.biological must be a non-empty list of strings for an insect`);
+      else if (t.biological.length !== lengthOf(insect.biological)) {
+        errors.push(`translations.${lang}.biological must have one item per English item`);
+      }
+    } else if (t.stageNote !== undefined || t.biological !== undefined) {
+      errors.push(`translations.${lang}: stageNote and biological belong only to an insect`);
+    }
+    for (const field of ['signs', 'actions', 'biological'] as const) if (isTextList(t[field])) text.push(...t[field]);
+    for (const field of ['callExpertIf', 'stageNote'] as const) if (typeof t[field] === 'string') text.push(t[field]);
+  }
+  return text;
+}
+
+/**
+ * The entry with its card text in the farmer's language, when a translation exists. Anything else, including English,
+ * gets the entry unchanged. The name, keywords, and insect names stay as written.
+ */
+export function localizeEntry(entry: KnowledgeEntry, language: string): KnowledgeEntry {
+  const t: EntryTranslation | undefined = entry.translations?.[language as CardLanguage];
+  if (!t) return entry;
+  return {
+    ...entry,
+    signs: t.signs,
+    actions: t.actions,
+    callExpertIf: t.callExpertIf,
+    ...(entry.insect
+      ? { insect: { ...entry.insect, stageNote: t.stageNote ?? entry.insect.stageNote, biological: t.biological ?? entry.insect.biological } }
+      : {}),
+  };
 }
 
 /** Returns a list of problems. An empty list means the entry is valid. */
@@ -63,8 +128,9 @@ export function validateEntry(value: unknown, fileId?: string): string[] {
   }
 
   const insectText = checkInsect(e.insect, errors);
+  const translationText = checkTranslations(e, errors);
 
-  const text = [e.name, e.callExpertIf, ...insectText, ...(Array.isArray(e.signs) ? e.signs : []), ...(Array.isArray(e.actions) ? e.actions : [])]
+  const text = [e.name, e.callExpertIf, ...insectText, ...translationText, ...(Array.isArray(e.signs) ? e.signs : []), ...(Array.isArray(e.actions) ? e.actions : [])]
     .filter((s): s is string => typeof s === 'string')
     .join(' | ');
   for (const v of findViolations(text)) {

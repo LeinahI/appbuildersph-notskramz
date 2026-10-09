@@ -34,6 +34,58 @@
       "Red ants and damsel bugs"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Itim at hugis-kalasag na surot sa puno ng halaman at sa tangkay",
+        "Namumulang kayumanggi ang dahon, kumakaunti ang suwi, ang patay na puso ay hindi nabubunot sa puno, at walang laman o walang uhay",
+        "Sa malalang atake, namamatay ang mga halaman nang patse-patse at parang nasunog ang palayan (bug burn)"
+      ],
+      "actions": [
+        "Alisin ang mga damo sa loob at paligid ng palayan, dahil doon nakatira ang mga surot",
+        "Magtanim ng mga barayting sabay mahihinog, sa loob ng mga isang buwan ng karaniwang panahon ng pagtatanim sa inyong barangay",
+        "Iwasan ang sobrang nitrogen na abono at huwag magtanim nang pasunod-sunod",
+        "Itaas ang tubig para malubog ang mga itlog nang higit sa isang araw",
+        "Itanong sa agriculturist ang tungkol sa malakas na light trap sa gabi tuwing kabilugan ng buwan, ayon sa payo ng PhilRice",
+        "Kung praktikal, pakawalan ang mga itik mga isang buwan pagkatapos maglipat-tanim",
+        "Araruhin ang palayan pagkatapos ng ani para sirain ang mga surot at ang kanilang pinagtataguan"
+      ],
+      "callExpertIf": "Maraming itim na surot sa bawat puno, namamatay ang mga halaman, o may mga bahagi ng palayan na parang nasunog",
+      "stageNote": "mula pagpupunla hanggang pamumulaklak",
+      "biological": [
+        "Mga itik na pinakawalan mga isang buwan pagkatapos maglipat-tanim",
+        "Mga putakti",
+        "Ground beetle at ladybug",
+        "Mga gagamba",
+        "Mga pulang langgam at damsel bug"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Itom ug porma-taming nga insekto sa punoan sa tanom ug sa mga tukog",
+        "Mapula-kape ang dahon, mokunhod ang suwi, ang patay nga puso dili maibot sa punoan, ug walay sulod o walay uhay",
+        "Sa grabe nga atake, mamatay ang mga tanom sa pipila ka bahin ug daw nasunog ang basakan (bug burn)"
+      ],
+      "actions": [
+        "Kuhaa ang mga sagbot sulod ug palibot sa basakan, tungod kay didto nagpuyo ang mga insekto",
+        "Pagtanom og mga barayti nga dungan mahinog, sulod sa mga usa ka bulan sa naandan nga panahon sa pagtanom sa inyong barangay",
+        "Likayi ang sobra nga nitrogen nga abono ug ayaw pagtanom nga sunod-sunod",
+        "Pataasa ang tubig aron malumos ang mga itlog labaw sa usa ka adlaw",
+        "Pangutana sa agriculturist bahin sa kusog nga light trap sa gabii inig kabilugan sa bulan, sumala sa tambag sa PhilRice",
+        "Kung praktikal, buhii ang mga itik mga usa ka bulan human sa pagbalhin-tanom",
+        "Daruha ang basakan human sa ani aron mapatay ang mga insekto ug ang ilang tagoanan"
+      ],
+      "callExpertIf": "Daghang itom nga insekto sa matag punoan, nangamatay ang mga tanom, o adunay mga bahin sa basakan nga daw nasunog",
+      "stageNote": "gikan sa pagsemilya hangtod sa pagpamulak",
+      "biological": [
+        "Mga itik nga gibuhian mga usa ka bulan human sa pagbalhin-tanom",
+        "Mga wasp",
+        "Ground beetle ug ladybug",
+        "Mga lawa-lawa",
+        "Pula nga hulmigas ug damsel bug"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

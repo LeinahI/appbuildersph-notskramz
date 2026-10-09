@@ -16,11 +16,19 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-resolve-main-merge-conflicts]] - resolved 4 conflicts merging main into implementing-guardrails; kept rails + answerOnPhone
 - [[2026-10-10-prompt-leak-two-layer-rails]] - TL/EN extract blocked at input; model persona leaks hard-replaced with INJECTION_REPLY
 - [[2026-10-10-prompt-injection-defense-map]] - mapped injection/leak rails: Tagalog "ulitin/instruksyon/blockquote" miss input rail; no output prompt-leak strip; Laya is matcher-only
 - [[2026-10-10-other-crop-ask-guardrail]] - other-crop asks (maliban sa palay/mais) refuse before ASK canned reply
+- [[2026-10-10-merge-offline-login-into-main]] - merged the offline/split-login branch into main; split login kept, deep links and logout dialog kept
 - [[2026-10-10-logout-confirm-modal]] - farmer + admin Log out opens a confirm dialog before signing out
 - [[2026-10-10-chat-conversation-urls]] - farmer chats use `/chat/:conversationId` deep links; bare `/chat` redirects to last active
+- [[2026-10-10-branch-and-pr]] - pending work committed on `offline-farmer-login-photo-eval` and opened as a PR
+- [[2026-10-10-photo-eval-and-confidence]] - 39-photo eval set and `pnpm eval:photo`; a photo alone is no longer "sure" on one sign (sure-and-wrong 18/31 to 2/31, healthy plants never told a sure problem)
+- [[2026-10-10-gemma-laya-on-phone]] - Gemma (with photo reading) and Laya run on the phone; the hub serves both over Wi-Fi
+- [[2026-10-10-local-only-offline]] - app reaches no internet: translated cards, chat without account, phone model from the hub, hub-only voice, local-only Laya
+- [[2026-10-10-standalone-offline-assessment]] - research only: what a hub-free, under-200 MB web app would need and which parts conflict with team decisions
+- [[2026-10-10-split-farmer-admin-login]] - separate farmer (/login) and staff (/admin/login) portals; farmer email/password needs a backend endpoint
 - [[2026-10-09-merge-main-into-go-backend]] - merged main into go-backend for PR 1: main's home UI with the sidebar and log-out ported on, lockfile fixed
 - [[2026-10-09-ws-docker-init]] - how to init `ws`: Docker Postgres on 5433, migrate, seed, run-api (plus commit-message draft note)
 - [[2026-10-09-remove-settings-auto-hub]] - removed settings/Ihanda ang AI; hub defaults to 127.0.0.1:8787

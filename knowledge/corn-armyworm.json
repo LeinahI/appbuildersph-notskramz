@@ -33,6 +33,48 @@
       "Birds"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Kinakain ang dahon mula sa gilid hanggang sa gitnang ugat, kaya gutay-gutay ang halaman",
+        "Berde hanggang madilim na uod na may maputlang guhit sa tagiliran, kumakain sa gabi at nagtatago sa ilalim ng kalat o damo sa araw",
+        "Nauubos ang dahon ng batang halaman kapag malala ang atake"
+      ],
+      "actions": [
+        "Hanapin ang mga uod sa gabi o madaling-araw, pulutin at durugin",
+        "Linisin ang mga damo at ibang halamang tinitirhan nila sa loob at paligid ng taniman, at bungkalin ang lupa bago magtanim",
+        "Kung praktikal, pakawalan ang mga itik sa taniman",
+        "Itanong sa agriculturist ang tungkol sa pheromone trap para mabantayan ang mga gamu-gamo"
+      ],
+      "callExpertIf": "Maraming batang halaman ang nauubos ang dahon o kumakalat ang mga uod sa taniman",
+      "stageNote": "karaniwan sa dahon ng batang halaman; maaari ring kainin ng uod ang dahon ng batang bunga",
+      "biological": [
+        "Mga parasitikong langaw at putakti",
+        "Mga itik",
+        "Mga ibon"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Gikaon ang dahon gikan sa ngilit hangtod sa tunga nga ugat, busa gisi-gisi ang tanom",
+        "Berde hangtod ngitngit nga ulod nga adunay luspad nga gilis sa kilid, mokaon sa gabii ug motago ilalom sa basura sa tanom o sagbot sa adlaw",
+        "Mahurot ang dahon sa batang tanom kung grabe ang atake"
+      ],
+      "actions": [
+        "Pangitaa ang mga ulod sa gabii o sayo sa buntag, pupuha ug pislita",
+        "Limpyohi ang mga sagbot ug ubang tanom nga ilang puy-anan sulod ug palibot sa uma, ug daruha ang yuta sa dili pa magtanom",
+        "Kung praktikal, buhii ang mga itik sa uma",
+        "Pangutana sa agriculturist bahin sa pheromone trap aron mabantayan ang mga moth (anunugba)"
+      ],
+      "callExpertIf": "Daghang batang tanom ang nahurot ang dahon o mikaylap ang mga ulod sa uma",
+      "stageNote": "kasagaran sa dahon sa batang tanom; mahimo usab kaonon sa ulod ang dahon sa batang bunga",
+      "biological": [
+        "Mga parasitiko nga langaw ug wasp",
+        "Mga itik",
+        "Mga langgam"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

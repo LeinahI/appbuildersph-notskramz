@@ -29,6 +29,46 @@
       "Spiders"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Napakaliliit na butas at puti o madilaw na guhit sa gilid ng dahon ng batang halaman",
+        "Pilipit na dahon na madaling mabali sa hangin",
+        "Bansot na halaman na kaunti ang suwi; maraming halaman ang nakakabawi habang lumalaki"
+      ],
+      "actions": [
+        "Silipin ang mga batang halaman sa unang mga linggo pagkatapos maglipat-tanim, lalo na kung saan nakatigil ang tubig",
+        "Huwag hayaang nakababad sa tubig ang palayan nang matagal; sundin ang lokal na payo sa pamamahala ng tubig",
+        "Protektahan ang maliliit na putakti, langaw, at gagamba na kumakain ng uod at langaw: iwasan ang di-kailangang pag-spray"
+      ],
+      "callExpertIf": "Maraming batang halaman ang bansot o patuloy na kumakalat ang pinsala kahit dapat ay nakabawi na ang mga halaman",
+      "stageNote": "mula punla hanggang pagsusuwi, kung saan nakatigil ang tubig",
+      "biological": [
+        "Maliliit na putakti na umaatake sa itlog at uod",
+        "Mga langaw na mahahaba ang paa na kumakain ng itlog",
+        "Mga gagamba"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Gagmay kaayo nga lungag ug puti o dalagon nga gilis sa ngilit sa dahon sa batang tanom",
+        "Tinuis nga dahon nga dali mabali sa hangin",
+        "Kulang-tubo nga tanom nga gamay ang suwi; daghang tanom ang makabawi samtang nagdako"
+      ],
+      "actions": [
+        "Susiha ang mga batang tanom sa unang mga semana human sa pagbalhin-tanom, labi na diin nagpundo ang tubig",
+        "Ayaw pasagdi nga magpundo ang tubig sa basakan sa dugay nga panahon; sunda ang lokal nga tambag sa pagdumala sa tubig",
+        "Panalipdi ang gagmay nga wasp, langaw, ug lawa-lawa nga mokaon sa ulod ug langaw pinaagi sa paglikay sa dili kinahanglan nga spray"
+      ],
+      "callExpertIf": "Daghang batang tanom ang kulang-tubo o nagpadayon ang kadaot bisan kung angay na unta nakabawi ang mga tanom",
+      "stageNote": "gikan sa semilya hangtod sa pagsuwi, diin nagpundo ang tubig",
+      "biological": [
+        "Gagmay nga wasp nga moatake sa itlog ug ulod",
+        "Mga langaw nga taas ang tiil nga mokaon sa itlog",
+        "Mga lawa-lawa"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

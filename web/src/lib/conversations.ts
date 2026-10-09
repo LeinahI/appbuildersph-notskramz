@@ -8,7 +8,7 @@ import {
   type ConversationDTO,
   type MessageInput,
 } from './ws-api';
-import { clearClaimLink, loadClaimLink } from '../config/ws';
+import { loadClaimLink } from '../config/ws';
 
 const ACTIVE_KEY = 'ugatan.activeConversationId';
 
@@ -99,7 +99,7 @@ export async function renameConversation(id: string, title: string): Promise<voi
   await db.conversations.update(id, { title: trimmed, updatedAt: new Date().toISOString() });
   const row = await db.conversations.get(id);
   if (row?.remoteId) {
-    void patchConversationRemote(row.remoteId, { title: trimmed }).catch(onAuthError);
+    void patchConversationRemote(row.remoteId, { title: trimmed }).catch(onSyncError);
   }
 }
 
@@ -107,7 +107,7 @@ export async function setPinned(id: string, pinned: boolean): Promise<void> {
   await db.conversations.update(id, { pinned, updatedAt: new Date().toISOString() });
   const row = await db.conversations.get(id);
   if (row?.remoteId) {
-    void patchConversationRemote(row.remoteId, { pinned }).catch(onAuthError);
+    void patchConversationRemote(row.remoteId, { pinned }).catch(onSyncError);
   }
 }
 
@@ -121,7 +121,7 @@ export async function deleteConversation(id: string): Promise<void> {
     saveActiveConversationId('');
   }
   if (row?.remoteId) {
-    void deleteConversationRemote(row.remoteId).catch(onAuthError);
+    void deleteConversationRemote(row.remoteId).catch(onSyncError);
   }
 }
 
@@ -142,7 +142,7 @@ export async function saveConversationThread(conversationId: string): Promise<vo
       remoteId = created.id;
       await db.conversations.update(conv.id, { remoteId });
     } catch (err) {
-      onAuthError(err);
+      onSyncError(err);
       return;
     }
   }
@@ -168,7 +168,7 @@ export async function saveConversationThread(conversationId: string): Promise<vo
     await putConversationMessages(remoteId, messages);
     await db.conversations.update(conversationId, { updatedAt: new Date().toISOString() });
   } catch (err) {
-    onAuthError(err);
+    onSyncError(err);
   }
 }
 
@@ -178,7 +178,7 @@ async function syncCreate(row: ConversationRow): Promise<void> {
     const created = await createConversationRemote(row.title);
     await db.conversations.update(row.id, { remoteId: created.id });
   } catch (err) {
-    onAuthError(err);
+    onSyncError(err);
   }
 }
 
@@ -189,7 +189,7 @@ export async function pullRemoteConversations(): Promise<void> {
   try {
     remote = await listConversationsRemote();
   } catch (err) {
-    onAuthError(err);
+    onSyncError(err);
     return;
   }
   const local = await db.conversations.toArray();
@@ -217,11 +217,8 @@ export async function pullRemoteConversations(): Promise<void> {
   }
 }
 
-function onAuthError(err: unknown): void {
-  if (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 401) {
-    clearClaimLink();
-    if (typeof window !== 'undefined') {
-      window.location.assign('/');
-    }
-  }
-}
+/**
+ * Syncing to ws is best-effort. An unreachable or rejecting server (offline, expired token) never signs the
+ * farmer out: the chat lives on this device and keeps working until they log out themselves.
+ */
+function onSyncError(_err: unknown): void {}

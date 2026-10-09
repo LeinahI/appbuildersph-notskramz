@@ -28,6 +28,46 @@
       "Birds"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Gutay-gutay na butas sa dahon, na may parang kusot na dumi (frass) sa ubod",
+        "Mga uod sa loob ng ubod, madalas maitim ang ulo at may guhit"
+      ],
+      "actions": [
+        "Magsiyasat sa madaling-araw o hapon at silipin ang loob ng ubod",
+        "Pulutin ang mga uod at kumpol ng itlog kung praktikal",
+        "Itanong sa agriculturist ang mga aprubadong biological control at sundin ang label ng produkto"
+      ],
+      "callExpertIf": "Maraming halaman ang napinsala o kinakain na ng uod ang tumutubong usbong sa gitna",
+      "stageNote": "mula sa punla at yugto ng ubod hanggang sa bunga",
+      "biological": [
+        "Trichogramma at Telenomus, mga putakti na umaatake sa itlog",
+        "Mga putakti na umaatake sa uod",
+        "Mga earwig, langgam, at ladybug",
+        "Mga ibon"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Gisi-gisi nga lungag sa dahon, nga adunay hugaw nga daw sawdust (frass) sa ubod",
+        "Mga ulod sulod sa ubod, kasagaran itom ang ulo ug adunay gilis"
+      ],
+      "actions": [
+        "Susiha sayo sa buntag o sa hapon ug tan-awa ang sulod sa ubod",
+        "Pupuha ang mga ulod ug pungpong sa itlog kung praktikal",
+        "Pangutana sa agriculturist bahin sa aprobado nga biological control ug sunda ang label sa produkto"
+      ],
+      "callExpertIf": "Daghang tanom ang nadaot o gikaon na sa ulod ang nagtubo nga usbong sa tunga",
+      "stageNote": "gikan sa semilya ug yugto sa ubod hangtod sa bunga",
+      "biological": [
+        "Trichogramma ug Telenomus, mga wasp nga moatake sa itlog",
+        "Mga wasp nga moatake sa ulod",
+        "Mga earwig, hulmigas, ug ladybug",
+        "Mga langgam"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

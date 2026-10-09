@@ -33,6 +33,52 @@
       "Wasps"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Bansot na batang halaman na ang dahon ay naninilaw, saka nangingitim dahil sa amag, at sunog ang gilid (hopperburn)",
+        "Maliliit na kayumangging insektong lumulukso at malagkit na honeydew sa dahon at sa ubod",
+        "Dahong may guhit-guhit na parang mosaic at mahinang bunga kapag may dalang maize mosaic virus ang insekto"
+      ],
+      "actions": [
+        "Linisin ang mga damo at ang matagal nang nakatiwangwang na lupa pagkatapos ng ani, at pagpahingahin ang taniman bago magtanim muli",
+        "Ihanda nang mabuti ang lupa at panatilihing walang damo ang gilid ng taniman",
+        "Magpalit-tanim ng legume o ibang pananim na hindi damo-damuhan (grass)",
+        "Iwasan ang sobrang nitrogen na abono",
+        "Protektahan ang mga gagamba, earwig, mirid bug, at putakti: iwasan ang di-kailangang pag-spray ng malawakang pamatay-insekto"
+      ],
+      "callExpertIf": "Maraming batang halaman ang bansot, nangingitim, o may guhit na parang mosaic",
+      "stageNote": "karaniwan sa batang halaman, pero maaaring dumami ang bilang nila sa kalaunan",
+      "biological": [
+        "Mga gagamba",
+        "Mga earwig",
+        "Mga mirid bug",
+        "Mga putakti"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Kulang-tubo nga batang tanom nga ang dahon nagdalag, unya nangitom tungod sa agup-op, ug sunog ang ngilit (hopperburn)",
+        "Gagmay nga kape nga insekto nga molukso ug pilit nga honeydew sa dahon ug sa ubod",
+        "Dahon nga adunay gilis-gilis nga daw mosaic ug dili maayo nga bunga kung nagdala ang insekto og maize mosaic virus"
+      ],
+      "actions": [
+        "Limpyohi ang mga sagbot ug ang dugay nang biniyaan nga yuta human sa ani, ug papahuwaya ang uma sa dili pa magtanom pag-usab",
+        "Andama pag-ayo ang yuta ug hupti nga walay sagbot ang ngilit sa uma",
+        "Ilisan og legume o ubang tanom nga dili sagbot-sagbot (grass)",
+        "Likayi ang sobra nga nitrogen nga abono",
+        "Panalipdi ang mga lawa-lawa, earwig, mirid bug, ug wasp pinaagi sa paglikay sa dili kinahanglan nga broad-spectrum nga spray"
+      ],
+      "callExpertIf": "Daghang batang tanom ang kulang-tubo, nangitom, o adunay gilis nga daw mosaic",
+      "stageNote": "kasagaran sa batang tanom, apan mahimong modaghan sila sa ulahi",
+      "biological": [
+        "Mga lawa-lawa",
+        "Mga earwig",
+        "Mga mirid bug",
+        "Mga wasp"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

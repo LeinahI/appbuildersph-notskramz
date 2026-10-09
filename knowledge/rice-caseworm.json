@@ -31,6 +31,50 @@
       "Birds"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Dulo ng dahon na parang ginupit ng gunting, at dahon na kinayod nang parang hagdan",
+        "Maliliit na hugis-tubong balot na gawa sa piraso ng dahon, lumulutang sa tubig o nakasabit sa halaman, na may uod sa loob",
+        "Maaaring mamatay ang mga batang punla kapag malala ang atake"
+      ],
+      "actions": [
+        "Patuyuin ang palayan nang ilang araw, dahil kailangan ng uod ang tubig para mabuhay at gumalaw",
+        "Maglipat-tanim ng mas matandang punla at bigyan sila ng sapat na pagitan",
+        "Gumamit ng balanseng abono",
+        "Protektahan ang mga gagamba, tutubi, at water beetle na kumakain ng uod: iwasan ang di-kailangang pag-spray"
+      ],
+      "callExpertIf": "Maraming punla o dahon ang napinsala sa buong palayan",
+      "stageNote": "mula batang punla hanggang pamumulaklak, kung saan may nakatigil na tubig",
+      "biological": [
+        "Mga water beetle na kumakain ng uod",
+        "Mga gagamba",
+        "Mga tutubi",
+        "Mga ibon"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Tumoy sa dahon nga daw gigunting, ug dahon nga gikiskis nga daw hagdan",
+        "Gagmay nga porma-tubo nga putos nga hinimo sa piraso sa dahon, naglutaw sa tubig o nagbitay sa tanom, nga adunay ulod sa sulod",
+        "Mahimong mamatay ang mga batang semilya kung grabe ang atake"
+      ],
+      "actions": [
+        "Pahubsa ang basakan sulod sa pipila ka adlaw, tungod kay kinahanglan sa ulod ang tubig aron mabuhi ug molihok",
+        "Ibalhin-tanom ang mas tigulang nga semilya ug hatagi sila og igong gilay-on",
+        "Gamit og balanse nga abono",
+        "Panalipdi ang mga lawa-lawa, alindanga, ug water beetle nga mokaon sa ulod pinaagi sa paglikay sa dili kinahanglan nga spray"
+      ],
+      "callExpertIf": "Daghang semilya o dahon ang nadaot sa tibuok basakan",
+      "stageNote": "gikan sa batang semilya hangtod sa pagpamulak, diin adunay nagpundo nga tubig",
+      "biological": [
+        "Mga water beetle nga mokaon sa ulod",
+        "Mga lawa-lawa",
+        "Mga alindanga",
+        "Mga langgam"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

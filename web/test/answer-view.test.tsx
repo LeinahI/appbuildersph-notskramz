@@ -187,3 +187,37 @@ describe('an insect answer', () => {
     for (const labels of Object.values(LABELS)) expect(findViolations(render(riceBug, labels))).toEqual([]);
   });
 });
+
+describe('cards in the farmer\u2019s language', () => {
+  const stemBorer = KNOWLEDGE.find((e) => e.id === 'stem-borer')!;
+  const render = (entry: typeof stemBorer, language: string, labels = LABELS.tl) =>
+    visibleText(renderToStaticMarkup(createElement(AnswerView, { labels, language, matches: [entry], clear: true })));
+
+  it('shows the Tagalog notes, with the English source one tap away', () => {
+    const text = render(stemBorer, 'tl');
+    expect(text).toContain(stemBorer.translations!.tl!.signs[0]!);
+    expect(text).toContain(stemBorer.translations!.tl!.actions[0]!);
+    expect(text).toContain('Orihinal sa English');
+    expect(text).toContain(stemBorer.signs[0]!);
+    expect(text.endsWith(DISCLAIMER)).toBe(true);
+  });
+
+  it('shows the Cebuano notes', () => {
+    expect(render(stemBorer, 'ceb', LABELS.ceb)).toContain(stemBorer.translations!.ceb!.callExpertIf);
+  });
+
+  it('shows only the English, with no toggle, in English', () => {
+    const text = render(stemBorer, 'en', LABELS.en);
+    expect(text).toContain(stemBorer.signs[0]!);
+    expect(text).not.toContain('Original in English');
+  });
+
+  it.each(KNOWLEDGE.flatMap((e) => (['tl', 'ceb'] as const).map((lang) => [e.id, lang, e] as const)))(
+    '%s in %s passes the pesticide guardrail',
+    (_id, lang, entry) => {
+      const text = render(entry, lang, LABELS[lang]);
+      expect(findViolations(text)).toEqual([]);
+      expect(text.endsWith(DISCLAIMER)).toBe(true);
+    },
+  );
+});
