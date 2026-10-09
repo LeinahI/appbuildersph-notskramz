@@ -37,7 +37,7 @@ export const HelpDialog = forwardRef<HTMLDialogElement, HelpDialogProps>(functio
         <li className='pl-1'>Basahin ang gabay at ihambing sa iyong pananim.</li>
       </ol>
       <p className='my-4 text-sm leading-6 text-mist'>
-        Mikropono: gawing teksto ang iyong sinabi. Ang hub ang nagsusulat nito sa Wi-Fi ng hub, walang internet; kung wala ka sa Wi-Fi ng hub, i-type ang tanong.
+        Mikropono: gawing teksto ang iyong sinabi. Sa browser, isinusulat ito ng browser (kailangan ng internet); sa Android app sa Wi-Fi ng hub, ang hub ang nagsusulat nang walang internet. Tingnan ang nakasulat bago ipadala, o i-type ang tanong.
         Kamera: magdagdag ng litrato ng pananim; binabasa ito ng AI sa device kapag handa na, o ng hub kung nasa Wi-Fi ka nito.
       </p>
       <section className='border-t border-rule pt-4' aria-labelledby='ugatan-local-ai-heading'>

@@ -107,10 +107,10 @@ export default function AdminLoginPage() {
 
       <hr className="my-6 border-0 border-t border-rule" />
       <Link
-        to="/login"
+        to="/chat"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-sage no-underline hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
       >
-        Looking for the Farmer portal? Go to Farmer Login
+        Looking for the farmer chat? Open Ugatan chat
         <ArrowRightIcon className="size-4" />
       </Link>
     </AuthShell>

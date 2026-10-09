@@ -9,8 +9,7 @@ import (
 
 	"github.com/yourorg/ws/internal/application/registration"
 	"github.com/yourorg/ws/internal/config"
-	"github.com/yourorg/ws/internal/domain/user"
-	"github.com/yourorg/ws/internal/pkg/crypto"
+	"github.com/yourorg/ws/internal/domain/admin"
 )
 
 type Seeder interface {
@@ -38,17 +37,16 @@ func RunAll(ctx context.Context, deps Deps) error {
 }
 
 type adminSeeder struct {
-	db        *sql.DB
-	app       *config.Config
-	admin     config.SeederAdmin
+	db    *sql.DB
+	admin config.SeederAdmin
 }
 
 func NewAdminSeeder(deps Deps) Seeder {
-	admin := config.SeederAdmin{}
+	adminCfg := config.SeederAdmin{}
 	if deps.SeederCfg != nil {
-		admin = deps.SeederCfg.Admin
+		adminCfg = deps.SeederCfg.Admin
 	}
-	return &adminSeeder{db: deps.DB, app: deps.AppCfg, admin: admin}
+	return &adminSeeder{db: deps.DB, admin: adminCfg}
 }
 
 func (s *adminSeeder) Name() string { return "admin" }
@@ -63,16 +61,9 @@ func (s *adminSeeder) Run(ctx context.Context) error {
 	if name == "" {
 		name = "Ugatan Admin"
 	}
-	if s.app == nil {
-		return fmt.Errorf("admin seeder: app config required for PII encryption")
-	}
 
-	box, err := crypto.NewBox(s.app.PIIEncryptionKey)
-	if err != nil {
-		return err
-	}
 	var exists bool
-	if err := s.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`, email).Scan(&exists); err != nil {
+	if err := s.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM admins WHERE email = $1)`, email).Scan(&exists); err != nil {
 		return err
 	}
 	if exists {
@@ -83,8 +74,7 @@ func (s *adminSeeder) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	u, err := user.New(user.NewInput{
-		Role:         user.RoleAdmin,
+	a, err := admin.New(admin.NewInput{
 		Email:        email,
 		PasswordHash: hash,
 		FullName:     name,
@@ -92,18 +82,25 @@ func (s *adminSeeder) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	nameEnc, err := box.Encrypt(u.FullName())
-	if err != nil {
-		return err
-	}
-	const q = `
-		INSERT INTO users (id, role, status, email, password_hash, full_name_enc, birth_date_enc, address_enc, phone_enc, id_number_hash, device_id, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,'','','','','',$7,$8)
-	`
-	_, err = s.db.ExecContext(ctx, q, u.ID(), string(u.Role()), string(u.Status()), u.Email(), u.PasswordHash(), nameEnc, u.CreatedAt(), u.UpdatedAt())
-	if err != nil {
+	repo := postgresAdminSaver{db: s.db}
+	if err := repo.Save(ctx, a); err != nil {
 		return err
 	}
 	fmt.Fprintf(os.Stderr, "seeded admin %s (%s)\n", email, name)
 	return nil
+}
+
+// Avoid importing infrastructure from seeders: thin insert matching AdminRepository.Save.
+type postgresAdminSaver struct{ db *sql.DB }
+
+func (r postgresAdminSaver) Save(ctx context.Context, a *admin.Admin) error {
+	const q = `
+		INSERT INTO admins (id, email, password_hash, full_name, status, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7)
+	`
+	_, err := r.db.ExecContext(ctx, q,
+		a.ID(), a.Email(), a.PasswordHash(), a.FullName(), string(a.Status()),
+		a.CreatedAt(), a.UpdatedAt(),
+	)
+	return err
 }

@@ -7,6 +7,7 @@ import { RegistrationDialog, QrInvitation } from '../src/admin/RegistrationDialo
 import { A } from '../src/admin/copy';
 import { setDisplayPreferences, resetDisplayPreferences } from '../src/config/displayPreferences';
 import { emptyDraft, fields, hasDraft, validateDraft } from '../src/admin/registration';
+import * as ws from '../src/config/ws';
 import { sileo } from 'sileo';
 
 const hooks = vi.hoisted(() => ({ slots: [] as unknown[], index: 0, effects: [] as (() => void)[] }));
@@ -90,11 +91,20 @@ describe('admin pages and backend boundaries', () => {
     expect(html).toContain('—');
     expect(html).not.toContain('Hub is online');
   });
-  it('does not collect credentials or pretend to authenticate', () => {
+  it('sends an already-signed-in preview login to the SPA /admin shell', () => {
+    const replace = vi.fn();
+    vi.stubGlobal('window', { location: { replace, hash: '#login' } });
+    const token = vi.spyOn(ws, 'loadAdminToken').mockReturnValue('jwt-token');
+    Login();
+    for (const effect of hooks.effects) effect();
+    expect(replace).toHaveBeenCalledWith('/admin');
+    token.mockRestore();
+  });
+  it('collects admin email and password for ws login', () => {
     const view = Login();
-    expect(find(view, (element) => element.props.id === 'admin-username').props.disabled).toBe(true);
-    expect(find(view, (element) => element.props.id === 'admin-password').props.disabled).toBe(true);
-    expect(button(view, A.signIn).props.disabled).toBe(true);
+    expect(find(view, (element) => element.props.id === 'admin-email').props.disabled).toBe(false);
+    expect(find(view, (element) => element.props.id === 'admin-password').props.disabled).toBe(false);
+    expect(button(view, A.signIn).props.disabled).toBe(false);
     const toggle = find(view, (element) => element.type === 'button' && element.props['aria-label'] === A.showPassword);
     expect(toggle.props['aria-pressed']).toBe(false);
     expect(find(toggle, (element) => element.type === 'svg').props['aria-hidden']).toBe(true);
@@ -103,7 +113,7 @@ describe('admin pages and backend boundaries', () => {
     const shown = Login();
     expect(find(shown, (element) => element.props.id === 'admin-password').props.type).toBe('text');
     expect(find(shown, (element) => element.props['aria-label'] === A.hidePassword).props['aria-pressed']).toBe(true);
-    expect(renderToStaticMarkup(view)).not.toContain('href="#overview"');
+    expect(renderToStaticMarkup(view)).toContain(A.email);
     expect(renderToStaticMarkup(view)).not.toContain('admin-preview-link');
   });
   it('uses English copy for admin pages, dialogs, and validation', () => {

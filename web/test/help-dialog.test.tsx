@@ -54,7 +54,8 @@ describe('Tagalog help dialog', () => {
     const { html } = renderHelp();
     expect(html).toContain('binabasa ito ng AI sa device');
     expect(html).not.toContain('Hindi pa magagamit ang larawan');
-    expect(html).toContain('Ang hub ang nagsusulat nito sa Wi-Fi ng hub, walang internet');
+    expect(html).toContain('isinusulat ito ng browser');
+    expect(html).toContain('ang hub ang nagsusulat');
     expect(html).toContain('hindi tiyak na diagnosis');
     expect(html).toContain(DISCLAIMER);
   });

@@ -16,6 +16,14 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-voice-hub-flash-empty-fix]] - Mic stop no longer hub-flash then empty; browser STT starts without hub probe
+- [[2026-10-10-browser-stt-mic-prime-fix]] - Removed getUserMedia priming that left Chrome STT hearing silence; en-US first
+- [[2026-10-10-browser-stt-interim-fix]] - Browser STT kept interim text and committed it on session end
+- [[2026-10-10-browser-voice-overlay]] - Browser Web Speech + Google-style mic overlay; hub STT kept for Capacitor
+- [[2026-10-10-admin-redirect-loop]] - Vite admin.html stole /admin; renamed to admin-preview.html to stop redirect loop
+- [[2026-10-10-admins-table-email-login]] - ws admins table + email/password on green-card and /admin/login
+- [[2026-10-10-hub-env-example-align]] - hub/.env.example matched working local .env; fixed HUB_VISION=on6 typo
+- [[2026-10-10-admin-auth-local-models]] - admin JWT redirect verified; Dexie-local farmer chats; hub-aware LiteRT/ONNX/Q4_0 routing
 - [[2026-10-10-merge-frontend-into-main]] - merged origin/FrontEnd (Figma home UI, admin pages, display preferences, Sileo toasts) into main, keeping no-login /setup, /chat, /search, guardrails
 - [[2026-10-10-toast-auto-dismiss-implementation]] - applied 3-second success and 5-second information toasts with sticky errors; build and 135 frontend tests pass, browser timing QA remains open
 - [[2026-10-10-toast-auto-dismiss-review]] - reviewed existing timers and hover behavior; proposed 3-second confirmations and 5-second information notices, pending approval
