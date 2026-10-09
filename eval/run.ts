@@ -5,6 +5,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { loadConfig } from '../hub/src/config.js';
+import { loadEnvFile } from '../hub/src/env.js';
 import { loadKnowledge } from '../hub/src/knowledge.js';
 import { createKeywordMatcher } from '../hub/src/matchers/keyword.js';
 import { createLayaMatcher } from '../hub/src/matchers/laya.js';
@@ -14,6 +15,8 @@ import { outcomeFor, rate, scoreRun, type Prediction, type Report } from './lib/
 
 const here = new URL('.', import.meta.url);
 const allowDownload = process.argv.includes('--allow-download');
+// Same hub/.env the hub reads, so LAYA_MODEL_DIR is set once per machine. Shell variables win.
+loadEnvFile();
 const config = loadConfig({ ...process.env, HUB_MATCHER: 'keyword' }, process.cwd());
 
 const passMarkRaw = process.env.LAYA_PASS_MARK?.trim();
