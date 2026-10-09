@@ -1,0 +1,33 @@
+:root {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #1d2b1f;
+  background: #f1f5ee;
+  color-scheme: light;
+}
+body { margin: 0; background: #f1f5ee; }
+.wrap { max-width: 680px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { margin: 0; font-size: 2rem; color: #1f5c2e; }
+h2 { font-size: 1.1rem; margin: 4px 0 8px; }
+h3 { margin: 0 0 6px; font-size: 1rem; }
+.tag { margin: 4px 0 16px; color: #4a5a4c; }
+.card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: grid; gap: 12px; }
+.model { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+label { display: grid; gap: 6px; font-weight: 600; font-size: 0.95rem; }
+select, textarea, input { font: inherit; padding: 10px; border: 1px solid #c9d6c8; border-radius: 8px; max-width: 100%; box-sizing: border-box; }
+button { font: inherit; font-weight: 600; padding: 10px 16px; border: 0; border-radius: 8px; background: #1f5c2e; color: #fff; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: default; }
+button.secondary { background: #e4efe2; color: #1f5c2e; }
+.symptoms { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.symptom { display: grid; justify-items: center; gap: 4px; background: #f5f9f3; color: #1d2b1f; border: 1px solid #d7e3d4; padding: 10px 8px; text-align: center; }
+.symptom .icon { font-size: 1.8rem; }
+.ref { border-top: 1px solid #e2eadf; padding-top: 12px; margin-top: 12px; }
+.notice { background: #fff6e0; border-radius: 8px; padding: 10px; margin: 0; }
+.explain { white-space: pre-wrap; line-height: 1.5; margin: 0; }
+.disclaimer { font-weight: 600; border-top: 2px solid #1f5c2e; padding-top: 10px; margin-bottom: 0; }
+.muted { color: #6b7a6d; }
+.small { font-size: 0.85rem; }
+.label { margin: 8px 0 2px; font-weight: 600; color: #3b4d3e; }
+ul, ol { margin: 0 0 6px; padding-left: 20px; }
+.history { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.history li { border-bottom: 1px solid #e2eadf; padding-bottom: 8px; }
+footer { margin-top: 24px; text-align: center; }
