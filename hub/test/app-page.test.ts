@@ -44,9 +44,17 @@ describe('setting up a phone from the hub', () => {
     expect(res.headers.get('content-type')).toContain('text/html');
     const html = await res.text();
     expect(html).toContain('Mobile Hotspot');
-    expect(html).toContain('handa (2 MB)');
-    expect(html).toContain('Laya (pantugma): <span class="warn">');
-    expect((html.match(/<svg/g) ?? []).length).toBe(lanAddresses().length);
+    expect(html).toContain('Hakbang 4');
+    expect(html).toContain('Port 8787');
+    expect(html).toContain('2 MB');
+    expect(html).toContain(`href="${APK_PATH}"`);
+    // Gemma is on, Laya is off.
+    expect(html).toContain('Handa sa Hub');
+    expect(html).toContain('Wala sa Hub');
+    // One QR code only: the other addresses are not offered.
+    expect((html.match(/class="qr-code"/g) ?? []).length).toBe(lanAddresses().length ? 1 : 0);
+    expect(html).not.toContain('Ibang IP');
+    expect(html).not.toMatch(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
     // The page loads nothing from the internet.
     expect(html).not.toMatch(/https:\/\//);
   });

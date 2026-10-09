@@ -16,6 +16,7 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-hub-setup-page-redesign]] - laptop `/` page redesigned: single hotspot QR + copy link, 4-step cards, "Katayuan ng Hub" readiness card (plain CSS, offline)
 - [[2026-10-10-admin-frontend-at-admin]] - `/admin` serves FrontEnd AdminApp (overview/users/qr/activity), not old top-nav portal
 - [[2026-10-10-landing-gpu-machine-note]] - Landing benchmarks label from `node-llama-cpp inspect gpu` (Vulkan · RTX 3060)
 - [[2026-10-10-landing-benchmarks]] - Browser `/` landing (GSAP/Motion) + hub `benchmark:landing` → real `benchmarks.json`
