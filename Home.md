@@ -16,6 +16,9 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-admin-frontend-at-admin]] - `/admin` serves FrontEnd AdminApp (overview/users/qr/activity), not old top-nav portal
+- [[2026-10-10-landing-gpu-machine-note]] - Landing benchmarks label from `node-llama-cpp inspect gpu` (Vulkan · RTX 3060)
+- [[2026-10-10-landing-benchmarks]] - Browser `/` landing (GSAP/Motion) + hub `benchmark:landing` → real `benchmarks.json`
 - [[2026-10-10-voice-hub-flash-empty-fix]] - Mic stop no longer hub-flash then empty; browser STT starts without hub probe
 - [[2026-10-10-browser-stt-mic-prime-fix]] - Removed getUserMedia priming that left Chrome STT hearing silence; en-US first
 - [[2026-10-10-browser-stt-interim-fix]] - Browser STT kept interim text and committed it on session end

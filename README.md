@@ -8,7 +8,7 @@ Read [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md) for the plan and [docs/DISCL
 
 | Folder | What it is |
 | --- | --- |
-| `web/` | React + Vite + TypeScript PWA, also built as an Android APK. Farmers never sign in: chat (+ sidebar) at `/chat` or `/chat/:conversationId`, first-run setup at `/setup` in the APK. Staff login at `/admin/login` and admin at `/admin` (browser build only). |
+| `web/` | React + Vite + TypeScript PWA, also built as an Android APK. Browser `/` is the marketing landing (CTA → `/chat`). Farmers never sign in: chat (+ sidebar) at `/chat` or `/chat/:conversationId`, first-run setup at `/setup` in the APK (native skips the landing). Staff login at `/admin/login` and admin at `/admin` (browser build only). |
 | `hub/` | Node.js TypeScript service for crop Q&A on the LAN. Answers `POST /ask`. |
 | `ws/` | Go DDD API on Postgres 16. Admin auth, farmer registration, QR invites, audit. The farmer app no longer calls it. PII encrypted at rest. |
 | `shared/` | Matcher, knowledge validation, pesticide guardrail, and answer composition, used by web and hub. |
@@ -26,7 +26,7 @@ pnpm install
 pnpm dev
 ```
 
-Open http://localhost:3000. The port is fixed in `web/vite.config.ts` for `pnpm dev` and `preview`; if something else is using 3000, the command stops with an error instead of picking another port. Keyword matching works right away. Offline reloads (no network after the first load) apply to the built site, not to `pnpm dev`, where the service worker is off.
+Open http://localhost:3000. In the browser, `/` is the Ugatan landing page; **Open chat** goes to `/chat`. The Android APK does not show the landing: it still opens `/setup` until setup is done, then `/chat`. The port is fixed in `web/vite.config.ts` for `pnpm dev` and `preview`; if something else is using 3000, the command stops with an error instead of picking another port. Keyword matching works right away. Offline reloads (no network after the first load) apply to the built site, not to `pnpm dev`, where the service worker is off.
 
 The app is local only: nothing it does at runtime reaches the internet. The app, the knowledge base (with Tagalog and Cebuano card text), and the fonts are bundled. Farmers never sign in: the chat opens at once, and chats and setup live only in the phone's own storage (IndexedDB and localStorage). Nothing is sent to `ws`.
 
@@ -61,7 +61,7 @@ This is a debug build, signed with the local debug key. A build for wider sharin
 
 To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`). `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. A previously saved address on that phone still overrides it. The home page has no hub settings or manual sync controls.
 
-Only the staff portal talks to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`). Unauthenticated `/admin` redirects to `/admin/login` (or use `/admin-preview.html` green-card login); after `POST /api/v1/auth/login` with an **admins** table email/password the JWT opens `/admin`. Farmer rows stay in `users` for registration/QR only — they cannot sign in to admin. Seed with `make migrate-up` then `make seed` in `ws/` (`admin@ugatan.com` / see `ws/configs/seeder.yaml`), then `make run-api`. Farmers open http://localhost:3000/ and land in the chat with no sign-in; chats stay in IndexedDB on that device (no `ws` sync). Chat is at `/chat/:conversationId` (bare `/chat` is a draft until the first message). Old `/login` and `/claim` links open the chat.
+Only the staff portal talks to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`). The admin UI is the FrontEnd hub shell at `/admin` (Overview, Users, QR access, Activity — same layout as `/admin-preview.html`). `/admin` opens `/admin/overview`. Sign-in is `/admin/login` (`POST /api/v1/auth/login` with an **admins** table email/password); after login the JWT is stored and the shell opens at `/admin/overview`. List/metrics data still shows the UI-empty state until those screens are wired to `ws`. Farmer rows stay in `users` for registration/QR only — they cannot sign in to admin. Seed with `make migrate-up` then `make seed` in `ws/` (`admin@ugatan.com` / see `ws/configs/seeder.yaml`), then `make run-api`. Farmers open http://localhost:3000/chat for the chat with no sign-in (browser `/` is the landing); chats stay in IndexedDB on that device (no `ws` sync). Chat is at `/chat/:conversationId` (bare `/chat` is a draft until the first message). Old `/login` and `/claim` links open `/` (landing in the browser).
 
 ### Which Gemma runs where
 
@@ -97,7 +97,7 @@ PII columns are AES-GCM ciphertext. ID images never leave the admin browser. Far
 
 ## Admin UI preview
 
-The real staff portal is `/admin` (above, backed by `ws`). Separately, open `/admin-preview.html` on the web dev or preview server for the English login layout. The preview entry must not be named `admin.html` — Vite also serves that file at `/admin`, which steals the staff SPA routes. There is no preview button on login; for frontend QA, open `/admin-preview.html#overview` directly. After a successful preview login, the browser opens the real `/admin` shell.
+The staff portal UI is `/admin/overview` (and `/admin/users`, `/admin/qr`, `/admin/activity`, `/admin/login`) inside the main SPA. `/admin-preview.html` is an optional second entry that mounts the same `AdminApp` with hash routes (`#overview`) for isolated frontend QA — it must not be named `admin.html`, or Vite would steal `/admin`. After a successful login from either entry, the browser opens `/admin/overview`.
 
 This is frontend only: login, registration persistence, ID reading, duplicate checks, QR generation/redemption, and access changes are not connected. These controls explain the missing integration rather than simulating success. No credentials, ID images, sample users, or personal records are stored.
 
@@ -304,10 +304,11 @@ From the repository root:
 | `pnpm test` | Builds, then runs all tests. |
 | `pnpm eval:voice` | Scores the hub's speech writing on recordings with the correct text: word and character error rate per language. Needs clips (see "Voice") and `GEMMA_MODEL_DIR`. Add `-- --dtype quantized` to compare weights. |
 | `pnpm eval` | Scores keyword matching on `eval/descriptions.csv`. Also scores Laya and hybrid when `LAYA_MODEL_DIR` is set (nothing is downloaded). Pass `-- --file <name>` to score another CSV in `eval/`. Add `--describe` to also score hybrid with Gemma's English first (needs `GEMMA_GGUF`). The `lang` column is `en`, `tl`, `taglish`, or `ceb` (Cebuano/Bisaya). |
+| `pnpm --filter @ugatan/hub benchmark:landing` | Measures real hub AI wall-clock timings (keyword match, Gemma explain, optional photo/voice) and writes `web/public/benchmarks.json` for the landing page. Labels the machine from `node-llama-cpp inspect gpu` (Vulkan/CUDA device when available). Needs models on disk (`GEMMA_GGUF` for llama.cpp, or `GEMMA_MODEL_DIR` for ONNX). Exits non-zero and does not overwrite with fake numbers when models are missing. CI must not require GPU models. Commit the JSON when the team wants shared numbers on `/`. |
 
 `make install`, `make build`, and `make test` call the same pnpm commands. They need GNU make on the PATH, which Windows does not include by default.
 
-Package-level scripts are `dev`, `build`, `preview`, and `test` in `web/`, and `dev`, `build`, `start`, `eval`, and `test` in `hub/`.
+Package-level scripts are `dev`, `build`, `preview`, and `test` in `web/`, and `dev`, `build`, `start`, `eval`, `benchmark:landing`, and `test` in `hub/`.
 
 Hub tests load `hub/.env`; shared and web tests do not. A machine-specific `hub/.env` therefore changes the hub test run, where the real-model tests run when their model paths are set.
 

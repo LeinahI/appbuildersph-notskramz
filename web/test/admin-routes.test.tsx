@@ -1,26 +1,37 @@
-import { createElement, isValidElement, type ReactElement } from 'react';
+import { createElement } from 'react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Navigate } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import * as ws from '../src/config/ws';
-import { RequireAdmin } from '../src/pages/admin/AdminLayout';
+import { describe, expect, it, vi } from 'vitest';
+import AdminHub from '../src/admin/AdminHub';
 
-afterEach(() => {
-  vi.restoreAllMocks();
+vi.mock('../src/admin/AdminApp', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../src/admin/AdminApp')>();
+  return {
+    ...mod,
+    AdminApp: ({ page }: { page?: string }) => createElement('div', { 'data-admin-page': page ?? '' }, 'AdminApp'),
+  };
 });
 
-describe('admin SPA route guards', () => {
-  it('sends unauthenticated /admin to /admin/login once', () => {
-    vi.spyOn(ws, 'loadAdminToken').mockReturnValue('');
-    const el = RequireAdmin({ children: createElement('div', { 'data-admin': 'shell' }, 'Users') });
-    expect(isValidElement(el)).toBe(true);
-    expect((el as ReactElement).type).toBe(Navigate);
-    expect((el as ReactElement).props).toMatchObject({ to: '/admin/login', replace: true });
+describe('admin SPA routes (FrontEnd AdminApp)', () => {
+  it('mounts AdminHub for /admin/overview', () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        { initialEntries: ['/admin/overview'] },
+        createElement(Routes, null, createElement(Route, { path: '/admin/:page', element: createElement(AdminHub) })),
+      ),
+    );
+    expect(html).toContain('data-admin-page="overview"');
   });
 
-  it('renders the admin shell when a token is present', () => {
-    vi.spyOn(ws, 'loadAdminToken').mockReturnValue('jwt-token');
-    const el = RequireAdmin({ children: createElement('div', { 'data-admin': 'shell' }, 'Users') });
-    expect(renderToStaticMarkup(el as ReactElement)).toContain('data-admin="shell"');
+  it('mounts AdminHub for /admin/users', () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        MemoryRouter,
+        { initialEntries: ['/admin/users'] },
+        createElement(Routes, null, createElement(Route, { path: '/admin/:page', element: createElement(AdminHub) })),
+      ),
+    );
+    expect(html).toContain('data-admin-page="users"');
   });
 });

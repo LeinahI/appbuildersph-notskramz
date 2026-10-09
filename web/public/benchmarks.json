@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-10-09T22:45:00.000Z",
+  "machineNote": "Vulkan · NVIDIA GeForce RTX 3060 Laptop GPU",
+  "status": "ok",
+  "items": [
+    {
+      "id": "keyword_match",
+      "label": "Keyword matcher",
+      "ms": 0.6,
+      "detail": "Match-only for “Nanilaw ang dahon ng palay” (rice)"
+    },
+    {
+      "id": "explain_gguf",
+      "label": "Gemma explain (GGUF Q4_0)",
+      "ms": 4880,
+      "detail": "Short Taglish explain after load warm-up"
+    },
+    {
+      "id": "voice_transcribe",
+      "label": "Gemma voice transcribe (ONNX)",
+      "ms": 29549,
+      "detail": "Short PCM after warm-up"
+    }
+  ]
+}
