@@ -5,6 +5,7 @@ import {
   MATCH_SURE,
   NO_SIGNS,
   SYSTEM_PROMPT,
+  buildChatMessages,
   buildDescribeMessages,
   buildMessages,
   notesToExplain,
@@ -93,5 +94,24 @@ describe('notesToExplain', () => {
   it('keeps every candidate when the match is not sure', () => {
     expect(notesToExplain(['a', 'b'], false)).toEqual(['a', 'b']);
     expect(notesToExplain([], false)).toEqual([]);
+  });
+});
+
+describe('buildChatMessages', () => {
+  it("replies in the farmer's language, never names a problem, and asks what they see", () => {
+    const [system] = buildChatMessages('hey');
+    expect(system!.role).toBe('system');
+    expect(system!.content).toContain('Reply directly to what the farmer just said');
+    expect(system!.content).toContain('never name or guess a pest or disease');
+    expect(system!.content).toContain('Never name pesticide brands and never give dosages');
+  });
+
+  it('puts the last four turns before the new message, with long replies cut', () => {
+    const history = Array.from({ length: 6 }, (_, i) => ({ question: `q${i}`, reply: i === 5 ? 'x'.repeat(1000) : `r${i}` }));
+    const messages = buildChatMessages(' kausapin mo ako ', history);
+    expect(messages.map((m) => m.role)).toEqual(['system', 'user', 'assistant', 'user', 'assistant', 'user', 'assistant', 'user', 'assistant', 'user']);
+    expect(messages[1]!.content).toBe('q2');
+    expect(messages[8]!.content.length).toBeLessThan(410);
+    expect(messages[9]!.content).toBe('kausapin mo ako');
   });
 });

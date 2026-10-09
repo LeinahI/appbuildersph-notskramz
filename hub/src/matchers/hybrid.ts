@@ -1,7 +1,10 @@
-import type { Crop } from '@ugatan/shared';
+import { NO_SIGNS, OTHER_CROP, type Crop } from '@ugatan/shared';
 import type { MatchOutcome, Matcher } from './index.js';
 
-/** Puts the farmer's words into plain English signs (Gemma, see Describer in explain/index.ts). */
+/**
+ * Puts the farmer's words into plain English signs (Gemma, see Describer in explain/index.ts). Returns NO_SIGNS
+ * when the farmer named no sign, OTHER_CROP when the plant is not rice or corn, and null when it has nothing useful.
+ */
 export type Describe = (text: string, crop: Crop | 'any') => Promise<string | null>;
 
 /**
@@ -38,6 +41,9 @@ export function createHybridMatcher(keyword: Matcher, laya: Matcher, { describe,
           english = null;
         }
       }
+      // A greeting, a complaint, "may problema ang palay ko", or kangkong. Laya would still pick a rice or corn
+      // problem for these words, so nothing is matched. The hub answers what the farmer said instead (Explainer.chat).
+      if (english === NO_SIGNS || english === OTHER_CROP) return { ids: [], clear: false, noSigns: true };
       const withEnglish = (o: MatchOutcome): MatchOutcome => (english ? { ...o, english } : o);
 
       let fromEnglish: MatchOutcome | null = null;

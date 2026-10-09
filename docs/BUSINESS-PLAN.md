@@ -41,7 +41,7 @@ Ugatan is a static React web app. The model runs in the user's browser, so there
 | --- | --- | --- |
 | Frontend | React, Vite, TypeScript | Fast builds, and no server to run |
 | On-device AI | Transformers.js 4.3.0 | Chat, embeddings, speech, and vision in one library. WebGPU, with a WebAssembly fallback |
-| Model | Gemma 4 E2B by default, pending a Taglish test. Gemma 4 E4B on the hub and laptops | Transformers.js ONNX export from onnx-community for Transformers.js. E2B suits weaker devices |
+| Model | Gemma 4 E2B on the phone (built) and on the hub (built, GGUF through llama.cpp). Gemma 4 E4B is planned, not built | Transformers.js ONNX export from onnx-community for the phone. E2B suits weaker devices. A Taglish test still decides the default |
 | Threading | Web Worker | Keeps the interface responsive during generation |
 | Storage | IndexedDB, through Dexie | Chat history and documents stay on the device |
 | Styling | Tailwind CSS | Quick to build a clean interface |
@@ -56,7 +56,7 @@ Ugatan is a static React web app. The model runs in the user's browser, so there
 - Confirm the text-only loading code from the Gemma 4 E4B model card works in the app.
 - Measure load time and tokens per second on the pilot devices.
 - Confirm E4B runs within the 6 GB GPU or shared memory that the reference app lists, on target laptops. Keep E2B as the fallback.
-- Switch the prototype from Qwen2.5-0.5B to Gemma 4 E2B. Run 20 to 30 farmer descriptions through E2B and E4B to choose the default. Dexie and Tailwind are not in the prototype yet.
+- Done in code: the prototype's phone model is Gemma 4 E2B (`web/src/config/models.ts`), not Qwen2.5-0.5B. Still to do: test it in Chrome on the demo laptop, and run 20 to 30 farmer descriptions through E2B and E4B to choose the default.
 
 ## Access model
 
@@ -93,7 +93,7 @@ The offline core works everywhere, so connectivity only affects the AI explanati
 
 - Queue and sync in the app, so questions wait offline and send on reconnect.
 - Hub answer service, which runs the model for queued questions on the local network.
-- Symptom picture list, drawn from the agronomist-reviewed knowledge base.
+- Symptom picture list, drawn from the knowledge base. The eight current notes are not yet reviewed by an agronomist.
 - Voice input tests in Tagalog on the pilot phones.
 
 A connected fallback for farmers with signal and no capable device is possible later. It would send questions to a cloud model. It is not part of the offline core, and it is excluded from the hackathon build.

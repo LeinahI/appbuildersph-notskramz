@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Crop } from '@ugatan/shared';
+import type { ChatTurn, Crop } from '@ugatan/shared';
 
 /** A question waiting for the hub, or already answered. Stored on the phone only. */
 export interface QueuedQuestion {
@@ -8,6 +8,8 @@ export interface QueuedQuestion {
   uid: string;
   crop: Crop | 'any';
   text: string;
+  /** Earlier turns of the chat at the time of asking, so the hub can reply in context. */
+  history?: ChatTurn[];
   /** Set when the farmer tapped a symptom picture instead of typing. */
   symptomId?: string;
   createdAt: string;

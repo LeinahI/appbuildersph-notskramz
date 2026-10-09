@@ -2,7 +2,7 @@
 
 Offline Taglish advisor for Filipino rice (palay) and corn (mais) farmers. A farmer describes what they see in the field, and the app matches it to a likely pest or disease, shows the signs, lists field steps, says when to call an expert, and explains the result in Taglish. It never names pesticide brands or gives dosages. Every answer ends with: "Kumpirmahin sa lokal na agriculturist bago gumamit ng anumang pesticide."
 
-Read [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md) for the plan and [docs/DISCLOSURE.md](docs/DISCLOSURE.md) for models, licenses, and library versions.
+Read [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md) for the plan and [docs/DISCLOSURE.md](docs/DISCLOSURE.md) for models, licenses, library versions, and the work done before kickoff. The offline demo is in [docs/DEMO.md](docs/DEMO.md), and the team is listed in [docs/TEAM.md](docs/TEAM.md).
 
 ## Layout
 
@@ -214,6 +214,8 @@ These need a person to decide. The code does not guess them.
 - **Phone AI retry.** After a load error the **Ihanda ang AI** button comes back, but tapping it does nothing until the page is reloaded. The worker is kept after an error (`web/src/lib/llm.ts`).
 - **Phone AI and sync.** A question the phone AI answers is marked answered only when generation finishes. A sync that runs during generation (Sync now, or an online event) can still send it to the hub, and a failed generation stays queued for the next sync. The app has no status that keeps it out of the sync yet.
 - **Laya errors.** A failure after startup is not retried on the CPU. In `laya` mode `/ask` returns an error. In `hybrid` mode the hub returns keyword's candidates marked not sure, or no match, and logs nothing.
+- **Voice input needs a network.** Typing works offline. In Chrome, the Web Speech API sends speech to a browser service (`web/src/components/VoiceInput.tsx`). Keep voice out of any offline demo.
+- **Offline phone AI is not yet tested.** The model weights and the ONNX runtime files are cached after the first online load, but a network-off reload has not been run on the demo laptop. See [docs/DEMO.md](docs/DEMO.md).
 - **Startup time.** With Gemma on, the hub takes about 40 to 50 s to start listening on the dev laptop (measured 2026-10-09, see `docs/agent-notes/`). Laya's load time adds to that when `laya` or `hybrid` is set, and it has not been measured.
 
 ## License

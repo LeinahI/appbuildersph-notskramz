@@ -1,6 +1,7 @@
-import { NO_SIGNS, buildDescribeMessages, buildMessages, type Crop } from '@ugatan/shared';
+import { NO_SIGNS, OTHER_CROP, buildChatMessages, buildDescribeMessages, buildMessages, type Crop } from '@ugatan/shared';
+import type { ChatHistoryItem } from 'node-llama-cpp';
 import { trimToSentence } from './gemma.js';
-import type { Describer, ExplainInput, ExplainResult, Explainer } from './index.js';
+import type { ChatInput, Describer, ExplainInput, ExplainResult, Explainer } from './index.js';
 import { oneAtATime } from './queue.js';
 
 export interface GemmaLlamaCppExplainerOptions {
@@ -14,6 +15,8 @@ export interface GemmaLlamaCppExplainerOptions {
 
 /** Cap on the plain-English description. Two short sentences fit well inside it. */
 const DESCRIBE_MAX_TOKENS = 80;
+/** Cap on a chat reply. The prompt asks for under 60 words. */
+const CHAT_MAX_TOKENS = 120;
 
 /**
  * Taglish explanation from a local Gemma 4 GGUF model through llama.cpp, on the GPU when there is one
@@ -29,7 +32,7 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
   // auto puts as many layers on the GPU as fit and runs the rest on the CPU, so a smaller card still works.
   const model = await llama.loadModel({ modelPath: opts.modelPath, gpuLayers: 'auto' });
   // The prompt plus a short answer fits well inside 2048 tokens. One sequence per job, so each keeps its own cached system prompt.
-  const context = await model.createContext({ contextSize: 2048, sequences: 2 });
+  const context = await model.createContext({ contextSize: 2048, sequences: 3 });
 
   // The system prompt is the same for every question. Keeping one session on one sequence lets llama.cpp
   // reuse its cached prefix, so each question only reads the farmer's part of the prompt.
@@ -46,7 +49,14 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
     chatWrapper: new Gemma4ChatWrapper({ reasoning: false }),
   });
 
-  // One model on one GPU: explaining and describing share the queue.
+  const chatSystem = buildChatMessages('')[0]!.content;
+  const chatSession = new LlamaChatSession({
+    contextSequence: context.getSequence(),
+    systemPrompt: chatSystem,
+    chatWrapper: new Gemma4ChatWrapper({ reasoning: false }),
+  });
+
+  // One model on one GPU: explaining, describing, and chatting share the queue.
   const enqueue = oneAtATime();
 
   async function generate({ text, crop, entries, clear }: ExplainInput, maxTokens = opts.maxNewTokens): Promise<string> {
@@ -72,8 +82,26 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
       budgets: { thoughtTokens: 0 },
     });
     const english = result.responseText.trim();
-    // Nothing to match on. The matcher then answers "not sure" instead of matching words Gemma made up.
-    return english && !english.startsWith(NO_SIGNS.slice(0, -1)) ? english : null;
+    // Nothing to match on. The matcher then matches nothing instead of words Gemma made up.
+    if (english.startsWith(NO_SIGNS.slice(0, -1))) return NO_SIGNS;
+    if (english.startsWith(OTHER_CROP.slice(0, -1))) return OTHER_CROP;
+    return english || null;
+  }
+
+  async function chat({ text, history }: ChatInput): Promise<string> {
+    // The earlier turns are set as the session's history, so the reply follows the conversation.
+    const [, ...turns] = buildChatMessages(text, history);
+    const question = turns.pop()!.content;
+    const items: ChatHistoryItem[] = [{ type: 'system', text: chatSystem }];
+    for (const t of turns) items.push(t.role === 'user' ? { type: 'user', text: t.content } : { type: 'model', response: [t.content] });
+    chatSession.setChatHistory(items);
+    const result = await chatSession.promptWithMeta(question, {
+      maxTokens: CHAT_MAX_TOKENS,
+      temperature: 0,
+      budgets: { thoughtTokens: 0 },
+    });
+    const reply = result.responseText.trim();
+    return result.stopReason === 'maxTokens' ? trimToSentence(reply) : reply;
   }
 
   // Warm-up, so the first farmer's question does not pay for loading the GPU kernels.
@@ -85,6 +113,10 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
     describe: (text, crop) => enqueue(() => describe(text, crop)),
     async explain(input): Promise<ExplainResult> {
       const text = await enqueue(() => generate(input));
+      return text ? { status: 'ok', text } : { status: 'unavailable', text: null };
+    },
+    async chat(input): Promise<ExplainResult> {
+      const text = await enqueue(() => chat(input));
       return text ? { status: 'ok', text } : { status: 'unavailable', text: null };
     },
   };

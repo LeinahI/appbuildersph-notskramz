@@ -6,10 +6,8 @@ Vault home. Each project folder is its own git repo.
 
 Offline Taglish advisor for rice and corn farmers.
 
-- [Project README](ugatan/README.md)
-- [Business plan](ugatan/docs/BUSINESS-PLAN.md)
-- [Disclosure: models, licenses, library versions](ugatan/docs/DISCLOSURE.md)
-
-## appbuildersph-notskramz
-
-- [Project structure](appbuildersph-notskramz/docs/project-structure.md)
+- [Project README](../README.md)
+- [Business plan](BUSINESS-PLAN.md)
+- [Disclosure: models, licenses, library versions, pre-kickoff work](DISCLOSURE.md)
+- [Offline demo runbook](DEMO.md)
+- [Team list](TEAM.md)

@@ -1,5 +1,5 @@
 import { basename, dirname } from 'node:path';
-import { buildMessages } from '@ugatan/shared';
+import { buildChatMessages, buildMessages, type ChatMessage } from '@ugatan/shared';
 import type { ExplainInput, ExplainResult, Explainer } from './index.js';
 import { oneAtATime } from './queue.js';
 
@@ -57,8 +57,7 @@ export async function createGemmaExplainer(opts: GemmaExplainerOptions): Promise
 
   const enqueue = oneAtATime();
 
-  async function generate({ text, crop, entries, clear }: ExplainInput): Promise<string> {
-    const messages = buildMessages(text, crop, entries, { maxWords: opts.maxWords, sure: clear });
+  async function generate(messages: ChatMessage[]): Promise<string> {
     const prompt = processor.apply_chat_template(messages, {
       enable_thinking: false,
       add_generation_prompt: true,
@@ -80,8 +79,13 @@ export async function createGemmaExplainer(opts: GemmaExplainerOptions): Promise
 
   return {
     name: 'gemma',
-    async explain(input): Promise<ExplainResult> {
-      const text = await enqueue(() => generate(input));
+    async explain({ text: question, crop, entries, clear }: ExplainInput): Promise<ExplainResult> {
+      const messages = buildMessages(question, crop, entries, { maxWords: opts.maxWords, sure: clear });
+      const text = await enqueue(() => generate(messages));
+      return text ? { status: 'ok', text } : { status: 'unavailable', text: null };
+    },
+    async chat({ text: question, history }): Promise<ExplainResult> {
+      const text = await enqueue(() => generate(buildChatMessages(question, history)));
       return text ? { status: 'ok', text } : { status: 'unavailable', text: null };
     },
   };

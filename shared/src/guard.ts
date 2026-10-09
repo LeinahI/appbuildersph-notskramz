@@ -10,7 +10,7 @@ export const PESTICIDE_NAMES: readonly string[] = [
   'Buprofezin', 'Bispyribac', 'Ridomil', 'Amistar', 'Azoxystrobin', 'Propiconazole',
   'Kasumin', 'Kasugamycin', 'Validamycin', 'Mancozeb', 'Antracol', 'Carbendazim',
   'Tricyclazole', 'Isoprothiolan', 'Orthene', 'Acephate', 'Glyphosate', 'Paraquat',
-  'Sevin',
+  'Sevin', 'Padan', 'Cartap', 'Malathion', 'Fenobucarb',
 ];
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -19,7 +19,7 @@ const NAME_RE = new RegExp(`\\b(?:${PESTICIDE_NAMES.map(escapeRegExp).join('|')}
 
 /** Number followed by a measure unit, such as "2 ml", "100 g", "3kg". */
 const NUMBER_UNIT_RE =
-  /\b\d+(?:[.,]\d+)?\s*(?:ml|mls|cc|l|lt|lit|liters?|litro|litros|g|gr|grams?|gramo|gramos|kg|kgs|kilo|kilos|kilogram|kilograms|oz|tbsp|tsp)\b/i;
+  /\b\d+(?:[.,]\d+)?\s*(?:ml|mls|cc|mg|mgs|mcg|milligrams?|micrograms?|l|lt|lit|liters?|litro|litros|g|gr|grams?|gramo|gramos|kg|kgs|kilo|kilos|kilogram|kilograms|oz|tbsp|tsp)\b/i;
 
 /** Spoon measures, with or without a number, such as "isang kutsara". */
 const SPOON_RE = /\b(?:kutsara|kutsarita|tablespoons?|teaspoons?)\b/i;

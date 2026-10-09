@@ -6,18 +6,21 @@ Vault home. Each project folder is its own git repo.
 
 Offline Taglish advisor for rice and corn farmers.
 
-- [Project README](ugatan/README.md)
-- [Business plan](ugatan/docs/BUSINESS-PLAN.md)
-- [Disclosure: models, licenses, library versions](ugatan/docs/DISCLOSURE.md)
-
-## appbuildersph-notskramz
-
-- [Project structure](appbuildersph-notskramz/docs/project-structure.md)
+- [Project README](README.md)
+- [Business plan](docs/BUSINESS-PLAN.md)
+- [Disclosure: models, licenses, library versions, pre-kickoff work](docs/DISCLOSURE.md)
+- [Offline demo runbook](docs/DEMO.md)
+- [Team list](docs/TEAM.md)
 
 ## Agent notes
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-09-push-all-changes-to-main]] - Pushed all pending changes to main; build passed, tests not run
+
+- [[2026-10-09-conversational-replies]] - with no match, Gemma replies to what the farmer said, using the last chat turns
+- [[2026-10-09-claude-chat-ui]] - web app is a Claude-style chat; reply is Gemma's explanation of Laya's match, no crop picker
+- [[2026-10-09-hackathon-qualification-audit]] - audit against the AppBuildersPH rules: disclosure, demo runbook, team list, and three code fixes; repo is still private and the team list is still empty
 - [[2026-10-09-run-pnpm-dev]] - Ran pnpm dev; dev server up at localhost:3000
 
 - [[2026-10-09-web-port-3000]] - web app fixed to http://localhost:3000 (strictPort); all dev servers stopped, but a peer session keeps restarting the old clone on 5173

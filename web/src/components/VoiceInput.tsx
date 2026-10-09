@@ -28,7 +28,7 @@ function speechRecognitionCtor(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-/** Speaks the question into the text box. Renders nothing on browsers without the Web Speech API. */
+/** Mic button for the composer. Speaks the question into the text box. Renders nothing on browsers without the Web Speech API. */
 export function VoiceInput({ onTranscript }: { onTranscript: (text: string) => void }) {
   const [supported] = useState(() => speechRecognitionCtor() !== null);
   const [listening, setListening] = useState(false);
@@ -64,11 +64,18 @@ export function VoiceInput({ onTranscript }: { onTranscript: (text: string) => v
   }
 
   return (
-    <div className="grid gap-1.5">
-      <button type="button" className="btn btn-secondary justify-self-start" onClick={listening ? stop : start}>
-        {listening ? L.voiceStop : L.voiceStart}
-      </button>
-      <p className="text-[0.85rem] text-muted">{L.voiceHint}</p>
-    </div>
+    <button
+      type="button"
+      className={`icon-btn ${listening ? 'animate-pulse bg-soft text-accent' : ''}`}
+      onClick={listening ? stop : start}
+      aria-label={listening ? L.voiceStop : L.voiceStart}
+      aria-pressed={listening}
+      title={L.voiceHint}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="9" y="3" width="6" height="11" rx="3" />
+        <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+      </svg>
+    </button>
   );
 }

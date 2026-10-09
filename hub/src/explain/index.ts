@@ -1,4 +1,4 @@
-import type { Crop, KnowledgeEntry } from '@ugatan/shared';
+import type { ChatTurn, Crop, KnowledgeEntry } from '@ugatan/shared';
 
 export interface ExplainInput {
   text: string;
@@ -15,6 +15,13 @@ export interface ExplainResult {
   text: string | null;
 }
 
+export interface ChatInput {
+  /** What the farmer just said. */
+  text: string;
+  /** Earlier turns of the chat, oldest first. */
+  history: readonly ChatTurn[];
+}
+
 /**
  * Writes the Taglish explanation for the notes the matcher chose. It explains; it does not diagnose. The Gemma
  * routes implement it (gemma-llamacpp.ts, gemma.ts).
@@ -22,12 +29,18 @@ export interface ExplainResult {
 export interface Explainer {
   readonly name: string;
   explain(input: ExplainInput): Promise<ExplainResult>;
+  /**
+   * Replies to what the farmer said when nothing matched: a greeting, a complaint, or a report with no sign.
+   * It asks what the farmer sees and never names a problem. Optional; without it the phone shows its no-match line.
+   */
+  chat?(input: ChatInput): Promise<ExplainResult>;
 }
 
 /**
  * Puts a farmer's question into plain English signs before matching, so keyword matching and Laya can read
  * Tagalog, Taglish, Cebuano (Bisaya), and English. It translates; it does not diagnose. The llama.cpp Gemma
- * route implements it. Returns null when it has nothing useful.
+ * route implements it. Returns NO_SIGNS when the farmer named no sign, OTHER_CROP when the plant is not rice or
+ * corn, and null when it has nothing useful.
  */
 export interface Describer {
   describe(text: string, crop: Crop | 'any'): Promise<string | null>;

@@ -1,7 +1,8 @@
+import type { ChatTurn } from './api.js';
 import type { KnowledgeEntry } from './types.js';
 
 export interface ChatMessage {
-  role: 'system' | 'user';
+  role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
@@ -16,8 +17,10 @@ export function systemPrompt(maxWords = 150): string {
   return `You are Ugatan, a helper for Filipino rice (palay) and corn (mais) farmers.
 A matching step has already chosen the reference notes for the farmer's description. Your job is to explain them, not to diagnose.
 Answer in simple Taglish. Base your answer ONLY on the reference notes provided, and never name a problem that is not in them.
-If the match is marked not sure, or there are no reference notes, say you are not sure and advise the farmer to call the local municipal agriculturist or DA technician.
+If there are no reference notes, say you are not sure and advise the farmer to call the local municipal agriculturist or DA technician.
+If the match is marked not sure, the app already tells the farmer it is not sure and to call the agriculturist, so do not repeat that. Name the signs that tell the possible problems apart, then ask the farmer one short question about what they see.
 Never name pesticide brands and never give dosages, even if the farmer asks.
+Write plain text: no asterisks, no bold, no markdown.
 Keep the answer under ${maxWords} words, using short numbered steps.`;
 }
 
@@ -33,7 +36,7 @@ export interface PromptOptions {
 /** What the model is told about the matcher's verdict. Exported so the tests check the same wording. */
 export const MATCH_SURE = 'Match: sure. Explain this problem to the farmer.';
 export const MATCH_NOT_SURE =
-  'Match: not sure. These are only possible problems. Say you are not sure, name the signs that tell them apart, and advise calling the local agriculturist.';
+  'Match: not sure. These are only possible problems. Do not say which one it is. Name the signs that tell them apart and ask the farmer which ones they see.';
 
 export function buildMessages(
   question: string,
@@ -75,6 +78,8 @@ export function notesToExplain<T>(entries: readonly T[], sure: boolean): T[] {
  */
 /** The describe answer when the farmer gave no sign to match on. */
 export const NO_SIGNS = 'No signs.';
+/** The describe answer when the report is about a plant that is not rice or corn, such as kangkong. */
+export const OTHER_CROP = 'Not rice or corn.';
 
 export const DESCRIBE_SYSTEM_PROMPT = `You turn a Filipino farmer's report about a rice (palay, humay) or corn (mais) crop into plain English.
 The farmer may write in Tagalog, Taglish, Cebuano (Bisaya), English, or a mix.
@@ -82,7 +87,9 @@ Write only what the farmer sees: which part of the plant, colors, shapes, spots,
 Keep every detail. Add nothing the farmer did not say.
 Do not name any pest or disease, and do not give advice.
 Answer with one or two short English sentences and nothing else.
+If the report is about a plant that is not rice or corn (for example kangkong, kamatis, talong, saging, niyog, gulay), answer exactly: ${OTHER_CROP}
 If the farmer names no sign at all, answer exactly: ${NO_SIGNS}
+Questions that report no sign, such as "pwede ba itong kainin?", "kailan mag-aani?", or "salamat", also get: ${NO_SIGNS}
 "Something is wrong with my crop", "hindi maganda ang tubo", "may problema ang palay ko", and "dili maayo akong mais" name no sign. Never invent a sign such as pale, yellow, or spots.
 
 Farm words you may see:
@@ -94,4 +101,42 @@ export function buildDescribeMessages(question: string, crop: string): ChatMessa
     { role: 'system', content: DESCRIBE_SYSTEM_PROMPT },
     { role: 'user', content: `Crop: ${crop}\nFarmer's report: ${question}` },
   ];
+}
+
+/**
+ * The model's third job: talk with the farmer when there is nothing to explain. A greeting, a complaint about the
+ * last answer, or a report that names no sign gets a reply to what the farmer actually said, not a canned line.
+ * It still never diagnoses: with no match there is no note to explain, so it asks what the farmer sees instead.
+ */
+export function chatSystemPrompt(maxWords = 60): string {
+  return `You are Ugatan, a friendly helper for Filipino rice (palay, humay) and corn (mais) farmers. You are chatting with a farmer.
+Reply directly to what the farmer just said. Use the same language they used: Tagalog, Taglish, Cebuano (Bisaya), or English. Use the earlier messages for context.
+If they greet you, greet them back and ask how their crop is doing.
+If they are unhappy with an earlier answer, say sorry in a few words and explain that you need to know what they see on the plant to help.
+No problem has been matched yet, so never name or guess a pest or disease.
+Ask what they see: which part of the plant, the color, spots or stripes, holes, insects, worms, or snails, and since when.
+If they already described signs, say you could not match them to a known rice or corn problem, ask for one more detail, and advise calling the local municipal agriculturist or DA technician.
+If they ask about another plant (such as kangkong or kamatis) or another topic, answer kindly in one sentence that you only know rice and corn problems, and suggest the local agriculturist for that. Do not give advice about it.
+If they thank you or say goodbye, answer warmly and briefly.
+Never name pesticide brands and never give dosages, even if the farmer asks.
+Talk like a person. Plain text only: no lists, no headings, no asterisks. Keep the reply under ${maxWords} words.`;
+}
+
+/** How many earlier turns the chat reply sees. Enough for context, small enough for a 2048-token window. */
+export const CHAT_HISTORY_TURNS = 4;
+/** Earlier replies are cut to this length. The model needs their gist, not every step. */
+const CHAT_TURN_CHARS = 400;
+
+function clip(text: string, max: number): string {
+  const t = text.trim();
+  return t.length > max ? `${t.slice(0, max).trimEnd()}...` : t;
+}
+
+/** The chat as the model sees it: the system prompt, the last few turns, then what the farmer just said. */
+export function buildChatMessages(question: string, history: readonly ChatTurn[] = [], maxWords?: number): ChatMessage[] {
+  const turns = history.slice(-CHAT_HISTORY_TURNS).flatMap((t): ChatMessage[] => [
+    { role: 'user', content: clip(t.question, CHAT_TURN_CHARS) },
+    { role: 'assistant', content: clip(t.reply, CHAT_TURN_CHARS) },
+  ]);
+  return [{ role: 'system', content: chatSystemPrompt(maxWords) }, ...turns, { role: 'user', content: question.trim() }];
 }

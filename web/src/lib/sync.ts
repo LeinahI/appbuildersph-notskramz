@@ -24,7 +24,7 @@ export async function syncQueue(hubUrl: string): Promise<{ sent: number; failed:
   let failed = 0;
   for (const q of pending) {
     try {
-      const body: AskRequest = { uid: q.uid, crop: q.crop, text: q.text };
+      const body: AskRequest = { uid: q.uid, crop: q.crop, text: q.text, ...(q.history?.length ? { history: q.history } : {}) };
       const res = await fetch(`${hubUrl}/ask`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

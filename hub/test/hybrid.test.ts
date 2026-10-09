@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NO_SIGNS } from '@ugatan/shared';
 import { createHybridMatcher } from '../src/matchers/hybrid';
 import type { MatchOutcome, Matcher } from '../src/matchers/index';
 
@@ -99,6 +100,13 @@ describe('hybrid matcher with Gemma describing first', () => {
     const englishKeyword = byText('keyword', {});
     const res = await createHybridMatcher(byText('keyword', {}), laya, { describe, englishKeyword }).match(farmer, 'rice');
     expect(res).toEqual({ ids: ['rice-blast'], clear: false, english });
+  });
+
+  it('matches nothing when Gemma finds no sign, instead of letting Laya guess from a greeting', async () => {
+    const laya = byText('laya', { hey: { ids: ['downy-mildew', 'rice-blast'], clear: false } });
+    const res = await createHybridMatcher(byText('keyword', {}), laya, { describe: async () => NO_SIGNS }).match('hey', 'any');
+    expect(res).toEqual({ ids: [], clear: false, noSigns: true });
+    expect(laya.seen).toEqual([]);
   });
 
   it('matches the farmer words when Gemma has nothing or fails', async () => {
