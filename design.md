@@ -48,7 +48,7 @@ Ugatan is a mobile-first, offline-capable adviser for rice and corn farmers. The
 - The textarea has no separate border, starts at 56 px tall, grows with content up to 160 px, and does not allow manual resizing.
 - Put photo and voice actions at the lower left; place the circular leaf-green send action at the lower right. The send action is disabled for blank input.
 - Desktop users with a fine pointer may submit with Enter; Shift+Enter keeps a newline. Mobile Enter keeps its native multiline behavior.
-- Display notices directly below the composer as centered muted status text. Use a live region for these messages.
+- Display ongoing listening status and important errors below the composer as muted live status text. Brief photo/voice availability notices use the shared Sileo toast host.
 
 ## Responsive and accessibility requirements
 
@@ -56,7 +56,18 @@ Ugatan is a mobile-first, offline-capable adviser for rice and corn farmers. The
 - Use responsive type and wrapping rather than truncating translated copy. Preserve 48 px minimum touch targets.
 - Support keyboard operation everywhere. Keep the global `:focus-visible` treatment: 3 px green outline with offset; suppress the textarea's individual outline only because the composer itself supplies the focus state.
 - Use semantic `header`, `main`, `section`, `form`, `label`, and `button` elements. Labels must remain available to screen readers.
-- Keep motion absent; respect reduced-motion preferences.
+- Keep page motion absent. The requested Sileo notifications may animate at standard settings; use their wrapping card layout for reduced motion and enlarged text.
+
+### Notifications
+
+- Use the shared `notify` helper and `ToastHost` for brief event feedback on farmer and admin pages. Keep validation, important failures, progress, and agricultural safety content inline.
+- Toasts inherit display preferences and use localized copy, visible 48 px dismissal targets, and top placement clear of the composer. Brief notices last 10 seconds; errors remain until dismissed.
+- The host follows the active native dialog. Enlarged text, narrow viewports, keyboard focus, high contrast, and reduced motion use a wrapping card rather than fixed SVG geometry.
+
+### Display preferences
+
+- Keep only the labeled size, weight, and contrast choices, reset, and essential save-failure feedback. The settings text is the live preview; do not add a separate preview or explanatory paragraphs.
+- Farmer and admin preference dialogs keep a text-independent outer frame, bounded by the viewport. Text inherits the selected preferences, wraps, and scrolls inside; the close control stays reachable. Do not scale the whole modal or clip enlarged text.
 
 ## Content and localization
 

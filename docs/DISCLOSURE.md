@@ -27,6 +27,8 @@ Model weights are not committed to this repository. `.gitignore` excludes `*.onn
 | `@receptron/laya` | 0.1.2 | hub (matcher, not enabled) | MIT |
 | `@huggingface/tokenizers` | 0.2.0 | Laya dependency | Apache-2.0 |
 | React and React DOM | 18.3.1 | web | MIT |
+| Sileo | 0.1.5 | web (toast notifications) | MIT |
+| Motion and Framer Motion | 12.43.0 | web (Sileo animation dependency) | MIT |
 | Vite | 5.4.11 | web build | MIT |
 | `@vitejs/plugin-react` | 4.3.4 | web build | MIT |
 | TypeScript | 5.6.3 | all packages | Apache-2.0 |

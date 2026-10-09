@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { A } from './copy';
+import { DisplayPreferencesPanel } from '../components/DisplayPreferencesPanel';
+import { DisplayPreferencesIcon } from '../components/DisplayPreferencesIcon';
 import { AdminDialog, AdminIcon, type IconName } from './AdminDialog';
 import { RegistrationDialog } from './RegistrationDialog';
 
@@ -118,7 +120,7 @@ export function Login() {
 
 export function AdminApp() {
   const [page, setPage] = useState<AdminPage>(() => adminPage(typeof window === 'undefined' ? '' : window.location.hash));
-  const [dialog, setDialog] = useState<'registration' | 'menu' | 'help' | 'hub' | null>(null);
+  const [dialog, setDialog] = useState<'registration' | 'menu' | 'help' | 'hub' | 'display' | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     const onHash = () => setPage(adminPage(window.location.hash));
@@ -142,6 +144,7 @@ export function AdminApp() {
       <Navigation page={page} />
       <p className='admin-connection'><AdminIcon name='lock' />{A.disconnected}</p>
       <div className='admin-sidebar-bottom'>
+        <button type='button' className='admin-nav-action' onClick={() => setDialog('display')} aria-haspopup='dialog' aria-controls='admin-display'><DisplayPreferencesIcon /><span>Display preferences</span></button>
         <button type='button' className='admin-nav-action' onClick={() => setDialog('hub')}><AdminIcon name='settings' />{A.hubInfo}</button>
         <button type='button' className='admin-nav-action' onClick={() => setDialog('help')}><AdminIcon name='help' />{A.help}</button>
         <a className='admin-nav-action' href='#login'>{A.login}</a>
@@ -169,11 +172,15 @@ export function AdminApp() {
     </div>
     </div>}
     {dialog === 'registration' && <RegistrationDialog onClose={() => setDialog(null)} />}
-    {dialog === 'menu' && <AdminDialog id='admin-menu' title={A.menuTitle} drawer onClose={() => setDialog(null)}>
+    {dialog === 'menu' && <AdminDialog id='admin-menu' title={A.menuTitle} drawer='left' onClose={() => setDialog(null)}>
       <Navigation page={page} onSelect={() => setDialog(null)} />
+      <button type='button' className='admin-nav-action' onClick={() => setDialog('display')} aria-haspopup='dialog' aria-controls='admin-display'><DisplayPreferencesIcon /><span>Display preferences</span></button>
       <button type='button' className='admin-nav-action' onClick={() => setDialog('hub')}><AdminIcon name='settings' />{A.hubInfo}</button>
       <button type='button' className='admin-nav-action' onClick={() => setDialog('help')}><AdminIcon name='help' />{A.help}</button>
       <a className='admin-nav-action' href='#login' onClick={() => setDialog(null)}>{A.login}</a>
+    </AdminDialog>}
+    {dialog === 'display' && <AdminDialog id='admin-display' title='Display preferences' onClose={() => setDialog(null)}>
+      <DisplayPreferencesPanel language='en' id='admin-display-options' />
     </AdminDialog>}
     {dialog === 'help' && <AdminDialog id='admin-help' title={A.helpTitle} onClose={() => setDialog(null)}>
       <ol className='admin-help-steps'>{A.helpSteps.map((text) => <li key={text}>{text}</li>)}</ol>

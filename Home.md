@@ -18,6 +18,16 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-stable-preferences-dialog]] - removed preference clutter and kept farmer/admin modal frames stable during text resizing; build and 134 frontend tests pass, browser QA remains open
+- [[2026-10-10-sileo-toast-implementation]] - implemented preference-aware Sileo notifications across farmer/admin entries; 132 frontend tests pass, browser QA remains open
+- [[2026-10-10-remove-registration-display-settings]] - removed preference controls from registration drawer; saved appearance still applies, build and 132 frontend tests pass
+- [[2026-10-10-display-preferences-navigation]] - moved preferences to home sliders icon and aligned admin navigation; removed login/help shortcuts, 123 frontend tests pass
+- [[2026-10-10-ui-display-preferences-implementation]] - shared text-size, weight and contrast controls across farmer/admin pages; build and 121 frontend tests pass, rendered QA pending
+
+- [[2026-10-10-toast-display-preferences-approach]] - recommended shared display preferences inherited by toasts, with enlarged-text and motion verification
+- [[2026-10-10-sileo-toast-review]] - reviewed Sileo compatibility and proposed accessible toast scope; no implementation or install
+- [[2026-10-10-ui-display-preferences-recommendations]] - proposed shared text-size, weight, and contrast preferences with local persistence; research only, implementation awaits approval
+- [[2026-10-10-admin-registration-drawer]] - moved admin registration to a responsive right drawer with fixed header and draft protection; build and 106 frontend tests pass, browser QA remains open
 - [[2026-10-09-admin-english-login-chat-fixes]] - translated admin UI to English, aligned the password icon field, removed login preview button, and wired home new-chat to its modal; 102 frontend tests pass
 - [[2026-10-09-admin-frontend]] - built responsive Tagalog admin frontend without an age cutoff or dummy records; build/frontend checks pass, browser QA and hub model checks remain open
 - [[2026-10-09-admin-ui-ux-scope]] - inspected admin Figma frames and proposed responsive pages/dialogs; frontend approval and backend integrations remain pending

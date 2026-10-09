@@ -145,3 +145,27 @@ it('identifies the new-chat control as opening the existing chat dialog', () => 
   newChat?.props.onClick();
   expect(onNewConversation).toHaveBeenCalledOnce();
 });
+
+it('opens display preferences from an accessible header icon without sending or changing the draft', () => {
+  const onTextChange = vi.fn();
+  const onSubmit = vi.fn();
+  const page = HomePage({ ...props('Unsent draft'), onTextChange, onSubmit });
+  const control = findElement(page, (element) => element.props['aria-label'] === 'Teksto at display');
+  const dialog = findElement(page, (element) => element.type === 'dialog' && element.props.id === 'ugatan-display-dialog');
+  expect(control).toBeDefined();
+  expect(dialog).toBeDefined();
+  const showModal = vi.fn();
+  (dialog as ReactElement & { ref: { current: unknown } }).ref.current = { showModal };
+  expect(control?.props['aria-controls']).toBe('ugatan-display-dialog');
+  expect(control?.props['aria-haspopup']).toBe('dialog');
+  control?.props.onClick();
+  expect(showModal).toHaveBeenCalledOnce();
+  expect(onTextChange).not.toHaveBeenCalled();
+  expect(onSubmit).not.toHaveBeenCalled();
+  expect(findElement(page, (element) => element.props.id === 'ugatan-question')?.props.value).toBe('Unsent draft');
+  const html = renderToStaticMarkup(page);
+  expect(html).toContain('aria-labelledby="ugatan-display-heading"');
+  expect(html).toContain('aria-label="Isara ang mga setting ng display"');
+  expect(html).toContain('method="dialog"');
+  expect(html).toContain('Laki ng teksto');
+});

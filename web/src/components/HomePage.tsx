@@ -1,6 +1,8 @@
 import { useEffect, useRef, type FormEvent, type ReactNode } from 'react';
 import { DEFAULT_UI_LANGUAGE, type Labels } from '../config/labels';
 import { VoiceInput } from './VoiceInput';
+import { DisplayPreferencesIcon } from './DisplayPreferencesIcon';
+import { DisplayPreferencesPanel } from './DisplayPreferencesPanel';
 
 export interface HomePageProps {
   labels: Labels;
@@ -18,6 +20,7 @@ export interface HomePageProps {
 
 export function HomePage(props: HomePageProps) {
   const textarea = useRef<HTMLTextAreaElement>(null);
+  const displayDialog = useRef<HTMLDialogElement>(null);
   const { labels } = props;
 
   useEffect(() => {
@@ -40,25 +43,31 @@ export function HomePage(props: HomePageProps) {
   return (
     <div className='chat-shell'>
       <header className='chat-header relative'>
-        <button
-          type='button'
-          className='chat-icon-button'
-          aria-label={labels.historyLabel}
-          title={labels.historyLabel}
-          aria-haspopup='dialog'
-          aria-controls='ugatan-history-dialog'
-          onClick={props.onHistory}
-        >
-          <img className='size-6' src='/home/history.svg' alt='' />
-        </button>
+        <div className='flex shrink-0 items-center gap-1'>
+          <button
+            type='button'
+            className='chat-icon-button'
+            aria-label={labels.historyLabel}
+            title={labels.historyLabel}
+            aria-haspopup='dialog'
+            aria-controls='ugatan-history-dialog'
+            onClick={props.onHistory}
+          >
+            <img className='size-6' src='/home/history.svg' alt='' />
+          </button>
+          <button type='button' className='chat-icon-button' aria-label='Teksto at display' title='Teksto at display'
+            aria-haspopup='dialog' aria-controls='ugatan-display-dialog' onClick={() => displayDialog.current?.showModal()}>
+            <DisplayPreferencesIcon />
+          </button>
+        </div>
         <img
-          className='h-16 w-auto max-w-[120px] object-contain sm:max-w-[160px] md:absolute md:left-1/2 md:-translate-x-1/2'
+          className='h-[64px] w-auto max-w-[120px] object-contain sm:max-w-[160px] md:absolute md:left-1/2 md:-translate-x-1/2'
           src='/UgatanLogo.png'
           width={3504}
           height={1827}
           alt={labels.appName}
         />
-        <div className='flex items-center gap-1 md:ml-auto'>
+        <div className='flex shrink-0 items-center gap-1 md:ml-auto'>
           <button
             type='button'
             className='chat-icon-button bg-leaf-soft'
@@ -90,13 +99,13 @@ export function HomePage(props: HomePageProps) {
         ) : (
           <section className='chat-content flex flex-1 flex-col items-center justify-center py-10 text-center'>
             <img
-              className='mb-6 h-24 w-auto max-w-full object-contain md:h-28'
+              className='mb-6 h-[96px] w-auto max-w-full object-contain md:h-[112px]'
               src='/UgatanLogoIcon.svg'
               width={4763}
               height={4880}
               alt=''
             />
-            <h1 className='m-0 font-display text-[28px] font-extrabold leading-[1.4] tracking-[-1px] md:text-[40px]'>
+            <h1 className='m-0 font-display text-[1.75rem] font-extrabold leading-[1.4] tracking-[-0.035em] md:text-[2.5rem]'>
               {labels.introTitle}
             </h1>
             <p className='mb-0 mt-4 max-w-[420px] text-base leading-7 text-mist md:text-lg'>
@@ -160,6 +169,19 @@ export function HomePage(props: HomePageProps) {
           <p className='chat-notice' role='status'>{props.notice}</p>
         </div>
       </footer>
+      <dialog ref={displayDialog} id='ugatan-display-dialog' className='chat-dialog' aria-labelledby='ugatan-display-heading'>
+        <div className='mb-3 flex items-center justify-between gap-3'>
+          <h2 id='ugatan-display-heading' className='m-0 text-xl font-bold'>Teksto at display</h2>
+          <form method='dialog'>
+            <button type='submit' className='chat-icon-button' aria-label='Isara ang mga setting ng display' title='Isara ang mga setting ng display'>
+              <svg className='size-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.7' strokeLinecap='round' aria-hidden='true'>
+                <path d='m6 6 12 12M6 18 18 6' />
+              </svg>
+            </button>
+          </form>
+        </div>
+        <DisplayPreferencesPanel language='tl' id='farmer-display' />
+      </dialog>
     </div>
   );
 }

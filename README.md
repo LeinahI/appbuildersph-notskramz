@@ -46,6 +46,18 @@ This is frontend only: login, registration persistence, ID reading, duplicate ch
 
 Manual registration supports consent, draft validation, review, editing, and explicit discard. There is no minimum-age eligibility rule. Drafts live in memory and are lost on reload; the browser is asked to warn before leaving an unfinished draft. Record and QR previews do not create accounts or grant access.
 
+## Text and display preferences
+
+Open the sliders icon beside history on the farmer page (**Teksto at display**), or **Display preferences** from the admin sidebar/mobile menu. Login and the registration drawer have no preference controls; both still inherit saved preferences. Choose Standard/Large/Extra large text (100/125/150%), Regular/Stronger weight, and Automatic/High contrast. Changes apply immediately to both entries; Automatic follows the device contrast preference. Reset restores the defaults.
+
+Preferences are saved only in this browser on this origin and shared with its other Ugatan tabs. On a shared computer, the next operator inherits them. If storage is blocked, the controls still work for the current page and explain that saving is unavailable. Changing appearance does not alter AI language, reload a chat, save a registration, or store personal information. Browser zoom and forced-color accessibility modes remain available.
+
+## Toast messages
+
+Farmer and admin pages share Sileo notifications for photo/voice availability, display-preference resets, and explicitly discarded registration drafts. Brief notices last 10 seconds; voice errors stay until dismissed. Use **Isara** or **Close** to dismiss a toast. Question-save errors, AI-request failures, listening progress, and registration validation remain inline.
+
+Toasts inherit saved text size, weight, and contrast. Larger text, narrow screens, keyboard focus, and system accessibility preferences use a wrapping card layout. Notifications move inside the active native dialog so its backdrop does not hide or disable them. No notification confirms an unimplemented backend operation.
+
 ## Run the hub
 
 The hub runs on a laptop on the same Wi-Fi as the phones.

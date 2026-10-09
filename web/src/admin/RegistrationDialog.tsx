@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { A } from './copy';
+import { notify } from '../components/ToastHost';
 import { AdminDialog, AdminIcon } from './AdminDialog';
 import { emptyDraft, fields, hasDraft, validateDraft, type Draft, type DraftErrors, type Method } from './registration';
 
@@ -86,12 +87,15 @@ export function RegistrationDialog({ onClose }: { onClose: () => void }) {
   }[step];
 
   return (
-    <AdminDialog id='admin-registration' title={title} wide={!discarding && step === 'details'} icon={!discarding && step === 'method' ? 'registration' : undefined} onClose={requestClose}>
+    <AdminDialog id='admin-registration' title={title} drawer='right' icon={!discarding && step === 'method' ? 'registration' : undefined} onClose={requestClose}>
       {discarding ? <>
         <p className='admin-description'>{A.discardDescription}</p>
         <div className='admin-actions'>
           <button type='button' className='btn btn-secondary' onClick={() => setDiscarding(false)}>{A.keepDraft}</button>
-          <button type='button' className='btn' onClick={onClose}>{A.discard}</button>
+          <button type='button' className='btn' onClick={() => {
+            onClose();
+            notify({ title: A.draftDiscarded, description: A.draftDiscardedNotice, type: 'success', language: 'en' });
+          }}>{A.discard}</button>
         </div>
       </> : step === 'method' ? <>
         <p className='admin-description'>{A.methodDescription}</p>

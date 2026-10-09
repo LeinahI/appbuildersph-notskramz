@@ -3,6 +3,7 @@
 @theme {
   --font-sans: 'DM Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: 'Manrope Variable', 'DM Sans Variable', system-ui, sans-serif;
+  --color-paper: #ffffff;
   --color-field: #e9ede5;
   --color-canvas: #e9ede5;
   --color-surface: #fafbf7;
@@ -12,9 +13,9 @@
   --color-sprout: #f1f5eb;
   --color-sprout-line: #dce6d1;
   --color-rule: #e1e6da;
-  --color-line: #d9e1d1;
-  --color-mist: #6f7c65;
-  --color-muted: #75846b;
+  --color-line: #788872;
+  --color-mist: #51654a;
+  --color-muted: #526447;
   --color-label: #395737;
   --color-warn: #fff6e0;
 }
@@ -28,7 +29,7 @@
 
   html {
     min-height: 100%;
-    background: #e9ede5;
+    background: var(--color-canvas);
   }
 
   body {
@@ -52,7 +53,7 @@
   }
 
   :focus-visible {
-    outline: 3px solid #6b8b50;
+    outline: 3px solid var(--color-leaf);
     outline-offset: 3px;
   }
 }
@@ -84,7 +85,7 @@
   }
 
   .chat-composer {
-    @apply rounded-[26px] border border-line bg-white p-3 shadow-[0_2px_12px_rgba(43,66,43,0.04)] md:p-4;
+    @apply rounded-[26px] border border-line bg-paper p-3 shadow-[0_2px_12px_rgba(43,66,43,0.04)] md:p-4;
   }
 
   .chat-composer:focus-within {
@@ -102,7 +103,7 @@
   }
 
   .chat-icon-button {
-    @apply grid size-12 shrink-0 place-items-center rounded-full text-leaf hover:bg-leaf-soft;
+    @apply grid size-[48px] shrink-0 place-items-center rounded-full text-leaf hover:bg-leaf-soft;
   }
 
   .chat-icon-button[aria-pressed='true'] {

@@ -5,12 +5,14 @@ import { AdminApp, Login, adminPage } from '../src/admin/AdminApp';
 import { AdminDialog } from '../src/admin/AdminDialog';
 import { RegistrationDialog, QrInvitation } from '../src/admin/RegistrationDialog';
 import { A } from '../src/admin/copy';
+import { setDisplayPreferences, resetDisplayPreferences } from '../src/config/displayPreferences';
 import { emptyDraft, fields, hasDraft, validateDraft } from '../src/admin/registration';
+import { sileo } from 'sileo';
 
-const hooks = vi.hoisted(() => ({ slots: [] as unknown[], index: 0 }));
+const hooks = vi.hoisted(() => ({ slots: [] as unknown[], index: 0, effects: [] as (() => void)[] }));
 vi.mock('react', async (importOriginal) => ({
   ...await importOriginal<typeof import('react')>(),
-  useEffect: () => {},
+  useEffect: (effect: () => void) => { hooks.effects.push(effect); },
   useRef: () => ({ current: null }),
   useState: (initial: unknown) => {
     const index = hooks.index++;
@@ -48,7 +50,7 @@ function submitReview() {
   find(wizard(), (element) => element.type === 'form').props.onSubmit({ preventDefault: vi.fn() });
 }
 beforeEach(() => {
-  hooks.slots = []; hooks.index = 0; onClose.mockClear();
+  hooks.slots = []; hooks.index = 0; hooks.effects = []; onClose.mockClear();
   vi.stubGlobal('requestAnimationFrame', vi.fn());
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -135,6 +137,67 @@ describe('admin pages and backend boundaries', () => {
 });
 
 describe('registration draft interactions', () => {
+  it('announces an explicitly discarded draft without claiming registration succeeded', () => {
+    const success = vi.spyOn(sileo, 'success');
+    fillDraft();
+    wizard().props.onClose();
+    button(wizard(), A.discard).props.onClick();
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ title: 'Draft discarded' }));
+    expect(onClose).toHaveBeenCalledOnce();
+    success.mockRestore();
+    sileo.clear();
+  });
+
+  it('keeps every registration step in the same right-hand drawer', () => {
+    expect(wizard().props.drawer).toBe('right');
+    fillDraft();
+    expect(wizard().props.drawer).toBe('right');
+    submitReview();
+    expect(wizard().props.drawer).toBe('right');
+    button(wizard(), A.previewRecord).props.onClick();
+    expect(wizard().props.drawer).toBe('right');
+    find(wizard(), (element) => typeof element.props.onQr === 'function').props.onQr();
+    expect(wizard().props.drawer).toBe('right');
+    wizard().props.onClose();
+    expect(wizard().props.drawer).toBe('right');
+    expect(button(wizard(), A.discard)).toBeDefined();
+  });
+  it('separates the right drawer header from its scrollable content without changing other dialogs', () => {
+    const content = <p>Drawer content</p>;
+    const drawer = AdminDialog({ id: 'drawer-test', title: A.detailsTitle, drawer: 'right', onClose, children: content });
+    expect(drawer.props.className).toContain('admin-drawer-right');
+    expect(drawer.props['aria-labelledby']).toBe('drawer-test-heading');
+    expect(find(drawer, (element) => element.props.className === 'admin-drawer-content').props.children).toBe(content);
+    const modal = AdminDialog({ id: 'help-test', title: A.help, onClose, children: content });
+    expect(modal.props.className).toBe('admin-dialog');
+    const navigation = AdminDialog({ id: 'menu-test', title: A.menuTitle, drawer: 'left', onClose, children: content });
+    expect(navigation.props.className).toContain('admin-drawer-left');
+    expect(navigation.props.className).not.toContain('admin-drawer-right');
+  });
+  it('routes Escape through discard protection and retains entered values when dismissed', () => {
+    fillDraft();
+    const drawer = AdminDialog(wizard().props);
+    const preventDefault = vi.fn();
+    drawer.props.onCancel({ preventDefault });
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(wizard().props.drawer).toBe('right');
+    button(wizard(), A.keepDraft).props.onClick();
+    expect(find(wizard(), (element) => element.props.id === 'registration-fullName').props.value).toBe(complete.fullName);
+  });
+  it('returns the drawer content to the top and focuses its heading on a step change', () => {
+    const drawer = AdminDialog({ id: 'step-test', title: A.reviewTitle, drawer: 'right', onClose, children: null });
+    const body = find(drawer, (element) => element.props.className === 'admin-drawer-content') as ReactElement & { ref: { current: unknown } | null };
+    const heading = find(drawer, (element) => element.type === 'h2') as ReactElement & { ref: { current: unknown } };
+    expect(body.ref).not.toBeNull();
+    const scroll = { scrollTop: 200 };
+    const focus = vi.fn();
+    body.ref!.current = scroll;
+    heading.ref.current = { focus };
+    hooks.effects.at(-1)?.();
+    expect(scroll.scrollTop).toBe(0);
+    expect(focus).toHaveBeenCalledOnce();
+  });
   it('starts with an unchecked consent and no sample values', () => {
     const manual = find(wizard(), (element) => element.type === 'button' && renderToStaticMarkup(element).includes(A.manualHint));
     manual.props.onClick();
@@ -191,5 +254,50 @@ describe('registration draft interactions', () => {
     button(wizard(), A.scanFallback).props.onClick();
     expect(button(wizard(), A.review).props.disabled).toBe(false);
     expect(find(wizard(), (element) => element.props.id === 'registration-consent').props.checked).toBe(false);
+  });
+});
+
+describe('display preference entry points and draft safety', () => {
+  it('keeps display preferences out of the login page', () => {
+    const html = renderToStaticMarkup(Login());
+    expect(html).not.toContain('Text &amp; display');
+    expect(html).not.toContain('Display preferences');
+    expect(html).not.toContain('aria-controls="admin-display"');
+  });
+  it('opens a labelled display dialog from the desktop workspace', () => {
+    vi.stubGlobal('window', { location: { hash: '#overview' } });
+    let view = AdminApp();
+    const control = find(view, (element) => element.type === 'button' && element.props['aria-controls'] === 'admin-display');
+    expect(control.props.className).toBe('admin-nav-action');
+    expect(renderToStaticMarkup(control)).toContain('Display preferences');
+    expect(renderToStaticMarkup(control)).toContain('<svg');
+    control.props.onClick();
+    hooks.index = 0; view = AdminApp();
+    expect(find(view, (element) => element.props.id === 'admin-display').props.title).toBe('Display preferences');
+  });
+
+  it('uses the same labelled icon and action in the mobile admin menu', () => {
+    vi.stubGlobal('window', { location: { hash: '#overview' } });
+    button(AdminApp(), A.menu).props.onClick();
+    hooks.index = 0;
+    const menu = find(AdminApp(), (element) => element.props.id === 'admin-menu');
+    const control = find(menu, (element) => element.type === 'button' && element.props['aria-controls'] === 'admin-display');
+    expect(renderToStaticMarkup(control)).toContain('Display preferences');
+    expect(renderToStaticMarkup(control)).toContain('<svg');
+    control.props.onClick();
+    hooks.index = 0;
+    expect(find(AdminApp(), (element) => element.props.id === 'admin-display').props.title).toBe('Display preferences');
+  });
+  it('keeps an in-progress registration when display preferences change', () => {
+    fillDraft();
+    const before = wizard();
+    expect(renderToStaticMarkup(before)).not.toContain('Text &amp; display');
+    expect(renderToStaticMarkup(before)).not.toContain('registration-display');
+    setDisplayPreferences({ textSize: 'extra-large', textWeight: 'stronger', contrast: 'high' });
+    expect(find(wizard(), (element) => element.props.id === 'registration-fullName').props.value).toBe(complete.fullName);
+    submitReview();
+    expect(renderToStaticMarkup(wizard())).toContain(complete.fullName);
+    expect(onClose).not.toHaveBeenCalled();
+    resetDisplayPreferences();
   });
 });

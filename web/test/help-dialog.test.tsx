@@ -24,6 +24,8 @@ describe('Tagalog help dialog', () => {
     expect(html).toContain('Basahin ang gabay');
     expect((html.match(/<li /g) ?? []).length).toBe(3);
     expect(html).toContain('aria-label="Isara ang tulong"');
+    expect(html).not.toContain('Teksto at display');
+    expect(html).not.toContain('<fieldset');
     expect((html.match(/method="dialog"/g) ?? []).length).toBe(1);
   });
 

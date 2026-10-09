@@ -7,6 +7,7 @@ import {
 } from '@ugatan/shared';
 import { AnswerView } from './components/AnswerView';
 import { HomePage } from './components/HomePage';
+import { notify } from './components/ToastHost';
 import { HelpDialog } from './components/HelpDialog';
 import { ConversationDialog } from './components/ConversationDialog';
 import { KNOWLEDGE, KNOWLEDGE_BY_ID } from './config/knowledge';
@@ -177,6 +178,14 @@ export default function App() {
     }
   }
 
+  function voiceNotice(message: string) {
+    if (!message || message === labels.voiceListening) setNotice(message);
+    else {
+      setNotice('');
+      notify({ title: labels.voiceStart, description: message, type: 'error' });
+    }
+  }
+
   const explanation = currentRecord?.explanation ?? null;
   const explanationStatus = currentRecord?.explanationStatus;
   const waitingForHub = !!currentRecord && currentRecord.status === 'queued' && !phoneAi.ready;
@@ -213,8 +222,8 @@ export default function App() {
         onHistory={showHistory}
         onHelp={() => helpDialog.current?.showModal()}
         onNewConversation={showHistory}
-        onPhoto={() => setNotice(labels.photoUnavailable)}
-        onNotice={setNotice}
+        onPhoto={() => notify({ title: labels.photoButton, description: labels.photoUnavailable })}
+        onNotice={voiceNotice}
       >
         {answer}
       </HomePage>

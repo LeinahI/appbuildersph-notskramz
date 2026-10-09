@@ -190,6 +190,15 @@
   },
   "active": "3e0a5b422b1ff231",
   "lastOpenFiles": [
+    "2026-10-10-stable-preferences-dialog.md",
+    "2026-10-10-sileo-toast-implementation.md",
+    "2026-10-10-remove-registration-display-settings.md",
+    "2026-10-10-display-preferences-navigation.md",
+    "2026-10-10-ui-display-preferences-implementation.md",
+    "2026-10-10-toast-display-preferences-approach.md",
+    "2026-10-10-sileo-toast-review.md",
+    "2026-10-10-ui-display-preferences-recommendations.md",
+    "2026-10-10-admin-registration-drawer.md",
     "2026-10-09-admin-english-login-chat-fixes.md",
     "2026-10-09-admin-frontend.md",
     "2026-10-09-admin-ui-ux-scope.md",
@@ -206,13 +215,6 @@
     "2026-10-09-gemma-llamacpp-speed.md",
     "2026-10-09-laya-webgpu-speed.md",
     "2026-10-09-push-all-to-main.md",
-    "2026-10-09-ui-stack-evaluation.md",
-    "2026-10-09-sync-local-model-paths.md",
-    "2026-10-09-ugatan-home-page-implementation.md",
-    "2026-10-09-ugatan-home-page-plan.md",
-    "2026-10-09-readme-local-ai-setup.md",
-    "2026-10-09-multilingual-matching.md",
-    "2026-10-09-backend-recommendation.md",
-    "2026-10-09-laya-option-text-fix.md"
+    "2026-10-09-ui-stack-evaluation.md"
   ]
 }

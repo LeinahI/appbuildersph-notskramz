@@ -9,25 +9,28 @@ export function AdminIcon({ name }: { name: IconName }) {
   return <img className='shrink-0' src={'/admin/' + name + '.svg'} alt='' />;
 }
 
-export function AdminDialog({ id, title, children, onClose, wide = false, drawer = false, icon }: {
+export function AdminDialog({ id, title, children, onClose, drawer, icon }: {
   id: string;
   title: string;
   children: ReactNode;
   onClose: () => void;
-  wide?: boolean;
-  drawer?: boolean;
+  drawer?: 'left' | 'right';
   icon?: IconName;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = dialog.current;
     element?.showModal();
     return () => element?.close();
   }, []);
-  useEffect(() => { heading.current?.focus(); }, [title]);
+  useEffect(() => {
+    heading.current?.focus();
+    if (content.current) content.current.scrollTop = 0;
+  }, [title]);
   return (
-    <dialog ref={dialog} id={id} className={'admin-dialog' + (wide ? ' admin-dialog-wide' : '') + (drawer ? ' admin-drawer' : '')}
+    <dialog ref={dialog} id={id} className={'admin-dialog' + (drawer ? ' admin-drawer-' + drawer : '')}
       aria-labelledby={id + '-heading'} onCancel={(event) => { event.preventDefault(); onClose(); }}>
       <header className='admin-dialog-header'>
         <div>
@@ -38,7 +41,7 @@ export function AdminDialog({ id, title, children, onClose, wide = false, drawer
           <AdminIcon name='close' />
         </button>
       </header>
-      {children}
+      {drawer === 'right' ? <div ref={content} className='admin-drawer-content'>{children}</div> : children}
     </dialog>
   );
 }

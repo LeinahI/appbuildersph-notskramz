@@ -112,6 +112,8 @@ export const A = {
   discardTitle: 'Discard this draft?',
   discardDescription: 'The entered details will be lost. Nothing has been saved.',
   discard: 'Discard draft',
+  draftDiscarded: 'Draft discarded',
+  draftDiscardedNotice: 'The unsaved registration draft was discarded.',
   keepDraft: 'Keep editing',
   hubName: 'Hub name',
   location: 'Location',

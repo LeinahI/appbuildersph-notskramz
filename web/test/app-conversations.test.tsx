@@ -1,9 +1,11 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
+import { setDisplayPreferences, resetDisplayPreferences } from '../src/config/displayPreferences';
 import { AnswerView } from '../src/components/AnswerView';
 import { KNOWLEDGE } from '../src/config/knowledge';
 import type { QueuedQuestion } from '../src/lib/db';
+import { sileo } from 'sileo';
 
 const hooks = vi.hoisted(() => ({ slots: [] as unknown[], index: 0 }));
 const storage = vi.hoisted(() => ({
@@ -68,9 +70,38 @@ beforeEach(() => {
   storage.newId.mockReset().mockReturnValue('new-question');
   vi.stubGlobal('requestAnimationFrame', vi.fn());
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); sileo.clear(); });
 
 describe('new and saved conversation actions', () => {
+  it('shows a toast for photo input without changing the draft or submitting', () => {
+    const info = vi.spyOn(sileo, 'info');
+    renderApp().home.props.onTextChange('Unsent question');
+    renderApp().home.props.onPhoto();
+    expect(info).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Larawan', description: expect.stringContaining('Ilarawan muna'),
+    }));
+    expect(renderApp().home.props.text).toBe('Unsent question');
+    expect(renderApp().home.props.notice).toBe('');
+    expect(storage.add).not.toHaveBeenCalled();
+    info.mockRestore();
+    sileo.clear();
+  });
+
+  it('keeps voice listening inline and shows a toast for unavailable voice input', () => {
+    const error = vi.spyOn(sileo, 'error');
+    const { home } = renderApp();
+    home.props.onNotice('Nakikinig… Magsalita tungkol sa iyong pananim.');
+    expect(renderApp().home.props.notice).toContain('Nakikinig');
+    expect(error).not.toHaveBeenCalled();
+    home.props.onNotice('Hindi magamit ang mikropono. Suriin ang pahintulot o i-type ang iyong tanong.');
+    expect(error).toHaveBeenCalledWith(expect.objectContaining({
+      description: expect.stringContaining('Hindi magamit ang mikropono'),
+    }));
+    expect(renderApp().home.props.notice).toBe('');
+    error.mockRestore();
+    sileo.clear();
+  });
+
   it('reopens the saved answer without another submission or model request', () => {
     renderApp().dialog.props.onSelect(saved);
     const { home } = renderApp();
@@ -146,5 +177,22 @@ describe('new and saved conversation actions', () => {
     finishRead(saved);
     await Promise.resolve();
     expect(find(renderApp().home.props.children, AnswerView)?.props.explanation).toBe(other.explanation);
+  });
+});
+
+describe('display preferences do not reset chat state', () => {
+  it('preserves a saved answer, unsent text and the component key', () => {
+    vi.stubGlobal('document', { documentElement: { dataset: {} } });
+    vi.stubGlobal('window', { localStorage: { setItem: vi.fn() } });
+    renderApp().dialog.props.onSelect(saved);
+    renderApp().home.props.onTextChange('Unsent question');
+    const before = renderApp().home;
+    setDisplayPreferences({ textSize: 'extra-large', textWeight: 'stronger', contrast: 'high' });
+    const after = renderApp().home;
+    expect(after.key).toBe(before.key);
+    expect(after.props.text).toBe('Unsent question');
+    expect(find(after.props.children, AnswerView)?.props.explanation).toBe(saved.explanation);
+    expect(storage.add).not.toHaveBeenCalled();
+    resetDisplayPreferences();
   });
 });
