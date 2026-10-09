@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 
 export type MatcherName = 'keyword' | 'laya' | 'hybrid';
 export type ExplainerName = 'off' | 'gemma';
+export type GemmaRuntime = 'llamacpp' | 'onnx';
 
 export interface HubConfig {
   host: string;
@@ -20,26 +21,39 @@ export interface HubConfig {
   layaConfidenceThreshold: number | null;
   /** If Laya fails to load, answer with keyword matching instead of stopping the hub. */
   layaFallbackToKeyword: boolean;
-  /** Local Gemma 4 ONNX folder (GEMMA_MODEL_DIR). Required when the explainer is gemma. */
+  /** How Gemma runs (GEMMA_RUNTIME). llamacpp uses the GPU and is the default. onnx is the slower CPU route. */
+  gemmaRuntime: GemmaRuntime;
+  /** Gemma 4 GGUF file (GEMMA_GGUF). Required for the llamacpp runtime. */
+  gemmaGguf: string | null;
+  /** Local Gemma 4 ONNX folder (GEMMA_MODEL_DIR). Required for the onnx runtime. */
   gemmaModelDir: string | null;
-  /** ONNX weight variant (GEMMA_DTYPE). q4f16 is the default. */
+  /** ONNX weight variant (GEMMA_DTYPE), onnx runtime only. q4f16 is the default. */
   gemmaDtype: string;
-  /** onnxruntime device (GEMMA_DEVICE). cpu is the tested route. */
+  /** onnxruntime device (GEMMA_DEVICE), onnx runtime only. cpu is the tested route. */
   gemmaDevice: string;
   /** Cap on generated tokens per answer (GEMMA_MAX_NEW_TOKENS). */
   gemmaMaxNewTokens: number;
+  /** Word limit the prompt asks for (GEMMA_MAX_WORDS). Shorter than the phone's 150 to save time. */
+  gemmaMaxWords: number;
   /** Folder for the pilot logs (JSON lines). Keep it off git. */
   logDir: string;
 }
 
 const MATCHERS: readonly MatcherName[] = ['keyword', 'laya', 'hybrid'];
 const EXPLAINERS: readonly ExplainerName[] = ['off', 'gemma'];
+const GEMMA_RUNTIMES: readonly GemmaRuntime[] = ['llamacpp', 'onnx'];
 
 function optionalNumber(name: string, raw: string | undefined): number | null {
   const trimmed = raw?.trim();
   if (!trimmed) return null;
   const n = Number(trimmed);
   if (!Number.isFinite(n)) throw new Error(`${name} must be a number. Got "${trimmed}".`);
+  return n;
+}
+
+function positiveInteger(name: string, raw: string | undefined, fallback: number): number {
+  const n = optionalNumber(name, raw) ?? fallback;
+  if (!Number.isInteger(n) || n < 1) throw new Error(`${name} must be a positive whole number. Got "${raw}".`);
   return n;
 }
 
@@ -67,14 +81,20 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
     }
   }
 
+  const gemmaRuntime = (env.GEMMA_RUNTIME ?? 'llamacpp') as GemmaRuntime;
+  if (!GEMMA_RUNTIMES.includes(gemmaRuntime)) {
+    throw new Error(`GEMMA_RUNTIME must be one of ${GEMMA_RUNTIMES.join(', ')}. Got "${gemmaRuntime}".`);
+  }
+  const gemmaGguf = env.GEMMA_GGUF ? resolve(cwd, env.GEMMA_GGUF) : null;
   const gemmaModelDir = env.GEMMA_MODEL_DIR ? resolve(cwd, env.GEMMA_MODEL_DIR) : null;
-  if (explainer === 'gemma' && gemmaModelDir === null) {
-    throw new Error('HUB_EXPLAINER=gemma needs GEMMA_MODEL_DIR, the folder of the Gemma 4 ONNX model.');
+  if (explainer === 'gemma' && gemmaRuntime === 'llamacpp' && gemmaGguf === null) {
+    throw new Error('HUB_EXPLAINER=gemma with GEMMA_RUNTIME=llamacpp needs GEMMA_GGUF, the Gemma 4 .gguf file.');
   }
-  const gemmaMaxNewTokens = optionalNumber('GEMMA_MAX_NEW_TOKENS', env.GEMMA_MAX_NEW_TOKENS) ?? 150;
-  if (!Number.isInteger(gemmaMaxNewTokens) || gemmaMaxNewTokens < 1) {
-    throw new Error(`GEMMA_MAX_NEW_TOKENS must be a positive whole number. Got "${env.GEMMA_MAX_NEW_TOKENS}".`);
+  if (explainer === 'gemma' && gemmaRuntime === 'onnx' && gemmaModelDir === null) {
+    throw new Error('HUB_EXPLAINER=gemma with GEMMA_RUNTIME=onnx needs GEMMA_MODEL_DIR, the folder of the Gemma 4 ONNX model.');
   }
+  const gemmaMaxNewTokens = positiveInteger('GEMMA_MAX_NEW_TOKENS', env.GEMMA_MAX_NEW_TOKENS, 128);
+  const gemmaMaxWords = positiveInteger('GEMMA_MAX_WORDS', env.GEMMA_MAX_WORDS, 70);
 
   const port = Number(env.HUB_PORT ?? 8787);
   if (!Number.isInteger(port) || port < 0 || port > 65535) {
@@ -92,10 +112,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
     layaPassMark,
     layaConfidenceThreshold,
     layaFallbackToKeyword: (env.HUB_LAYA_FALLBACK ?? 'keyword') === 'keyword',
+    gemmaRuntime,
+    gemmaGguf,
     gemmaModelDir,
     gemmaDtype: env.GEMMA_DTYPE ?? 'q4f16',
     gemmaDevice: env.GEMMA_DEVICE ?? 'cpu',
     gemmaMaxNewTokens,
+    gemmaMaxWords,
     logDir: resolve(cwd, env.HUB_LOG_DIR ?? 'logs'),
   };
 }

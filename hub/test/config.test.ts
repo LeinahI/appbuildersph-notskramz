@@ -47,18 +47,29 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ HUB_EXPLAINER: 'cloud' })).toThrow(/HUB_EXPLAINER/);
   });
 
-  it('refuses the gemma explainer without a model folder', () => {
-    expect(() => loadConfig({ HUB_EXPLAINER: 'gemma' }, '/repo/hub')).toThrow(/GEMMA_MODEL_DIR/);
+  it('refuses the gemma explainer without a model file for its runtime', () => {
+    expect(() => loadConfig({ HUB_EXPLAINER: 'gemma' }, '/repo/hub')).toThrow(/GEMMA_GGUF/);
+    expect(() => loadConfig({ HUB_EXPLAINER: 'gemma', GEMMA_RUNTIME: 'onnx' }, '/repo/hub')).toThrow(/GEMMA_MODEL_DIR/);
+    expect(() => loadConfig({ GEMMA_RUNTIME: 'tpu' })).toThrow(/GEMMA_RUNTIME/);
   });
 
-  it('reads the Gemma settings, with the tested route as the default', () => {
-    const c = loadConfig({ HUB_EXPLAINER: 'gemma', GEMMA_MODEL_DIR: '/models/gemma' }, '/repo/hub');
+  it('reads the Gemma settings, with llama.cpp and short answers as the default', () => {
+    const c = loadConfig({ HUB_EXPLAINER: 'gemma', GEMMA_GGUF: '/models/gemma.gguf' }, '/repo/hub');
     expect(c.explainer).toBe('gemma');
+    expect(c.gemmaRuntime).toBe('llamacpp');
+    expect(c.gemmaGguf).toBe(resolve('/repo/hub', '/models/gemma.gguf'));
+    expect(c.gemmaMaxNewTokens).toBe(128);
+    expect(c.gemmaMaxWords).toBe(70);
+    expect(() => loadConfig({ GEMMA_MAX_NEW_TOKENS: '0' })).toThrow(/GEMMA_MAX_NEW_TOKENS/);
+    expect(() => loadConfig({ GEMMA_MAX_WORDS: '2.5' })).toThrow(/GEMMA_MAX_WORDS/);
+  });
+
+  it('reads the ONNX route settings', () => {
+    const c = loadConfig({ HUB_EXPLAINER: 'gemma', GEMMA_RUNTIME: 'onnx', GEMMA_MODEL_DIR: '/models/gemma' }, '/repo/hub');
+    expect(c.gemmaRuntime).toBe('onnx');
     expect(c.gemmaModelDir).toBe(resolve('/repo/hub', '/models/gemma'));
     expect(c.gemmaDtype).toBe('q4f16');
     expect(c.gemmaDevice).toBe('cpu');
-    expect(c.gemmaMaxNewTokens).toBe(150);
-    expect(() => loadConfig({ GEMMA_MAX_NEW_TOKENS: '0' })).toThrow(/GEMMA_MAX_NEW_TOKENS/);
   });
 
   it('puts the Laya cache under LAYA_CACHE, resolved from the working folder', () => {

@@ -69,14 +69,25 @@ Laya fits all answer options of a question into 192 tokens and silently cuts eac
 
 ## Gemma on the hub
 
-The hub can write the Taglish explanation with a local Gemma 4 ONNX model (E2B tested). Nothing is downloaded when `GEMMA_MODEL_DIR` is set. Put these in `hub/.env`:
+The hub can write the Taglish explanation with a local Gemma 4 E2B model. The default route runs a GGUF file through llama.cpp (`node-llama-cpp`) on the GPU: about 1 to 2 s per answer on the dev laptop (RTX 4060, Vulkan). Download the model once (Q4_0, about 2.8 GB, Apache-2.0):
+
+```
+cd hub
+npx node-llama-cpp pull --dir E:/models/gemma-4-E2B-it-GGUF hf:ggml-org/gemma-4-E2B-it-GGUF:Q4_0
+```
+
+Then put these in `hub/.env`:
 
 ```
 HUB_EXPLAINER=gemma
-GEMMA_MODEL_DIR=E:/models/gemma-4-E2B-it-ONNX
+GEMMA_GGUF=E:/models/gemma-4-E2B-it-GGUF/hf_ggml-org_gemma-4-E2B-it.Q4_0.gguf
 ```
 
-Optional: `GEMMA_DTYPE` (default `q4f16`), `GEMMA_DEVICE` (default `cpu`), `GEMMA_MAX_NEW_TOKENS` (default 150). Answers that hit the cap are cut back to the last full sentence. Requests run one at a time. If the model fails to load, the hub logs it and answers with the matched notes only. Check it with `GEMMA_MODEL_DIR` set and `pnpm --filter @ugatan/hub test`; without it the Gemma tests are skipped.
+node-llama-cpp picks the GPU itself: CUDA if the CUDA runtime is installed, otherwise Vulkan, otherwise the CPU. Check what it finds with `npx node-llama-cpp inspect gpu` in `hub/`. `Q8_0` (about 5 GB) is the higher-quality file if Q4_0 answers read badly.
+
+The older ONNX route still works for a hub without a usable GPU, but takes 12 s to a minute per answer: set `GEMMA_RUNTIME=onnx` and `GEMMA_MODEL_DIR=E:/models/gemma-4-E2B-it-ONNX`. Optional for it: `GEMMA_DTYPE` (default `q4f16`), `GEMMA_DEVICE` (default `cpu`).
+
+Both routes: `GEMMA_MAX_WORDS` (default 70) is the word limit in the prompt. The phone keeps 150; the hub asks for less because every token costs time. `GEMMA_MAX_NEW_TOKENS` (default 128) caps the answer. Answers that hit the cap are cut back to the last full sentence. Requests run one at a time. If the model fails to load, the hub logs it and answers with the matched notes only. Check it with `GEMMA_GGUF` (or `GEMMA_MODEL_DIR`) set and `pnpm --filter @ugatan/hub test`; without them the Gemma tests are skipped.
 
 ## Device tiers
 
@@ -124,7 +135,7 @@ Each problem is one file in `knowledge/`, named `<id>.json`.
 These need a person to decide. The code does not guess them.
 
 - **Gemma loader (web): decided.** The app uses the text-only `Gemma4ForCausalLM` loader, about 3.1 GB at q4f16. The card's `Gemma4ForConditionalGeneration` also downloads the vision and audio files (about 3.4 GB). This departs from the spec's "card loader" rule, and the team approved it. Image and audio input are later phases. See `web/src/workers/llm.worker.ts`.
-- **Gemma on the hub: runs, but slow.** `HUB_EXPLAINER=gemma` runs the local Gemma 4 E2B ONNX model through `@huggingface/transformers` on the CPU (`q4f16`). It works end to end through `/ask`, and the pesticide guardrail still runs on its text. Speed is the open issue: about 12 s to 1 minute per answer on the dev laptop (16 cores), not 1 to 5 s. DirectML on the GPU produced empty output. The E4B model has not been run.
+- **Gemma on the hub: runs on the GPU.** `HUB_EXPLAINER=gemma` runs the local Gemma 4 E2B GGUF (Q4_0) through llama.cpp on the GPU (Vulkan on the dev laptop's RTX 4060): about 1 to 2.5 s per `/ask`, matching included. The pesticide guardrail still runs on its text. The ONNX CPU route (`GEMMA_RUNTIME=onnx`, 12 s to 1 minute) is kept as a fallback. Not yet run: a hub without an NVIDIA GPU, the CUDA backend, the Q8_0 file, and the E4B model.
 - **Laya pass mark and confidence threshold.** `LAYA_PASS_MARK` and `LAYA_CONFIDENCE_THRESHOLD` are required before the hub will use Laya. Laya has no abstain option, so the confidence threshold is the only "not sure" gate. Result on the labeled set (24 problem descriptions, 2026-10-09): keyword matching got 23 of 24 right. The English base checkpoint with the default criteria got 11 of 24. The best Laya setting tried, the fine-tuned `typed-decisions` checkpoint with each option text set to the first sign only, got 17 of 24. Laya does not meet the adoption rule on this set, so keyword stays the default. That setting was chosen on the same rows it is scored on, so the Laya numbers are optimistic too. Latest `pnpm eval` run with the default criteria on all 27 rows in `eval/descriptions.csv` (2026-10-09, `LAYA_MODEL_DIR` set, no threshold): keyword matching 96.3% right, Laya 40.7% right (English 22.2%, Tagalog 11.1%, Taglish 88.9%). That run lost the symptoms to silent option truncation (see "Laya bundle"). After the fix (option text `<short name>: <signs>`, threshold 0.3) Laya got 63.0% right with no wrong answers on the same rows, and the `hybrid` matcher matched keyword (96.3%). On `eval/descriptions-paraphrase.csv` (31 farmer-style rows written for this test, not yet reviewed by an agriculturist) keyword got 64.5%, Laya 38.7%, and hybrid 67.7%, none wrong. The Laya code path itself works: the hub tests pass against the real bundle, `/ask` answers through it, and a bad bundle path falls back to keyword matching.
 - **Laya in Tagalog.** The default bundle is English-only (about 1.69 GB). It got 3 of 19 Tagalog rows right across both labeled sets and answers "not sure" on most of the rest. The checkpoint's `multilingual/` folder (mmBERT, 100+ languages) was exported to ONNX on 2026-10-09 (1.29 GB, one `laya.onnx` file; it loads only with `patches/@receptron__laya@0.1.2.patch`, which accepts its `<bos>`/`<eos>`/`<mask>`/`<pad>` token names). It scored worse with the current knowledge text: 1 of 19 Tagalog rows right, and it is overconfident (its calibration temperatures are all 1.0), giving 28 confident wrong answers against 12 right at threshold 0.3. Do not use it yet. The next step is adding Tagalog wording to the knowledge entries, then re-running `pnpm eval` with both bundles.
 - **Hub network.** A web app served over https cannot call a plain-http hub on the LAN (browsers block it as mixed content). Options: serve the app from the hub, or give the hub a trusted https address.

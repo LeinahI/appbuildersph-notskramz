@@ -1,6 +1,7 @@
 import { loadConfig } from './config.js';
 import { loadEnvFile } from './env.js';
 import { createGemmaExplainer } from './explain/gemma.js';
+import { createGemmaLlamaCppExplainer } from './explain/gemma-llamacpp.js';
 import { offExplainer, type Explainer } from './explain/index.js';
 import { fileLogger } from './log.js';
 import { createKeywordMatcher } from './matchers/keyword.js';
@@ -38,12 +39,20 @@ async function main(): Promise<void> {
   let explainer: Explainer = offExplainer;
   if (config.explainer === 'gemma') {
     try {
-      explainer = await createGemmaExplainer({
-        modelDir: config.gemmaModelDir!,
-        dtype: config.gemmaDtype,
-        device: config.gemmaDevice,
-        maxNewTokens: config.gemmaMaxNewTokens,
-      });
+      explainer =
+        config.gemmaRuntime === 'llamacpp'
+          ? await createGemmaLlamaCppExplainer({
+              modelPath: config.gemmaGguf!,
+              maxNewTokens: config.gemmaMaxNewTokens,
+              maxWords: config.gemmaMaxWords,
+            })
+          : await createGemmaExplainer({
+              modelDir: config.gemmaModelDir!,
+              dtype: config.gemmaDtype,
+              device: config.gemmaDevice,
+              maxNewTokens: config.gemmaMaxNewTokens,
+              maxWords: config.gemmaMaxWords,
+            });
     } catch (err) {
       // The explanation is optional. Keep answering with the matched notes only.
       const message = err instanceof Error ? err.message : String(err);

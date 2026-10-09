@@ -14,7 +14,7 @@ describe.skipIf(!modelDir)('gemma explainer with a local model', () => {
   let explainer: Explainer;
 
   beforeAll(async () => {
-    explainer = await createGemmaExplainer({ modelDir: modelDir!, dtype: 'q4f16', device: 'cpu', maxNewTokens: 60 });
+    explainer = await createGemmaExplainer({ modelDir: modelDir!, dtype: 'q4f16', device: 'cpu', maxNewTokens: 60, maxWords: 70 });
   }, 120_000);
 
   it('writes a non-empty explanation from the matched notes', async () => {

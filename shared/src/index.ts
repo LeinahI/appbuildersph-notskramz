@@ -1,6 +1,6 @@
 export * from './types.js';
 export type { AskRequest, AskResponse } from './api.js';
-export { SYSTEM_PROMPT, buildMessages, type ChatMessage } from './prompt.js';
+export { SYSTEM_PROMPT, buildMessages, systemPrompt, type ChatMessage } from './prompt.js';
 export { normalize, matchKeywords } from './keyword.js';
 export { PESTICIDE_NAMES, findViolations, isSafeText, type GuardViolation } from './guard.js';
 export { validateEntry, assertValidEntries } from './knowledge.js';

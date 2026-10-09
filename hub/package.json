@@ -16,7 +16,8 @@
   "dependencies": {
     "@huggingface/transformers": "4.3.0",
     "@receptron/laya": "0.1.2",
-    "@ugatan/shared": "workspace:*"
+    "@ugatan/shared": "workspace:*",
+    "node-llama-cpp": "3.22.1"
   },
   "devDependencies": {
     "@types/node": "20.19.43",
