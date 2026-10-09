@@ -8,6 +8,7 @@ import {
 import { AnswerView } from './components/AnswerView';
 import { QueueList } from './components/QueueList';
 import { SymptomPicker } from './components/SymptomPicker';
+import { VoiceInput } from './components/VoiceInput';
 import { KNOWLEDGE } from './config/knowledge';
 import { L } from './config/labels';
 import { PHONE_MODEL } from './config/models';
@@ -124,6 +125,10 @@ export default function App() {
     void ask(tile.labelTl || entry.name, [entry], true, entry.id);
   }
 
+  function onTranscript(spoken: string) {
+    setText((prev) => (prev.trim() ? `${prev.trim()} ${spoken}` : spoken));
+  }
+
   const record = currentRecord;
   const explanation = record?.explanation ?? null;
   const explanationStatus = record?.explanationStatus;
@@ -139,28 +144,36 @@ export default function App() {
           : L.phoneAiError;
 
   return (
-    <main className="wrap">
+    <main className="mx-auto max-w-[680px] px-4 pt-6 pb-12">
       <header>
-        <h1>{L.appName}</h1>
-        <p className="tag">{L.tagline}</p>
+        <h1 className="m-0 text-[2rem] font-bold text-leaf">{L.appName}</h1>
+        <p className="mt-1 mb-4 text-mist">{L.tagline}</p>
       </header>
 
       <section className="card">
-        <label>
+        <label className="field">
           {L.crop}
-          <select value={crop} onChange={(e) => setCrop(e.target.value as Crop | 'any')}>
+          <select className="input" value={crop} onChange={(e) => setCrop(e.target.value as Crop | 'any')}>
             <option value="rice">{L.cropRice}</option>
             <option value="corn">{L.cropCorn}</option>
             <option value="any">{L.cropAny}</option>
           </select>
         </label>
 
-        <label>
+        <label className="field">
           {L.describe}
-          <textarea rows={4} value={text} placeholder={L.describePlaceholder} onChange={(e) => setText(e.target.value)} />
+          <textarea
+            className="input"
+            rows={4}
+            value={text}
+            placeholder={L.describePlaceholder}
+            onChange={(e) => setText(e.target.value)}
+          />
         </label>
 
-        <button onClick={onLook} disabled={!text.trim()}>
+        <VoiceInput onTranscript={onTranscript} />
+
+        <button className="btn justify-self-start" onClick={onLook} disabled={!text.trim()}>
           {L.look}
         </button>
 
@@ -169,7 +182,7 @@ export default function App() {
 
       {current && (
         <section className="card">
-          <h2>{L.matchesHeading}</h2>
+          <h2 className="mt-1 mb-2 text-[1.1rem] font-bold">{L.matchesHeading}</h2>
           <AnswerView
             matches={currentEntries}
             clear={current.clear}
@@ -177,33 +190,34 @@ export default function App() {
             explanationStatus={explanationStatus}
             waitingForHub={waitingForHub}
           />
-          {notice && <p className="muted small">{notice}</p>}
+          {notice && <p className="text-[0.85rem] text-muted">{notice}</p>}
         </section>
       )}
 
-      <section className="card model">
+      <section className="card flex items-center justify-between gap-3">
         <div>
           <strong>{L.phoneAiHeading}:</strong> {aiLabel}
-          {ai.progress && <div className="muted small">{ai.progress}</div>}
+          {ai.progress && <div className="text-[0.85rem] text-muted">{ai.progress}</div>}
           {ai.status === 'ready' && (
-            <div className="muted small">
+            <div className="text-[0.85rem] text-muted">
               {L.phoneAiDevice} {ai.device}. {PHONE_MODEL.id.split('/')[1]}
             </div>
           )}
-          {ai.status === 'error' && <div className="muted small">{ai.error}</div>}
+          {ai.status === 'error' && <div className="text-[0.85rem] text-muted">{ai.error}</div>}
         </div>
         {(ai.status === 'idle' || ai.status === 'error') && (
-          <button className="secondary" onClick={() => phoneAi.load()}>
+          <button className="btn btn-secondary" onClick={() => phoneAi.load()}>
             {L.phoneAiPrepare}
           </button>
         )}
       </section>
 
       <section className="card">
-        <h2>{L.hubHeading}</h2>
-        <label>
+        <h2 className="mt-1 mb-2 text-[1.1rem] font-bold">{L.hubHeading}</h2>
+        <label className="field">
           {L.hubUrlLabel}
           <input
+            className="input"
             type="url"
             inputMode="url"
             placeholder={DEFAULT_HUB_URL || 'http://192.168.1.10:8787'}
@@ -215,19 +229,19 @@ export default function App() {
           />
         </label>
         {hubUrl && hubOnline !== null && (
-          <p className="small">{hubOnline ? L.hubOnline : L.hubOffline}</p>
+          <p className="text-[0.85rem]">{hubOnline ? L.hubOnline : L.hubOffline}</p>
         )}
-        <button className="secondary" onClick={() => void syncNow()} disabled={!hubUrl}>
+        <button className="btn btn-secondary justify-self-start" onClick={() => void syncNow()} disabled={!hubUrl}>
           {L.hubSyncNow}
         </button>
       </section>
 
       <section className="card">
-        <h2>{L.queueHeading}</h2>
+        <h2 className="mt-1 mb-2 text-[1.1rem] font-bold">{L.queueHeading}</h2>
         <QueueList items={history} />
       </section>
 
-      <footer className="muted small">{L.footer}</footer>
+      <footer className="mt-6 text-center text-[0.85rem] text-muted">{L.footer}</footer>
     </main>
   );
 }

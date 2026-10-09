@@ -24,42 +24,44 @@ export function AnswerView({ matches, clear, explanation, explanationStatus, wai
   const blocked = explanationStatus === 'blocked' || (explanationText !== '' && !explanationSafe);
 
   return (
-    <section className="answer" aria-live="polite">
-      {matches.length === 0 && <p className="notice">{NO_MATCH_TEXT}</p>}
-      {matches.length > 0 && !clear && <p className="notice">{NOT_SURE_TEXT}</p>}
+    <section className="grid gap-3" aria-live="polite">
+      {matches.length === 0 && <p className="m-0 rounded-lg bg-warn p-2.5">{NO_MATCH_TEXT}</p>}
+      {matches.length > 0 && !clear && <p className="m-0 rounded-lg bg-warn p-2.5">{NOT_SURE_TEXT}</p>}
 
       {matches.map((r) => (
-        <article key={r.id} className="ref">
-          <h3>{r.name}</h3>
-          <p className="label">Mga senyales</p>
-          <ul>
+        <article key={r.id} className="mt-3 border-t border-rule pt-3">
+          <h3 className="mb-1.5 text-base font-bold">{r.name}</h3>
+          <p className="mt-2 mb-0.5 font-semibold text-label">Mga senyales</p>
+          <ul className="mb-1.5 list-disc pl-5">
             {r.signs.map((s) => (
               <li key={s}>{s}</li>
             ))}
           </ul>
-          <p className="label">Mga hakbang</p>
-          <ol>
+          <p className="mt-2 mb-0.5 font-semibold text-label">Mga hakbang</p>
+          <ol className="mb-1.5 list-decimal pl-5">
             {r.actions.map((a) => (
               <li key={a}>{a}</li>
             ))}
           </ol>
-          <p className="small">
+          <p className="text-[0.85rem]">
             <strong>Kumonsulta agad kung:</strong> {r.callExpertIf}
           </p>
         </article>
       ))}
 
-      <div className="ai-block">
-        <p className="label">{L.aiHeading}</p>
-        {explanationSafe && <p className="explain">{explanationText}</p>}
-        {!explanationSafe && blocked && <p className="muted small">{L.aiBlocked}</p>}
-        {!explanationSafe && !blocked && waitingForHub && <p className="muted small">{L.aiWaiting}</p>}
+      <div>
+        <p className="mt-2 mb-0.5 font-semibold text-label">{L.aiHeading}</p>
+        {explanationSafe && <p className="m-0 whitespace-pre-wrap leading-[1.5]">{explanationText}</p>}
+        {!explanationSafe && blocked && <p className="text-[0.85rem] text-muted">{L.aiBlocked}</p>}
+        {!explanationSafe && !blocked && waitingForHub && (
+          <p className="text-[0.85rem] text-muted">{L.aiWaiting}</p>
+        )}
         {!explanationSafe && !blocked && explanationStatus === 'unavailable' && (
-          <p className="muted small">{L.aiNone}</p>
+          <p className="text-[0.85rem] text-muted">{L.aiNone}</p>
         )}
       </div>
 
-      <p className="disclaimer">{DISCLAIMER}</p>
+      <p className="mb-0 border-t-2 border-leaf pt-2.5 font-semibold">{DISCLAIMER}</p>
     </section>
   );
 }
