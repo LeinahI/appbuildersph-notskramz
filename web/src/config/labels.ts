@@ -58,6 +58,10 @@ const tl = {
   logoutConfirmBody: 'Aalis ka sa Usapan. Kailangan mong mag-claim o mag-login ulit para makabalik.',
   logoutConfirmYes: 'Mag-log out',
   logoutConfirmNo: 'Hindi muna',
+  deleteConversationConfirmTitle: 'Burahin ang usapan?',
+  deleteConversationConfirmBody: 'Mawawala ang usapan na ito sa device na ito.',
+  deleteConversationConfirmYes: 'Burahin',
+  deleteConversationConfirmNo: 'Hindi muna',
   introTitle: 'Ugatan AI',
   introDescription: 'Lokal na katuwang sa pag-aalaga ng palay at mais. Ilarawan ang iyong napansin para makatanggap ng gabay.',
   composerPlaceholder: 'Ilarawan o itanong ang iyong napansin...',
@@ -91,6 +95,13 @@ const tl = {
   naturalEnemiesHeading: 'Likas na kalaban',
   lastResortHeading: 'Huling opsyon',
   lastResortText: 'Huling opsyon lamang ang pesticide, at sa payo lang ng lokal na agriculturist. Kung kailangan, magsuot ng guwantes, maskara, long sleeves, at botas (PPE), at huwag mag-spray pasalungat sa hangin.',
+  searchChatsLabel: 'Hanapin ang usapan',
+  searchPlaceholder: 'Maghanap sa mga usapan',
+  searchRecentHeading: 'Kamakailan',
+  searchResultsHeading: 'Mga resulta',
+  searchNoResults: 'Walang nahanap.',
+  searchNoChats: 'Walang usapan pa.',
+  newChatLabel: 'Bagong usapan',
 };
 
 export type Labels = {
@@ -154,6 +165,10 @@ const en: Labels = {
   logoutConfirmBody: 'You will leave this chat. You will need to claim or sign in again to return.',
   logoutConfirmYes: 'Log out',
   logoutConfirmNo: 'Cancel',
+  deleteConversationConfirmTitle: 'Delete this conversation?',
+  deleteConversationConfirmBody: 'This conversation will be removed from this device.',
+  deleteConversationConfirmYes: 'Delete',
+  deleteConversationConfirmNo: 'Cancel',
   introTitle: 'Ugatan AI',
   introDescription: 'Your local companion for rice and corn. Describe what you noticed to get field guidance.',
   composerPlaceholder: 'Describe or ask about what you noticed...',
@@ -187,6 +202,13 @@ const en: Labels = {
   naturalEnemiesHeading: 'Natural enemies',
   lastResortHeading: 'Last resort',
   lastResortText: "Pesticide is the last option, and only on the local agriculturist's advice. If it is needed, wear gloves, a mask, long sleeves, and boots (PPE), and do not spray against the wind.",
+  searchChatsLabel: 'Search chats',
+  searchPlaceholder: 'Search chats',
+  searchRecentHeading: 'Recent',
+  searchResultsHeading: 'Results',
+  searchNoResults: 'No results found.',
+  searchNoChats: 'No chats yet.',
+  newChatLabel: 'New chat',
 };
 
 // shortcut: Cebuano interface copy is developer-authored, replace after native-speaker review.
@@ -245,6 +267,10 @@ const ceb: Labels = {
   logoutConfirmBody: 'Muhawa ka niini nga panag-istorya. Kinahanglan nimo mag-claim o mag-login pag-usab aron makabalik.',
   logoutConfirmYes: 'Mag-log out',
   logoutConfirmNo: 'Dili una',
+  deleteConversationConfirmTitle: 'Papason ang panag-istorya?',
+  deleteConversationConfirmBody: 'Mawala ang panag-istorya niini nga device.',
+  deleteConversationConfirmYes: 'Papason',
+  deleteConversationConfirmNo: 'Dili una',
   introTitle: 'Ugatan AI',
   introDescription: 'Lokal nga kauban sa pag-atiman sa humay ug mais. Ihulagway ang imong namatikdan aron makakuha og giya.',
   composerPlaceholder: 'Ihulagway o ipangutana ang imong namatikdan...',
@@ -278,6 +304,13 @@ const ceb: Labels = {
   naturalEnemiesHeading: 'Likas nga kontra',
   lastResortHeading: 'Katapusang kapilian',
   lastResortText: 'Ang pesticide mao ang katapusang kapilian, ug sa tambag lang sa lokal nga agriculturist. Kung kinahanglan, mosul-ob og guwantes, maskara, long sleeves, ug botas (PPE), ug ayaw pag-spray batok sa hangin.',
+  searchChatsLabel: 'Pangita og panag-istorya',
+  searchPlaceholder: 'Pangita sa mga panag-istorya',
+  searchRecentHeading: 'Bag-o',
+  searchResultsHeading: 'Mga resulta',
+  searchNoResults: 'Walay nakit-an.',
+  searchNoChats: 'Wala pay panag-istorya.',
+  newChatLabel: 'Bag-ong panag-istorya',
 };
 
 export const LABELS: Record<UiLanguage, Labels> = { tl, en, ceb };

@@ -1,3 +1,5 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import {
   NOT_SURE_TEXT,
@@ -33,6 +35,7 @@ import {
 } from '@ugatan/shared';
 import { AnswerView } from './components/AnswerView';
 import { HelpDialog } from './components/HelpDialog';
+import { HighlightedText } from './components/HighlightedText';
 import { HomePage } from './components/HomePage';
 import { QueueList } from './components/QueueList';
 import { SymptomPicker } from './components/SymptomPicker';
@@ -59,7 +62,7 @@ import { phoneAi, phoneAiFit, type PhoneAiState } from './lib/llm';
 import { photoSrc, shrinkPhoto } from './lib/photo';
 import { hubCapabilities, hubReachable, syncQueue } from './lib/sync';
 import { symptomTile } from './symptoms';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 const ConversationSidebar = lazy(() => import('./components/ConversationSidebar'));
 
@@ -193,9 +196,10 @@ const SIDEBAR_KEY = 'ugatan.sidebarOpen';
 
 export default function App() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { conversationId: routeId } = useParams<{ conversationId?: string }>();
   const [text, setText] = useState('');
-  const [history, setHistory] = useState<QueuedQuestion[]>([]);
   const [unsaved, setUnsaved] = useState<QueuedQuestion[]>([]);
   const [conversation, setConversation] = useState<ConversationRow | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -214,11 +218,17 @@ export default function App() {
   const [pickerOpen, setPickerOpen] = useState(false);
   // A photo chosen for the next question, as a base64 JPEG already shrunk for the hub.
   const [photo, setPhoto] = useState<string | null>(null);
+  const [highlightUid, setHighlightUid] = useState('');
+  const [highlightNeedle, setHighlightNeedle] = useState('');
   const endOfChat = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const historyDialog = useRef<HTMLDialogElement>(null);
   const helpDialog = useRef<HTMLDialogElement>(null);
+  const scrolledToMatch = useRef('');
 
   const conversationId = conversation?.id ?? '';
+  const focusUid = searchParams.get('m') ?? '';
+  const focusQ = searchParams.get('q') ?? '';
 
   useEffect(() => {
     document.documentElement.lang = DEFAULT_UI_LANGUAGE;
@@ -236,20 +246,23 @@ export default function App() {
     }
   }, [ai.status]);
 
-  const refresh = useCallback(async () => {
-    if (!conversationId) return;
-    try {
-      setHistory(await questionsForConversation(conversationId));
-    } catch {
-      // IndexedDB blocked
-    }
-  }, [conversationId]);
+  const { data: storedMessages } = useQuery({
+    queryKey: ['conversation-messages', conversationId],
+    queryFn: () => questionsForConversation(conversationId),
+    enabled: Boolean(conversationId),
+  });
+  const history = conversationId ? (storedMessages ?? []) : [];
+
+  const refresh = useCallback(async (id = conversationId || loadActiveConversationId()) => {
+    if (!id) return;
+    await queryClient.invalidateQueries({ queryKey: ['conversation-messages', id] });
+  }, [conversationId, queryClient]);
 
   useEffect(() => {
     void pullRemoteConversations().then(() => setListKey((k) => k + 1));
   }, []);
 
-  // URL is source of truth: load :conversationId, or redirect to a valid chat.
+  // URL is source of truth: load :conversationId, or stay on draft `/chat` with no row.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -260,18 +273,18 @@ export default function App() {
       setText('');
       setPickerOpen(false);
       setNotice('');
-      if (c.id !== routeId) {
-        navigate(`/chat/${c.id}`, { replace: true });
+      scrolledToMatch.current = '';
+      if (c && c.id !== routeId) {
+        // Keep ?m=&q= when normalizing the path so scroll-to-match still runs.
+        navigate(`/chat/${c.id}${window.location.search}`, { replace: true });
+      } else if (!c && routeId) {
+        navigate('/chat', { replace: true });
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [routeId, navigate]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
 
   const syncNow = useCallback(async () => {
     const result = await syncQueue(hubUrl);
@@ -291,10 +304,46 @@ export default function App() {
 
   const messages = history.concat(unsaved.filter((u) => u.conversationId === conversationId));
 
+  const rowVirtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => mainRef.current,
+    estimateSize: () => 240,
+    overscan: 3,
+  });
+
+  useEffect(() => {
+    if (focusUid) {
+      setHighlightUid(focusUid);
+      setHighlightNeedle(focusQ);
+    }
+  }, [focusUid, focusQ]);
+
+  useEffect(() => {
+    if (!focusUid || messages.length === 0) return;
+    const key = `${conversationId}:${focusUid}`;
+    if (scrolledToMatch.current === key) return;
+    const index = messages.findIndex((m) => m.uid === focusUid);
+    if (index < 0) return;
+    scrolledToMatch.current = key;
+    requestAnimationFrame(() => {
+      rowVirtualizer.scrollToIndex(index, { align: 'center' });
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('m');
+          next.delete('q');
+          return next;
+        },
+        { replace: true },
+      );
+    });
+  }, [focusUid, messages, conversationId, rowVirtualizer, setSearchParams]);
+
   const lastKey = `${messages.length}:${messages[messages.length - 1]?.explanation ?? ''}:${messages[messages.length - 1]?.hubMatchIds?.join() ?? ''}:${busyId}`;
   useEffect(() => {
+    if (highlightUid || focusUid) return;
     endOfChat.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
-  }, [lastKey]);
+  }, [lastKey, highlightUid, focusUid]);
 
   function toggleSidebar() {
     setSidebarOpen((o) => {
@@ -320,15 +369,29 @@ export default function App() {
     }
   }
 
-  async function newChat() {
-    const c = await createLocalConversation('Bagong usapan');
-    selectConversation(c);
+  function newChat() {
+    saveActiveConversationId('');
+    setConversation(null);
+    setUnsaved([]);
+    setText('');
     setPhoto(null);
+    setPickerOpen(false);
+    setNotice('');
+    setHighlightUid('');
+    setHighlightNeedle('');
+    navigate('/chat');
     setListKey((k) => k + 1);
   }
 
   async function ask(question: string, symptomId?: string, image?: string) {
-    if (!conversation) return;
+    let active = conversation;
+    if (!active) {
+      active = await createLocalConversation('Bagong usapan');
+      selectConversation(active);
+      setListKey((k) => k + 1);
+    }
+    setHighlightUid('');
+    setHighlightNeedle('');
     const trimmed = question.trim().slice(0, MAX_QUESTION_CHARS);
     setNotice('');
     setPickerOpen(false);
@@ -357,8 +420,8 @@ export default function App() {
       history: turns,
       symptomId,
       ...(image ? { image } : {}),
-      sessionId: conversation.sessionId,
-      conversationId: conversation.id,
+      sessionId: active.sessionId,
+      conversationId: active.id,
       route: plan.route,
       createdAt: new Date().toISOString(),
       status: 'queued',
@@ -369,17 +432,17 @@ export default function App() {
     let id: number | undefined;
     try {
       id = await db.questions.add(record);
-      if (messages.length === 0 && conversation.title === 'Bagong usapan') {
+      if (messages.length === 0 && active.title === 'Bagong usapan') {
         const title = trimmed.slice(0, 48);
-        await renameConversation(conversation.id, title);
-        setConversation({ ...conversation, title });
+        await renameConversation(active.id, title);
+        setConversation({ ...active, title });
         setListKey((k) => k + 1);
       }
     } catch {
       setNotice(L.saveError);
       setUnsaved((u) => [...u, record]);
     }
-    await refresh();
+    await refresh(active.id);
 
     // With the phone AI prepared, everything runs on the phone: the photo, the matching (keyword, Gemma's English,
     // and Laya), and the reply. Nothing waits for the hub. Without it, the question waits for the hub.
@@ -400,8 +463,8 @@ export default function App() {
         setBusyId(null);
       }
     }
-    await refresh();
-    void saveConversationThread(conversation.id);
+    await refresh(active.id);
+    void saveConversationThread(active.id);
     setListKey((k) => k + 1);
   }
 
@@ -567,36 +630,52 @@ export default function App() {
   }
 
   const thread = empty ? null : (
-    <div className="grid gap-8">
+    <div>
       <h1 className="sr-only">{L.appName}</h1>
-      {messages.map((r) => {
-        const { entries, clear, matchedOn } = matchOf(r);
-        return (
-          <div key={r.uid} className="grid gap-6">
-            <div className="flex justify-end">
-              <div className="grid max-w-[85%] justify-items-end gap-2">
-                {r.image && (
-                  <img src={photoSrc(r.image)} alt={L.photoPreview} className="block max-h-56 w-auto max-w-full rounded-2xl border border-line object-cover" />
-                )}
-                <p className="m-0 whitespace-pre-wrap rounded-3xl rounded-br-lg bg-leaf-soft px-5 py-3 text-base leading-7">{r.text}</p>
+      <div className="relative w-full" style={{ height: rowVirtualizer.getTotalSize() }}>
+        {rowVirtualizer.getVirtualItems().map((vi) => {
+          const r = messages[vi.index]!;
+          const { entries, clear, matchedOn } = matchOf(r);
+          const highlight = highlightUid === r.uid ? highlightNeedle : '';
+          return (
+            <div
+              key={r.uid}
+              data-index={vi.index}
+              data-msg-uid={r.uid}
+              ref={rowVirtualizer.measureElement}
+              className="absolute top-0 left-0 w-full pb-8"
+              style={{ transform: `translateY(${vi.start}px)` }}
+            >
+              <div className="grid gap-6">
+                <div className="flex justify-end">
+                  <div className="grid max-w-[85%] justify-items-end gap-2">
+                    {r.image && (
+                      <img src={photoSrc(r.image)} alt={L.photoPreview} className="block max-h-56 w-auto max-w-full rounded-2xl border border-line object-cover" />
+                    )}
+                    <p className="m-0 whitespace-pre-wrap rounded-3xl rounded-br-lg bg-leaf-soft px-5 py-3 text-base leading-7">
+                      {highlight ? <HighlightedText text={r.text} needle={highlight} /> : r.text}
+                    </p>
+                  </div>
+                </div>
+                <PhotoNote r={r} reading={busyId !== null && busyId === r.id} />
+                <AnswerView
+                  labels={L}
+                  language={DEFAULT_UI_LANGUAGE}
+                  matches={entries}
+                  clear={clear}
+                  matchedOn={matchedOn}
+                  explanation={r.explanation}
+                  explanationStatus={r.explanationStatus}
+                  waitingForHub={r.status === 'queued' && !phoneAi.ready && busyId !== r.id}
+                  thinking={busyId !== null && busyId === r.id}
+                  fallback={r.route === 'chat' ? smallTalkReply(r.text) : undefined}
+                  highlightNeedle={highlight}
+                />
               </div>
             </div>
-            <PhotoNote r={r} reading={busyId !== null && busyId === r.id} />
-            <AnswerView
-              labels={L}
-              language={DEFAULT_UI_LANGUAGE}
-              matches={entries}
-              clear={clear}
-              matchedOn={matchedOn}
-              explanation={r.explanation}
-              explanationStatus={r.explanationStatus}
-              waitingForHub={r.status === 'queued' && !phoneAi.ready && busyId !== r.id}
-              thinking={busyId !== null && busyId === r.id}
-              fallback={r.route === 'chat' ? smallTalkReply(r.text) : undefined}
-            />
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
       <div ref={endOfChat} />
     </div>
   );
@@ -606,19 +685,21 @@ export default function App() {
       <Suspense fallback={null}>
         <ConversationSidebar
           open={sidebarOpen}
-          activeId={conversationId || loadActiveConversationId()}
+          activeId={conversationId}
+          labels={L}
           onToggle={toggleSidebar}
           onSelect={selectConversation}
-          onCreated={(c) => {
-            selectConversation(c);
-            setListKey((k) => k + 1);
-          }}
+          onNewChat={newChat}
+          onSearch={() => navigate('/search')}
           onDeleted={async (id) => {
             if (id === conversationId) {
               const next = await ensureActiveConversation();
-              selectConversation(next);
+              if (next) selectConversation(next);
+              else newChat();
             }
             setListKey((k) => k + 1);
+            void queryClient.invalidateQueries({ queryKey: ['chat-search'] });
+            void queryClient.invalidateQueries({ queryKey: ['chat-search-recent'] });
           }}
           refreshKey={listKey}
         />
@@ -631,6 +712,7 @@ export default function App() {
           notice={notice}
           hubUrl={hubUrl}
           photo={photo}
+          mainRef={mainRef}
           suggestions={empty ? <SymptomPicker labels={L} onPick={onSymptom} /> : undefined}
           tray={!empty && pickerOpen ? <SymptomPicker labels={L} onPick={onSymptom} /> : undefined}
           symptomsOpen={pickerOpen}
@@ -640,7 +722,7 @@ export default function App() {
           onHistory={() => historyDialog.current?.showModal()}
           onHelp={() => helpDialog.current?.showModal()}
           onLogout={logoutFarmer}
-          onNewConversation={() => void newChat()}
+          onNewConversation={newChat}
           onPhotoFile={(file) => void onPhotoChosen(file)}
           onRemovePhoto={() => setPhoto(null)}
           onNotice={setNotice}
