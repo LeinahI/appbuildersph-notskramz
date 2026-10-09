@@ -1,21 +1,8 @@
-const STORAGE_KEY = 'ugatan.hubUrl';
+/** Fixed hub address — no manual settings. Trailing slash stripped for fetch paths. */
+export const DEFAULT_HUB_URL = 'http://127.0.0.1:8787';
 
-/** Build-time default from VITE_HUB_URL. Blank means offline only. */
-export const DEFAULT_HUB_URL: string = (import.meta.env.VITE_HUB_URL ?? '').trim();
-
-/** Per-device hub address set in the app. Stored in localStorage, so it is a convenience, not shared state. */
+/** Hub URL used by chat sync. Build-time VITE_HUB_URL overrides when set. */
 export function loadHubUrl(): string {
-  try {
-    return localStorage.getItem(STORAGE_KEY) ?? DEFAULT_HUB_URL;
-  } catch {
-    return DEFAULT_HUB_URL;
-  }
-}
-
-export function saveHubUrl(url: string): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, url.trim().replace(/\/+$/, ''));
-  } catch {
-    // Storage blocked (private window). The app still works for this session.
-  }
+  const fromEnv = (import.meta.env.VITE_HUB_URL ?? '').trim().replace(/\/+$/, '');
+  return fromEnv || DEFAULT_HUB_URL;
 }

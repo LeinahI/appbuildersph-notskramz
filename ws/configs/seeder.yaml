@@ -1,0 +1,5 @@
+# Bootstrap admin (make seed). Dev/hackathon credentials only.
+admin:
+  email: admin@ugatan.com
+  password: "Ug4tan@2026"
+  name: Ugatan Admin

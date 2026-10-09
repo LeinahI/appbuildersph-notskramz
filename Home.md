@@ -16,6 +16,19 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-09-merge-main-into-go-backend]] - merged main into go-backend for PR 1: main's home UI with the sidebar and log-out ported on, lockfile fixed
+- [[2026-10-09-ws-docker-init]] - how to init `ws`: Docker Postgres on 5433, migrate, seed, run-api (plus commit-message draft note)
+- [[2026-10-09-remove-settings-auto-hub]] - removed settings/Ihanda ang AI; hub defaults to 127.0.0.1:8787
+- [[2026-10-09-claim-rebind-device]] - claim re-binds device so a new browser/QR can open `/chat`
+- [[2026-10-09-admin-seeder-yaml]] - admin seed from `configs/seeder.yaml`; removed ADMIN_* from config.go
+- [[2026-10-09-login-default-admin-email]] - login default + `.env.example` admin email → `admin@ugatan.com`
+- [[2026-10-09-ws-admin-migrations-compose]] - compose POSTGRES_* from env; migrations users→invites→conversations; product seed/routes gone; admin seeded
+- [[2026-10-09-chat-sidebar-explore]] - mapped farmer chat/Dexie/claim auth/ws for Gemini-style history sidebar planning
+- [[2026-10-09-admin-nav-cleanup]] - removed Farmer chat/Login from admin nav; `/` redirects signed-in admins to `/admin`
+- [[2026-10-09-chat-sidebar-auth]] - `/chat` sidebar + Dexie/ws sync; `/` unified login; farmer JWT required
+- [[2026-10-09-ws-makefile-windows]] - Makefile migrate works on Windows cmd; migrate loads `.env`
+- [[2026-10-09-admin-registration-qr-claim]] - `ws` registration/QR/audit + web `/admin` and `/claim`; chat sidebar deferred
+- [[2026-10-09-explore-ws-codebase]] - mapped `ws/` Go starter: Product-only DDD sample, Postgres/goose, no auth/QR/chat
 - [[2026-10-09-photo-form-recognition]] - photo reading uses a form built from every knowledge entry; the user's corn photo now matches fall armyworm (sure) with a Tagalog reply
 - [[2026-10-09-insect-identification]] - 12 insect notes plus insect profiles (English, scientific, and Filipino names, crop stage, natural enemies, last-resort line with PPE), name-weighted matching, and research on sources and open datasets
 - [[2026-10-09-chat-behaviour-20-chats]] - 320-message real-model chat test with fixes after each chat: fixed lines for pesticide, health, office, and growing questions, no re-matching of answered problems, problem name always said

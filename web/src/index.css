@@ -17,6 +17,13 @@
   --color-muted: #75846b;
   --color-label: #395737;
   --color-warn: #fff6e0;
+  /* Names used by the sign-in, admin and sidebar screens, mapped onto the green palette. */
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+  --color-bg: #fafbf7;
+  --color-soft: rgb(43 96 62 / 8%);
+  --color-bubble: #e4edd9;
+  --color-accent: #2b603e;
+  --color-accent-hover: #244f34;
 }
 
 @layer base {
@@ -166,4 +173,24 @@
 
 .typing-dot {
   animation: ugatan-dot 1.2s infinite ease-in-out;
+}
+
+/* Pieces shared by the sign-in, admin and sidebar screens. */
+@layer components {
+  .icon-btn {
+    @apply inline-flex size-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-soft hover:text-ink;
+  }
+
+  .pill-btn {
+    @apply rounded-lg border border-line bg-transparent px-3.5 py-2 text-sm font-medium text-ink transition-colors hover:bg-soft disabled:opacity-50;
+  }
+
+  .field-label {
+    @apply grid gap-1.5 text-sm font-medium;
+  }
+
+  .text-input,
+  .field-input {
+    @apply box-border w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-base;
+  }
 }

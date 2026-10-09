@@ -16,7 +16,7 @@ function props(text = ''): HomePageProps {
     onSubmit: () => {},
     onHistory: () => {},
     onHelp: () => {},
-    onSettings: () => {},
+    onLogout: () => {},
     onNewConversation: () => {},
     onPhotoFile: () => {},
     onRemovePhoto: () => {},
@@ -81,9 +81,9 @@ describe('Ugatan home page', () => {
     expect(chat).not.toContain('Piliin ito');
   });
 
-  it('labels the icon-only camera, microphone, history, new-chat, settings, help, and send actions', () => {
+  it('labels the icon-only camera, microphone, history, new-chat, log-out, help, and send actions', () => {
     const html = renderToStaticMarkup(createElement(HomePage, props()));
-    for (const label of ['Mga nakaraang usapan', 'Bagong usapan', 'Mga setting', 'Larawan', 'Magsalita', 'Ipadala ang tanong', 'Tulong']) {
+    for (const label of ['Mga nakaraang usapan', 'Bagong usapan', 'Log out', 'Larawan', 'Magsalita', 'Ipadala ang tanong', 'Tulong']) {
       expect(html).toContain(`aria-label="${label}"`);
     }
     expect(html).toContain('aria-pressed="false"');

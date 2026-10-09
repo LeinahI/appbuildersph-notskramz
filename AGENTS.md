@@ -5,8 +5,9 @@ Instructions for AI coding agents working in this repo. Read [README.md](README.
 ## Project rules
 
 - Use pnpm 10 and Node 20+. Never use npm.
-- Layout: `web/` (React + Vite PWA), `hub/` (Node service), `shared/` (matcher, guardrail, answer composition), `knowledge/` (one JSON file per problem), `eval/`, `docs/`.
-- Build and test from the repo root: `pnpm build`, `pnpm test`. `shared` must be built before `web` or `hub` use it.
+- Layout: `web/` (React + Vite PWA; unified login at `/`, farmer chat at `/chat` with conversation sidebar, admin at `/admin`, QR claim at `/claim`), `hub/` (Node crop Q&A AI), `ws/` (Go DDD API on Postgres 16 — registration, roles, QR invites, audit, farmer conversations), `shared/` (matcher, guardrail, answer composition), `knowledge/` (one JSON file per problem), `eval/`, `docs/`.
+- Build and test from the repo root: `pnpm build`, `pnpm test`. `shared` must be built before `web` or `hub` use it. For `ws/`: Postgres via docker compose, then `make migrate-up`, `make seed` (admin from `ws/configs/seeder.yaml`), `make run-api`.
+- Never commit `ws/.env`, `PII_ENCRYPTION_KEY`, or `JWT_SECRET`. Do not store ID images in `ws` or logs.
 - Answers never name pesticide brands or give dosages. A reply that gives treatment, control, or spraying advice ends with: "Kumpirmahin sa lokal na agriculturist bago gumamit ng anumang pesticide." Greetings, questions, and "not sure" replies do not carry it. Do not weaken the guardrail in `shared/`.
 - Never commit `.env` files, model weights, `hub/logs/`, `hub/data/`, or `eval/results/` (see `.gitignore`).
 - Only commit or push when the user asks.
