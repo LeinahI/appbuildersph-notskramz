@@ -65,6 +65,8 @@ Laya runs on the hub only with `HUB_MATCHER=laya` or `HUB_MATCHER=hybrid`, a pas
 
 Check the bundle by running the hub tests with `LAYA_MODEL_DIR` set. In PowerShell: `$env:LAYA_MODEL_DIR = "E:/models/laya-onnx"; pnpm --filter @ugatan/hub test`. Without `LAYA_MODEL_DIR` the Laya tests are skipped. Score the bundle with `pnpm eval`.
 
+Laya runs on the GPU through onnxruntime's WebGPU backend by default (`LAYA_DEVICE=webgpu`): about 0.1 s per question on the dev laptop against about 1 s on the CPU, with the same `pnpm eval` results. At startup the hub asks Laya one warm-up question. If WebGPU fails to load or to answer, it logs a warning and uses the CPU. Set `LAYA_DEVICE=cpu` to skip the GPU. DirectML does not work with this model (it fails on the first answer).
+
 Laya fits all answer options of a question into 192 tokens and silently cuts each one to an equal share when they do not fit. Keep option text short and never put the id in it (see `problemOptions` in `hub/src/matchers/laya.ts`). Check any change to the options or to the knowledge base with `pnpm eval`.
 
 ## Gemma on the hub

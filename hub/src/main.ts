@@ -26,6 +26,7 @@ async function main(): Promise<void> {
         cacheDir: config.layaCache,
         modelDir: config.layaModelDir,
         confidenceThreshold: config.layaConfidenceThreshold!,
+        device: config.layaDevice,
       });
       matcher = config.matcher === 'hybrid' ? createHybridMatcher(keyword, laya) : laya;
     } catch (err) {

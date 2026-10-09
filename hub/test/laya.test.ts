@@ -25,6 +25,7 @@ const noDownloadDir = join(tmpdir(), 'ugatan-laya-no-download-expected');
 describe.skipIf(!modelDir)('laya matcher with a local bundle', () => {
   let atConfidence: Matcher; // threshold = the model's own confidence for riceText
   let aboveConfidence: Matcher; // threshold a hair above it
+  let onGpu: Matcher; // webgpu, or cpu if this machine has no working WebGPU
   let topChoice: string; // the model's own top answer for riceText
   let fetchSpy: ReturnType<typeof vi.spyOn>;
 
@@ -50,6 +51,12 @@ describe.skipIf(!modelDir)('laya matcher with a local bundle', () => {
       cacheDir: noDownloadDir,
       modelDir,
       confidenceThreshold: answer.confidence + 0.0001,
+    });
+    onGpu = await createLayaMatcher(knowledge, {
+      cacheDir: noDownloadDir,
+      modelDir,
+      confidenceThreshold: 0,
+      device: 'webgpu',
     });
   }, 240_000);
 
@@ -90,4 +97,16 @@ describe.skipIf(!modelDir)('laya matcher with a local bundle', () => {
     const b = await atConfidence.match(riceText, 'any');
     expect(b).toEqual(a);
   }, 60_000);
+
+  it('ranks the same problems on the GPU as on the CPU', async () => {
+    const questions: [string, 'rice' | 'corn' | 'any'][] = [
+      [riceText, 'any'],
+      ['May diamond-shaped na batik sa dahon ng palay at nabubulok ang leeg ng uhay', 'rice'],
+      ['Dilaw ang dahon ng mais at may mga uod sa loob ng tangkay', 'corn'],
+      ['Nanilaw ang dulo ng dahon ng palay at may basang guhit', 'rice'],
+    ];
+    for (const [text, crop] of questions) {
+      expect((await onGpu.match(text, crop)).ids, text).toEqual((await atConfidence.match(text, crop)).ids);
+    }
+  }, 120_000);
 });

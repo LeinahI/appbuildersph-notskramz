@@ -66,6 +66,7 @@ async function main() {
         cacheDir: config.layaCache,
         modelDir: config.layaModelDir,
         confidenceThreshold,
+        device: config.layaDevice,
       });
       const note = thresholdRaw ? '' : ' (not set, raw top answer counts as clear)';
       const layaPredictions = await predictAll(laya);

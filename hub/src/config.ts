@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 export type MatcherName = 'keyword' | 'laya' | 'hybrid';
 export type ExplainerName = 'off' | 'gemma';
 export type GemmaRuntime = 'llamacpp' | 'onnx';
+export type LayaDevice = 'webgpu' | 'cpu';
 
 export interface HubConfig {
   host: string;
@@ -21,6 +22,8 @@ export interface HubConfig {
   layaConfidenceThreshold: number | null;
   /** If Laya fails to load, answer with keyword matching instead of stopping the hub. */
   layaFallbackToKeyword: boolean;
+  /** Where Laya runs (LAYA_DEVICE). webgpu is the default and falls back to cpu if it does not work. */
+  layaDevice: LayaDevice;
   /** How Gemma runs (GEMMA_RUNTIME). llamacpp uses the GPU and is the default. onnx is the slower CPU route. */
   gemmaRuntime: GemmaRuntime;
   /** Gemma 4 GGUF file (GEMMA_GGUF). Required for the llamacpp runtime. */
@@ -42,6 +45,7 @@ export interface HubConfig {
 const MATCHERS: readonly MatcherName[] = ['keyword', 'laya', 'hybrid'];
 const EXPLAINERS: readonly ExplainerName[] = ['off', 'gemma'];
 const GEMMA_RUNTIMES: readonly GemmaRuntime[] = ['llamacpp', 'onnx'];
+const LAYA_DEVICES: readonly LayaDevice[] = ['webgpu', 'cpu'];
 
 function optionalNumber(name: string, raw: string | undefined): number | null {
   const trimmed = raw?.trim();
@@ -66,6 +70,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
   const explainer = (env.HUB_EXPLAINER ?? 'off') as ExplainerName;
   if (!EXPLAINERS.includes(explainer)) {
     throw new Error(`HUB_EXPLAINER must be one of ${EXPLAINERS.join(', ')}. Got "${explainer}".`);
+  }
+
+  const layaDevice = (env.LAYA_DEVICE ?? 'webgpu') as LayaDevice;
+  if (!LAYA_DEVICES.includes(layaDevice)) {
+    throw new Error(`LAYA_DEVICE must be one of ${LAYA_DEVICES.join(', ')}. Got "${layaDevice}".`);
   }
 
   const layaPassMark = optionalNumber('LAYA_PASS_MARK', env.LAYA_PASS_MARK);
@@ -112,6 +121,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
     layaPassMark,
     layaConfidenceThreshold,
     layaFallbackToKeyword: (env.HUB_LAYA_FALLBACK ?? 'keyword') === 'keyword',
+    layaDevice,
     gemmaRuntime,
     gemmaGguf,
     gemmaModelDir,

@@ -72,6 +72,12 @@ describe('loadConfig', () => {
     expect(c.gemmaDevice).toBe('cpu');
   });
 
+  it('runs Laya on WebGPU by default and accepts cpu', () => {
+    expect(loadConfig({}).layaDevice).toBe('webgpu');
+    expect(loadConfig({ LAYA_DEVICE: 'cpu' }).layaDevice).toBe('cpu');
+    expect(() => loadConfig({ LAYA_DEVICE: 'dml' })).toThrow(/LAYA_DEVICE/);
+  });
+
   it('puts the Laya cache under LAYA_CACHE, resolved from the working folder', () => {
     const c = loadConfig({ LAYA_CACHE: 'cache/laya' }, '/repo/hub');
     expect(c.layaCache.replace(/\\/g, '/')).toMatch(/\/repo\/hub\/cache\/laya$/);
