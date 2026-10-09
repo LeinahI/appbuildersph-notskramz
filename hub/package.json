@@ -11,7 +11,8 @@
     "build": "tsc",
     "start": "node dist/main.js",
     "eval": "tsx ../eval/run.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "eval:voice": "tsx ../eval/voice.ts"
   },
   "dependencies": {
     "@huggingface/transformers": "4.3.0",

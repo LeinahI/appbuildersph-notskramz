@@ -53,6 +53,35 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ GEMMA_RUNTIME: 'tpu' })).toThrow(/GEMMA_RUNTIME/);
   });
 
+  it('keeps photo reading off unless HUB_VISION=on, and then needs the ONNX folder', () => {
+    expect(loadConfig({}, '/repo/hub').vision).toBe(false);
+    expect(() => loadConfig({ HUB_VISION: 'on' }, '/repo/hub')).toThrow(/GEMMA_MODEL_DIR/);
+    expect(() => loadConfig({ HUB_VISION: 'yes' }, '/repo/hub')).toThrow(/HUB_VISION/);
+    const c = loadConfig({ HUB_VISION: 'on', GEMMA_MODEL_DIR: '/models/gemma' }, '/repo/hub');
+    expect(c.vision).toBe(true);
+    expect(c.visionMaxNewTokens).toBe(64);
+    expect(loadConfig({ HUB_VISION: 'on', GEMMA_MODEL_DIR: '/m', VISION_MAX_NEW_TOKENS: '32' }, '/repo/hub').visionMaxNewTokens).toBe(32);
+  });
+
+  it('keeps speech reading off unless HUB_VOICE=on, and then needs the ONNX folder', () => {
+    expect(loadConfig({}, '/repo/hub').voice).toBe(false);
+    expect(() => loadConfig({ HUB_VOICE: 'on' }, '/repo/hub')).toThrow(/GEMMA_MODEL_DIR/);
+    expect(() => loadConfig({ HUB_VOICE: 'true' }, '/repo/hub')).toThrow(/HUB_VOICE/);
+    const c = loadConfig({ HUB_VOICE: 'on', GEMMA_MODEL_DIR: '/models/gemma' }, '/repo/hub');
+    expect(c.voice).toBe(true);
+    expect(c.vision).toBe(false);
+    expect(c.voiceMaxNewTokens).toBe(192);
+    expect(loadConfig({ HUB_VOICE: 'on', GEMMA_MODEL_DIR: '/m', VOICE_MAX_NEW_TOKENS: '64' }, '/repo/hub').voiceMaxNewTokens).toBe(64);
+  });
+
+  it('reads the photo and speech weight variants, which default to the Gemma one', () => {
+    const base = { HUB_VOICE: 'on', GEMMA_MODEL_DIR: '/m' };
+    expect(loadConfig(base, '/repo/hub')).toMatchObject({ multimodalDtype: 'q4f16', audioDtype: null });
+    expect(loadConfig({ ...base, GEMMA_DTYPE: 'q4' }, '/repo/hub').multimodalDtype).toBe('q4');
+    expect(loadConfig({ ...base, GEMMA_DTYPE: 'q4', MULTIMODAL_DTYPE: 'quantized' }, '/repo/hub').multimodalDtype).toBe('quantized');
+    expect(loadConfig({ ...base, AUDIO_DTYPE: 'fp32' }, '/repo/hub').audioDtype).toBe('fp32');
+  });
+
   it('reads the Gemma settings, with llama.cpp and short answers as the default', () => {
     const c = loadConfig({ HUB_EXPLAINER: 'gemma', GEMMA_GGUF: '/models/gemma.gguf' }, '/repo/hub');
     expect(c.explainer).toBe('gemma');

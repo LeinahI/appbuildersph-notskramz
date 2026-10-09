@@ -1,8 +1,9 @@
-import type { AskRequest, AskResponse } from '@ugatan/shared';
+import type { AskRequest, AskResponse, TranscribeRequest, TranscribeResponse } from '@ugatan/shared';
 import { db } from './db';
 
 const PROBE_TIMEOUT_MS = 2500;
-const ASK_TIMEOUT_MS = 90_000;
+// A photo is read on the hub's CPU (about 30 s), and the first one may wait for the model to load.
+const ASK_TIMEOUT_MS = 180_000;
 
 /** True when the hub answers its health check. Fails quietly off the hub's Wi-Fi. */
 export async function hubReachable(hubUrl: string): Promise<boolean> {
@@ -30,6 +31,8 @@ export async function syncQueue(hubUrl: string): Promise<{ sent: number; failed:
         text: q.text,
         ...(q.history?.length ? { history: q.history } : {}),
         ...(q.sessionId ? { sessionId: q.sessionId } : {}),
+        ...(q.symptomId ? { symptomId: q.symptomId } : {}),
+        ...(q.image ? { image: q.image } : {}),
       };
       const res = await fetch(`${hubUrl}/ask`, {
         method: 'POST',
@@ -37,6 +40,18 @@ export async function syncQueue(hubUrl: string): Promise<{ sent: number; failed:
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(ASK_TIMEOUT_MS),
       });
+      if (res.status === 400 || res.status === 413) {
+        // The hub refused the request itself, so retrying it would fail the same way. The question is closed with a note.
+        await db.questions.update(q.id!, {
+          status: 'answered',
+          explanation: null,
+          explanationStatus: 'unavailable',
+          answeredAt: new Date().toISOString(),
+          lastError: `Hub: ${res.status}`,
+        });
+        failed++;
+        continue;
+      }
       if (!res.ok) throw new Error(`Hub returned ${res.status}`);
       const data = (await res.json()) as AskResponse;
       await db.questions.update(q.id!, {
@@ -47,6 +62,7 @@ export async function syncQueue(hubUrl: string): Promise<{ sent: number; failed:
         hubMatchIds: data.matchIds,
         hubClear: data.clear,
         hubMatchedOn: data.matchedOn ?? [],
+        ...(data.photo ? { photo: data.photo, photoSigns: data.photoSigns ?? null } : {}),
         answeredAt: new Date().toISOString(),
         lastError: undefined,
       });
@@ -57,4 +73,32 @@ export async function syncQueue(hubUrl: string): Promise<{ sent: number; failed:
     }
   }
   return { sent, failed, reachable: true };
+}
+
+/** What the hub can read besides text, from its health check. Null when the hub does not answer. */
+export async function hubCapabilities(hubUrl: string): Promise<{ vision: boolean; voice: boolean } | null> {
+  if (!hubUrl) return null;
+  try {
+    const res = await fetch(`${hubUrl}/health`, { signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
+    if (!res.ok) return null;
+    const info = (await res.json()) as { vision?: string; voice?: string };
+    return { vision: info.vision === 'on', voice: info.voice === 'on' };
+  } catch {
+    return null;
+  }
+}
+
+/** A recording takes about as long to write down as it took to say, plus the first load of the model. */
+const TRANSCRIBE_TIMEOUT_MS = 120_000;
+
+/** Sends a recording (base64 16 kHz PCM) to the hub and returns what it wrote down. Throws when the hub cannot be reached. */
+export async function transcribeOnHub(hubUrl: string, audio: string): Promise<TranscribeResponse> {
+  const res = await fetch(`${hubUrl}/transcribe`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ audio } satisfies TranscribeRequest),
+    signal: AbortSignal.timeout(TRANSCRIBE_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`Hub returned ${res.status}`);
+  return (await res.json()) as TranscribeResponse;
 }

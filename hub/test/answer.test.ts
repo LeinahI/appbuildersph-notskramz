@@ -101,7 +101,8 @@ describe('matcher and explainer together', () => {
       },
     };
     const res = await answerQuestion(
-      { uid: 'u3', crop: 'any', text: 'ano ang pwede i-spray' },
+      // A pesticide ask gets a fixed line and never reaches the model, so a vague report stands in for it here.
+      { uid: 'u3', crop: 'any', text: 'may mali sa palay ko' },
       { matcher: matcher({ ids: [], clear: false }), explainer, knowledge, logger: { write() {} } },
     );
     expect(res.explanationStatus).toBe('blocked');

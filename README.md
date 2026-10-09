@@ -1,6 +1,6 @@
 # Ugatan
 
-Offline Taglish advisor for Filipino rice (palay) and corn (mais) farmers. A farmer describes what they see in the field, and the app matches it to a likely pest or disease, shows the signs, lists field steps, says when to call an expert, and explains the result in Taglish. It never names pesticide brands or gives dosages. Every answer ends with: "Kumpirmahin sa lokal na agriculturist bago gumamit ng anumang pesticide."
+Offline Taglish advisor for Filipino rice (palay) and corn (mais) farmers. A farmer describes what they see in the field, and the app matches it to a likely pest or disease, shows the signs, lists field steps, says when to call an expert, and explains the result in Taglish. It never names pesticide brands or gives dosages. A reply that gives treatment, control, or spraying advice ends with: "Kumpirmahin sa lokal na agriculturist bago gumamit ng anumang pesticide." Greetings, questions, and "not sure" replies do not carry that line.
 
 Read [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md) for the plan and [docs/DISCLOSURE.md](docs/DISCLOSURE.md) for models, licenses, library versions, and the work done before kickoff. The offline demo is in [docs/DEMO.md](docs/DEMO.md), and the team is listed in [docs/TEAM.md](docs/TEAM.md).
 
@@ -27,9 +27,9 @@ pnpm dev
 
 Open http://localhost:3000. The port is fixed in `web/vite.config.ts` for `pnpm dev` and `preview`; if something else is using 3000, the command stops with an error instead of picking another port. Keyword matching works right away. Offline reloads (no network after the first load) apply to the built site, not to `pnpm dev`, where the service worker is off.
 
-The phone AI is optional. To turn it on, tap **Ihanda ang AI**. That downloads Gemma 4 E2B (`onnx-community/gemma-4-E2B-it-ONNX`, q4f16, text-only) from Hugging Face. It is about 3.1 GB, so the first time it needs a network. The phone tries WebGPU first and falls back to WebAssembly on the CPU, which is slower. The model is held in memory, so a page reload starts at idle and the button shows again.
+The phone AI is optional. To turn it on, open **Tulong** (the ? button) and tap **Ihanda ang AI**. That downloads Gemma 4 E2B (`onnx-community/gemma-4-E2B-it-ONNX`, q4f16, text-only) from Hugging Face. It is about 3.1 GB, so the first time it needs a network. The phone tries WebGPU first and falls back to WebAssembly on the CPU, which is slower. The model is held in memory, so a page reload starts at idle and the button shows again.
 
-To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`), or type the hub address in the app. `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. An address typed in the app is saved on that phone and overrides it.
+To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`), or type the hub address under **Mga setting** (the gear button). `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. An address typed in the app is saved on that phone and overrides it.
 
 Build and preview the static site. The repo does not yet set up how phones load this built site over Wi-Fi (see Pending decisions, hub network):
 
@@ -59,6 +59,7 @@ The hub checks its settings at startup and stops with an error when one is missi
 
 - `HUB_MATCHER=laya` or `hybrid` needs `LAYA_PASS_MARK` and `LAYA_CONFIDENCE_THRESHOLD`. `HUB_LAYA_FALLBACK` does not get around this.
 - `HUB_EXPLAINER=gemma` needs `GEMMA_GGUF` (the default llama.cpp route) or `GEMMA_MODEL_DIR` (with `GEMMA_RUNTIME=onnx`).
+- `HUB_VISION=on` and `HUB_VOICE=on` each need `GEMMA_MODEL_DIR`, whichever route writes the explanation (see "Photos" and "Voice").
 
 The hub starts listening after each model load has finished, whether it succeeded or failed. A failed Gemma load is logged, and the hub answers without an explanation. A failed Laya load falls back to keyword matching, unless `HUB_LAYA_FALLBACK` is set to something other than `keyword`, in which case the hub exits. With Gemma on, the loads take about 40 to 50 s on the dev laptop (measured 2026-10-09, see `docs/agent-notes/`); the Laya load time has not been measured.
 
@@ -114,6 +115,38 @@ The older ONNX route works on a hub without a usable GPU, but takes 12 s to a mi
 
 Both routes: `GEMMA_MAX_WORDS` (default 70) is written into the prompt as the word limit. Nothing enforces it. The phone asks for 150; the hub asks for less because every token costs time. `GEMMA_MAX_NEW_TOKENS` (default 128) caps the answer. An answer that hits the cap and does not end in `.`, `!`, or `?` is trimmed. If it has several lines, the last line is dropped when the rest keeps more than a third of the text. Otherwise the text is cut at its last sentence end followed by a space, if that keeps more than a third. If neither cut works, the full text is kept. Requests run one at a time. If the model fails to load, or returns nothing, the hub answers with the matched notes only. The pesticide guardrail checks the Gemma text too. Check the model with `GEMMA_GGUF` (or `GEMMA_MODEL_DIR`) set and `pnpm --filter @ugatan/hub test`; without them the Gemma tests are skipped.
 
+## Photos
+
+A farmer can attach a photo of the plant (the camera button next to the text box). The hub reads it with the local Gemma 4 E2B vision model. It is off until you set `HUB_VISION=on`, and it needs the ONNX folder: `GEMMA_MODEL_DIR=E:/models/gemma-4-E2B-it-ONNX` (the same one the ONNX text route uses, `onnx-community/gemma-4-E2B-it-ONNX`, which includes `vision_encoder*.onnx`). The llama.cpp route cannot read photos: its GGUF has no vision projector file, and `node-llama-cpp` 3.22.1 has no image input. So the hub can run Gemma twice: the GGUF on the GPU for the Taglish text, and the ONNX model on the CPU for photos.
+
+```
+HUB_VISION=on
+GEMMA_MODEL_DIR=E:/models/gemma-4-E2B-it-ONNX
+```
+
+Photo reading follows the same split as the rest of the hub. The vision model only writes down what is visible, in one or two plain English sentences (`PHOTO_SYSTEM_PROMPT` in `shared/src/prompt.ts`). It never names a problem. Those sentences are added to what the farmer typed, and the matcher (keyword, Laya, or `hybrid`) decides, then Gemma explains in Taglish, as in the table above. So a photo can add signs, but it cannot decide the problem by itself.
+
+- **Phone.** The photo is shrunk to a JPEG of at most 1024 px on its long side (`web/src/lib/photo.ts`) and sent in `POST /ask` as `image` (base64, no `data:` prefix). The hub accepts a request without a photo up to 16 KB, and one with a photo up to about 1.4 MB. It refuses a file that is not a JPEG or is over 4096 px on a side, before the image library sees it (`hub/src/image.ts`). A question with a photo always waits for the hub: the phone AI cannot read photos.
+- **Answer.** `/ask` adds `photo` (`ok`, `not-plant`, `no-signs`, `unreadable`, or `unavailable` when the hub has no photo reading) and `photoSigns` (the English signs, shown to the farmer as "Nakita sa litrato"). A photo that is not rice or corn, or shows nothing wrong, adds nothing to matching; the chat reply is told, and the app says so. The pesticide guardrail checks the photo text too. The photo is not stored on the hub, and the log keeps only the English signs and the time.
+- **Speed.** The model loads in the background at startup (about 8 s once the files are cached) and stays in memory. One photo took 28 to 35 s on the dev laptop's CPU (measured 2026-10-09, with the machine otherwise idle), and 192 s once while other processes held the CPU at 82%. The first photo may wait for the load. The phone waits up to 180 s. `VISION_MAX_NEW_TOKENS` (default 64) caps the description.
+- **Limits.** The vision encoder takes a fixed 280 image tokens (a higher budget fails with a token and feature mismatch), so small spots in a wide photo can be missed. The same scene encoded as a different JPEG gave different descriptions. Close-up photos of the affected part should do better. This has been tried only on drawn test leaves, not on real field photos or any labeled photo set, so its accuracy is unknown. See Pending decisions.
+
+## Voice
+
+A farmer can speak the question instead of typing it (the mic button next to the text box). With `HUB_VOICE=on`, the phone records up to 30 seconds and the hub writes it down with the local Gemma 4 E2B audio model. No internet is needed. The words go into the text box and the farmer checks them before sending, so a mishearing never becomes an answer by itself. It uses the same ONNX folder and the same loaded model as photo reading (`GEMMA_MODEL_DIR`, `onnx-community/gemma-4-E2B-it-ONNX`, which includes `audio_encoder*.onnx`), one job at a time on the CPU. The llama.cpp route cannot do this: its GGUF has no audio projector file.
+
+```
+HUB_VOICE=on
+GEMMA_MODEL_DIR=E:/models/gemma-4-E2B-it-ONNX
+```
+
+- **Phone.** The mic button records with the browser's `MediaRecorder`, converts the audio to 16 kHz mono (`web/src/lib/recorder.ts`), and sends it to `POST /transcribe` as `{ "audio": "<base64 16-bit PCM>" }`. Tap the mic again to stop. It stops by itself at 30 seconds. The response is `{ "status": "ok" | "empty" | "unreadable" | "unavailable", "text": "..." }`. The prompt asks for the words as spoken, in the language spoken, with no translation (`TRANSCRIBE_PROMPT` in `shared/src/prompt.ts`).
+- **Fallback.** If the hub is not reachable or has voice off, the button uses the browser's own speech service as before. That one needs internet, and only some browsers have it (see Known issues).
+- **Privacy.** The recording is not stored. The hub log keeps only the length of the recording and of the text, not the words. The words reach the log only if the farmer sends them as a question.
+- **Speed.** A 6 s English recording took about 26 s to transcribe on the dev laptop's CPU (measured 2026-10-09). The phone waits up to 120 s. The first recording after a start may wait for the model to load.
+- **Browsers allow the microphone only on `localhost` and on https.** A phone that opens the app over plain `http://<laptop-ip>` gets no microphone and the button falls back to browser speech or hides. This is the same problem as "Hub network" in Pending decisions.
+- **Limits.** Tested only with synthetic English speech. No Tagalog, Taglish, or Cebuano recording has been tried, and no farmer's voice, phone microphone, or field noise. The model card lists Filipino among its trained languages but gives no accuracy for it. See Pending decisions.
+
 ## How matching and Gemma split the work
 
 The matcher (keyword, Laya, or `hybrid`) decides which problem it is and whether it is sure. Gemma only explains that decision in Taglish. It does not diagnose. One exception: in `hybrid` mode on the llama.cpp route, when keyword is not sure, Gemma first turns the farmer's words into one or two plain English sentences, and keyword and Laya match those. Gemma does not name a problem in that step, and the English is logged. The same rule holds on the phone, where keyword matching decides. See `answerQuestion` in `hub/src/answer.ts` and `buildMessages` and `notesToExplain` in `shared/src/prompt.ts`.
@@ -130,10 +163,28 @@ Two rules keep Gemma's English from causing wrong answers (`hub/src/matchers/hyb
 | Matcher verdict | What Gemma gets | What Gemma writes |
 | --- | --- | --- |
 | Sure | The top problem's note only, marked "sure" | Explains that problem in numbered steps |
-| Not sure | Every candidate note (at most two), marked "not sure" | Says it is not sure, names the signs that tell the candidates apart, and says to call the agriculturist |
-| No match | Nothing. The hub skips Gemma (logged as `skipped-no-match`) | Nothing. The phone shows its own no-match line |
+| Not sure | Every candidate note (at most two), marked "not sure" | Says in one sentence what is unclear, then asks one question about the signs that tell the candidates apart. No steps |
+| Best guess (two questions in a row with no clear match) | The top note only, marked "best guess" | Says it is the most likely problem but not certain, gives its first steps, and asks nothing |
+| No match, or small talk | The chat: the farmer's earlier symptom messages and the last few turns | Replies to what the farmer said and asks one question. Never names a problem |
 
 The verdict goes in the user message, not the system prompt, so llama.cpp keeps reusing its cached system prompt.
+
+### Guardrail rails
+
+Two rails, borrowed from how open-source guardrail libraries (NVIDIA NeMo Guardrails, Meta Llama Guard and Prompt Guard) split the work. Both are plain rules in `shared/src/rails.ts`, so they run on the phone and the hub, offline.
+
+- **Input rail.** A message that tries to change the helper's rules, show its instructions, or make it play another role ("ignore previous instructions", "kalimutan mo ang mga panuto") goes to the chat with a fixed reply. It is not matched, no photo is read, and the model never sees it, even when it also has a symptom word in it. The prompts also tell the model the farmer's message is data, not orders.
+- **Grounding rail.** A reply may name only the problems it was given notes for. If the hub's or phone's model names another problem from `knowledge/` (the farmer's own wording excepted), the reply is dropped like a pesticide violation and the curated notes show instead. The hub logs a `guardrail` event with the names. A chat reply with no notes may name none.
+- **Guardrail wording.** The brand and dosage check also catches caps, drops, cups, sachets, ppm, and a mix rate per tank with no number ("kada tangke").
+
+### How the chat works
+
+- **Small talk goes to the chat, not to matching.** A greeting, thanks, a request for help, or a complaint about an earlier answer gets a reply to what the farmer said. A message with a symptom in it is matched even when it starts with "hello po".
+- **Matching reads the whole chat.** The phone sends a `sessionId` (one per chat, reset by "Bagong usapan") and its history. The hub keeps each chat's symptom messages in memory for six hours and matches on all of them, so "may butas po siya" after "may mali sa palay ko" is read as rice. If the hub has no record of a chat, it rebuilds it from the history the phone sends.
+- **One question per reply.** The hub keeps the first question in a reply and drops the rest. After two questions in a row with no clear match, the reply gives its best answer and says what is uncertain.
+- **A match is shown as "Tugma" only when it is sure.** The card names the symptom words it matched on ("Dahil sa").
+
+The logic lives in `shared/src/conversation.ts` (routing, session text, the one-question rule, the notice rule) and `hub/src/conversation/state.ts` (the per-chat state).
 
 ## Device tiers
 
@@ -143,7 +194,7 @@ The verdict goes in the user message, not the system prompt, so llama.cpp keeps 
 | Phone AI | Any phone browser can try. WebGPU is preferred; WebAssembly is the slower fallback. The code has no device check, and the repo has no phone test. | Gemma 4 E2B in the browser, after a first download of about 3.1 GB (estimate from a code comment). The phone explains only the match that keyword matching chose. | Once loaded on that phone. Whether the browser keeps the download across visits is not checked. |
 | Village hub | Cooperative or barangay members | Keyword matching by default. Optional Laya matching and optional Gemma 4 E2B explanation (E4B not run). | Yes, on the local network |
 
-Questions the phone does not answer itself queue on the phone. The app sends them when it starts, when the browser fires an online event, when the farmer taps Sync now, or after a new question when the hub answers its health check. Nothing polls for the hub's Wi-Fi. A question the phone AI answers is marked answered only when generation finishes, and a sync that runs during generation can still send it to the hub (see Known issues). The phone uses keyword matching only; Laya runs on the hub.
+Questions the phone does not answer itself queue on the phone. The app sends them when it starts, when the browser fires an online event, when the farmer taps **Ipadala ngayon** in Mga setting, or after a new question when the hub answers its health check. Nothing polls for the hub's Wi-Fi. A question the phone AI answers is marked answered only when generation finishes, and a sync that runs during generation can still send it to the hub (see Known issues). The phone uses keyword matching only; Laya runs on the hub.
 
 No single phone runs the full model, so the plan does not promise AI on every phone.
 
@@ -200,21 +251,24 @@ These need a person to decide. The code does not guess them.
   - Gemma's answer stays Taglish for every language. Whether Cebuano farmers should get Cebuano answers is a team decision.
 - **Hub network.** A web app served over https cannot call a plain-http hub on the LAN (browsers block it as mixed content). Options: serve the app from the hub, or give the hub a trusted https address.
 - **Node version.** Node 20 reached end of life on 2026-04-30. Plan on Node 22 or 24. The hub itself needs Node 20.12 or later (`process.loadEnvFile`). The `engines` fields in `package.json` and `hub/package.json` still say `>=20`, which also allows 20.0 to 20.11; changing them is a team decision.
+- **Voice accuracy.** Nobody has measured the hub's speech writing on Tagalog, Taglish, or Cebuano. Before the farmers rely on it: record real farmers on real phones (quiet and noisy, short and long), write the correct text by hand, and compare it with what `/transcribe` returns, per language. Decide whether Cebuano needs its own prompt, and whether the 30-second limit is enough.
+- **Photo accuracy.** Nobody has measured how well Gemma's description of a real photo leads to the right problem. Before the farmers rely on it: collect labeled field photos (rice and corn, each problem in `knowledge/`, plus healthy plants and non-crop photos), run them through `/ask`, and score `photo` and `matchIds`. Decide whether the 280-token limit is acceptable, whether the E4B model (not run) is worth the extra time, and whether a hub without a spare CPU should leave `HUB_VISION` off.
 - **Remote repository.** `origin` is set to `https://github.com/LeinahI/appbuildersph-notskramz.git`. Whether that is the team's shared repo is not recorded here.
 
 ## Limits
 
-- This is a guide, not a diagnosis. It cannot identify a disease from a photo in this version.
+- This is a guide, not a diagnosis. A photo only adds signs for the matcher to read. The app does not identify a disease from a photo by itself, and photo reading has not been tested on real field photos.
 - The knowledge notes are a starting set. They are not yet reviewed by an agronomist.
 - Model answers can be wrong. The app shows the curated notes next to the AI text so the farmer can check them.
 - The eval set is written by the developer, not labeled by an agronomist. Its scores are optimistic.
 
 ## Known issues
 
+- **Photos are slow on a busy CPU.** Reading one takes about 30 s when the hub machine is idle, and minutes when other programs use the CPU. The first photo after a restart waits for the model to load. A photo question sent while the hub restarts is lost on the hub side and stays queued on the phone until the next sync.
 - **Phone AI retry.** After a load error the **Ihanda ang AI** button comes back, but tapping it does nothing until the page is reloaded. The worker is kept after an error (`web/src/lib/llm.ts`).
-- **Phone AI and sync.** A question the phone AI answers is marked answered only when generation finishes. A sync that runs during generation (Sync now, or an online event) can still send it to the hub, and a failed generation stays queued for the next sync. The app has no status that keeps it out of the sync yet.
+- **Phone AI and sync.** A question the phone AI answers is marked answered only when generation finishes. A sync that runs during generation (Ipadala ngayon, or an online event) can still send it to the hub, and a failed generation stays queued for the next sync. The app has no status that keeps it out of the sync yet.
 - **Laya errors.** A failure after startup is not retried on the CPU. In `laya` mode `/ask` returns an error. In `hybrid` mode the hub returns keyword's candidates marked not sure, or no match, and logs nothing.
-- **Voice input needs a network.** Typing works offline. In Chrome, the Web Speech API sends speech to a browser service (`web/src/components/VoiceInput.tsx`). Keep voice out of any offline demo.
+- **Browser voice input needs a network.** Typing works offline. With `HUB_VOICE` off, or when the hub cannot be reached, the mic button uses the Web Speech API, which in Chrome sends speech to a browser service (`web/src/components/VoiceInput.tsx`). With the hub's voice on and reachable, the mic works offline.
 - **Offline phone AI is not yet tested.** The model weights and the ONNX runtime files are cached after the first online load, but a network-off reload has not been run on the demo laptop. See [docs/DEMO.md](docs/DEMO.md).
 - **Startup time.** With Gemma on, the hub takes about 40 to 50 s to start listening on the dev laptop (measured 2026-10-09, see `docs/agent-notes/`). Laya's load time adds to that when `laya` or `hybrid` is set, and it has not been measured.
 

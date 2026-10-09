@@ -28,5 +28,10 @@ eval/results/
 !.env.example
 
 .cursor/
+.agents/
+.codegraph/
+.codex-tmp/
 /gemma-onnx-folder
 /task
+# Speech clips fetched for pnpm eval:voice
+eval/voice-clips/

@@ -1,4 +1,4 @@
-import { nextFollowUps, sessionNotes, type ChatTurn, type TurnOutcome } from '@ugatan/shared';
+import { nextFollowUps, sessionNotes, type AskResponse, type ChatTurn, type TurnOutcome } from '@ugatan/shared';
 
 /** Most chats the hub keeps in memory. The one nobody has written to for longest goes first. */
 export const MAX_SESSIONS = 200;
@@ -8,6 +8,8 @@ export const SESSION_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_KEPT = 40;
 /** Question and reply pairs kept per chat. The model reads the last few. */
 const MAX_TURNS = 8;
+/** Answers kept per chat, by request id, so a retried request gets the same answer back. */
+const MAX_REPLIES = 20;
 
 /**
  * What the hub knows about one chat before the next question. Built from the phone's sessionId and kept between
@@ -16,17 +18,26 @@ const MAX_TURNS = 8;
 export interface Session {
   /** Every question the farmer asked, oldest first. The crop is read from these. */
   questions: string[];
-  /** The farmer's symptom messages, oldest first. Small talk is left out. The matcher reads these. */
+  /**
+   * The farmer's symptom messages about the problem still open, oldest first. Small talk and off-topic messages are
+   * left out, and a clear match or a final answer closes the problem and empties them. The matcher reads these.
+   */
   notes: string[];
+  /** The knowledge id of the problem the app last named in this chat. Questions about it are answered from its notes. */
+  lastMatch?: string;
   /** The last few question and reply pairs, as the phone showed them. */
   turns: ChatTurn[];
   /** Questions in a row the hub asked with no clear match. */
   followUps: number;
+  /** The answers already given in this chat, by request id, newest last. */
+  replies: { uid: string; response: AskResponse }[];
 }
 
 /** Chats in memory, by the phone's sessionId. Lost on restart, which the phone's history covers. */
 export class ConversationStore {
   private readonly sessions = new Map<string, { session: Session; touched: number }>();
+  /** The request currently running for each chat, and the ones queued behind it. */
+  private readonly queues = new Map<string, Promise<unknown>>();
   private readonly clock: () => number;
 
   constructor(clock: () => number = Date.now) {
@@ -52,6 +63,25 @@ export class ConversationStore {
       this.sessions.delete(key);
     }
   }
+
+  /**
+   * Runs one request at a time for a chat. Two questions from the same chat read and write the same notes, so the
+   * second waits for the first to finish instead of overwriting it. Other chats are not held up.
+   */
+  exclusive<T>(id: string, task: () => Promise<T>): Promise<T> {
+    const previous = this.queues.get(id) ?? Promise.resolve();
+    const run = previous.then(task);
+    // The queue entry never rejects, so one failed request does not block the ones behind it.
+    const settled = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.queues.set(id, settled);
+    void settled.then(() => {
+      if (this.queues.get(id) === settled) this.queues.delete(id);
+    });
+    return run;
+  }
 }
 
 /**
@@ -66,18 +96,38 @@ export function sessionBefore(
 ): Session {
   const stored = sessionId && store ? store.get(sessionId) : undefined;
   if (stored) {
-    return { questions: [...stored.questions], notes: [...stored.notes], turns: [...stored.turns], followUps: stored.followUps };
+    return {
+      questions: [...stored.questions],
+      notes: [...stored.notes],
+      turns: [...stored.turns],
+      followUps: stored.followUps,
+      replies: [...stored.replies],
+      ...(stored.lastMatch ? { lastMatch: stored.lastMatch } : {}),
+    };
   }
   const questions = history.map((t) => t.question);
-  return { questions, notes: sessionNotes(questions, hasSign), turns: history.slice(-MAX_TURNS), followUps: 0 };
+  return { questions, notes: sessionNotes(questions, hasSign), turns: history.slice(-MAX_TURNS), followUps: 0, replies: [] };
 }
 
-/** The chat after one exchange. Small talk adds no note, and a clear match resets the follow-up count. */
-export function sessionAfter(before: Session, question: string, reply: string, outcome: TurnOutcome): Session {
+/**
+ * The chat after one exchange. Small talk adds no note. A clear match or a final answer closes the problem: its notes
+ * are emptied, so the next sign is matched on its own and never mixed with a problem already answered. `named` is
+ * the problem the reply named, if any.
+ */
+export function sessionAfter(before: Session, question: string, reply: string, outcome: TurnOutcome, named?: string): Session {
+  const closed = outcome === 'clear' || outcome === 'done';
+  const lastMatch = named ?? before.lastMatch;
   return {
     questions: [...before.questions, question].slice(-MAX_KEPT),
-    notes: outcome === 'small' ? [...before.notes] : [...before.notes, question].slice(-MAX_KEPT),
+    notes: closed ? [] : outcome === 'small' ? [...before.notes] : [...before.notes, question].slice(-MAX_KEPT),
     turns: [...before.turns, { question, reply }].slice(-MAX_TURNS),
     followUps: nextFollowUps(before.followUps, outcome),
+    replies: [...before.replies],
+    ...(lastMatch ? { lastMatch } : {}),
   };
+}
+
+/** The chat with this answer kept under its request id, so a retry of the same request gets the same answer. */
+export function withReply(session: Session, uid: string, response: AskResponse): Session {
+  return { ...session, replies: [...session.replies, { uid, response }].slice(-MAX_REPLIES) };
 }

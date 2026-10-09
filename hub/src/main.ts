@@ -3,6 +3,7 @@ import { loadEnvFile } from './env.js';
 import { createGemmaExplainer } from './explain/gemma.js';
 import { createGemmaLlamaCppExplainer } from './explain/gemma-llamacpp.js';
 import { offExplainer, type Explainer } from './explain/index.js';
+import { createGemmaMultimodal, type GemmaMultimodal } from './explain/multimodal.js';
 import { fileLogger } from './log.js';
 import { createKeywordMatcher } from './matchers/keyword.js';
 import { createHybridMatcher, type Describe } from './matchers/hybrid.js';
@@ -72,6 +73,26 @@ async function main(): Promise<void> {
     }
   }
 
+  // Photo and speech reading run on the CPU from the ONNX folder, whichever route writes the explanation. One model
+  // serves both. It loads in the background, so the hub starts listening at once; a photo or recording that
+  // arrives early waits for the load.
+  let multimodal: GemmaMultimodal | undefined;
+  if (config.vision || config.voice) {
+    multimodal = createGemmaMultimodal({
+      modelDir: config.gemmaModelDir!,
+      dtype: config.multimodalDtype,
+      audioDtype: config.audioDtype ?? undefined,
+      device: config.gemmaDevice,
+      imageMaxNewTokens: config.visionMaxNewTokens,
+      audioMaxNewTokens: config.voiceMaxNewTokens,
+    });
+    void multimodal.preload().then((ok) => {
+      if (!ok) logger.write({ event: 'error', where: 'multimodal-load', message: 'Photo and speech reading failed to load. It is tried again on the next use.' });
+    });
+  }
+  const imageDescriber = config.vision ? multimodal : undefined;
+  const transcriber = config.voice ? multimodal : undefined;
+
   const server = createHubServer({
     matcher,
     explainer,
@@ -79,10 +100,19 @@ async function main(): Promise<void> {
     logger,
     // One store for the whole hub: each phone chat keeps its notes here between questions.
     conversations: new ConversationStore(),
-    info: { matcher: matcher.name, explainer: explainer.name },
+    imageDescriber,
+    transcriber,
+    info: {
+      matcher: matcher.name,
+      explainer: explainer.name,
+      vision: imageDescriber ? 'on' : 'off',
+      voice: transcriber ? 'on' : 'off',
+    },
   });
   server.listen(config.port, config.host, () => {
-    console.log(`Ugatan hub listening on http://${config.host}:${config.port} (matcher: ${matcher.name}, explainer: ${explainer.name})`);
+    console.log(
+      `Ugatan hub listening on http://${config.host}:${config.port} (matcher: ${matcher.name}, explainer: ${explainer.name}, vision: ${imageDescriber ? 'on' : 'off'}, voice: ${transcriber ? 'on' : 'off'})`,
+    );
   });
 }
 

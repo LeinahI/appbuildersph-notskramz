@@ -1,0 +1,36 @@
+{
+  "id": "rice-armyworm",
+  "crop": "rice",
+  "name": "Rice armyworm (harabas)",
+  "keywords": ["armyworm", "army worm", "armyworms", "harabas", "arabas", "tagustos", "ear cutting caterpillar", "ear cutting caterpillars", "cut panicles", "cut the panicles", "cut the rice panicles", "panicles at the base", "cut heads", "panicles cut at the base", "heads cut at the base", "falling panicles", "fallen panicles", "drooping panicles", "only the midribs", "eaten to the midrib", "midribs left", "caterpillars at night", "feed at night", "feeding at night", "pinutol ang uhay", "naputol na uhay", "nalaglag na uhay", "natumba ang uhay", "uod na kumakain sa gabi"],
+  "signs": [
+    "Young palay cut at ground level, and older plants with only the midribs of the leaves left",
+    "Grain heads cut at the base, so they droop or fall to the ground",
+    "Caterpillars that feed at night or on cloudy days and hide in weeds or plant waste during the day"
+  ],
+  "actions": [
+    "Flood the seedbed: this is the best defense at the seedling stage",
+    "Clear weeds in and around the seedbed and the field, and plow fallow land",
+    "Dig a trench around the field, put ashes or branches in it, and collect the trapped caterpillars by hand",
+    "Look for caterpillars at night or early in the morning and hand-pick them",
+    "Avoid unnecessary broad-spectrum sprays, so the wasps and spiders that feed on them survive"
+  ],
+  "callExpertIf": "Many seedlings are cut or many grain heads are falling",
+  "insect": {
+    "commonName": "Armyworm",
+    "scientificName": "Mythimna sp.",
+    "localNames": [
+      "Harabas",
+      "Arabas",
+      "Tagustos"
+    ],
+    "stages": ["vegetative", "reproductive", "ripening"],
+    "stageNote": "from the seedbed to grain filling; head cutting is mostly at heading",
+    "biological": [
+      "Wasps that attack the caterpillars",
+      "Spiders"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

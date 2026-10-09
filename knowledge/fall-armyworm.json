@@ -13,6 +13,21 @@
     "Ask your agriculturist about approved biological control options and follow the product label"
   ],
   "callExpertIf": "Many plants are damaged or larvae are eating into the growing point",
+  "insect": {
+    "commonName": "Fall armyworm",
+    "scientificName": "Spodoptera frugiperda",
+    "localNames": [
+      "Harabas (the general word for armyworm caterpillars)"
+    ],
+    "stages": ["vegetative", "reproductive"],
+    "stageNote": "from seedlings and the whorl stage up to the ear",
+    "biological": [
+      "Trichogramma and Telenomus egg wasps",
+      "Wasps that attack the caterpillars",
+      "Earwigs, ants, and ladybird beetles",
+      "Birds"
+    ]
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

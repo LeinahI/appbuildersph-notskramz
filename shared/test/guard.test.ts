@@ -26,6 +26,13 @@ describe('pesticide guardrail', () => {
     ['Ibuhos ang 500 mg kada tangke', 'dosage'],
     ['Gamitin ang Padan sa palayan', 'brand'],
     ['Malathion ang ipang-spray', 'brand'],
+    ['Maghalo ng dalawang litro sa isang ektarya', 'dosage'],
+    ['Maglagay ng isang kutsarang pamatay', 'dosage'],
+    ['Mag-spray ng 2 litre kada ektarya', 'dosage'],
+    ['Gumamit ng 2 milliliters kada litro', 'dosage'],
+    ['Gamitin ang isang litro bawat ektarya', 'dosage'],
+    ['Gumamit ng isoprothiolane sa palayan', 'brand'],
+    ['Gumamit ng lambda cyhalothrin sa mais', 'brand'],
   ])('blocks "%s"', (text, kind) => {
     const found = findViolations(text);
     expect(found.some((v) => v.kind === kind)).toBe(true);

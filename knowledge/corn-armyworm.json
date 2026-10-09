@@ -1,0 +1,38 @@
+{
+  "id": "corn-armyworm",
+  "crop": "corn",
+  "name": "Corn armyworm (harabas)",
+  "keywords": ["armyworm", "army worm", "armyworms", "harabas", "arabas", "anogba", "alabag", "tagus tus", "eaten to the midrib", "eaten down to the midrib", "only the midrib", "midribs left", "feed at night", "feeding at night", "stripped plants", "stripped leaves", "marching caterpillars", "caterpillars at night", "caterpillars hide in the weeds", "uod na kumakain sa gabi", "kinain hanggang gitnang ugat", "gitnang ugat na lang"],
+  "signs": [
+    "Leaves eaten from the edges down to the midrib, leaving ragged plants",
+    "Greenish to dark caterpillars with pale stripes along the sides, feeding at night and hiding under plant waste or weeds by day",
+    "Young plants stripped in bad attacks"
+  ],
+  "actions": [
+    "Look for the caterpillars in the evening or early morning, and hand-pick and crush them",
+    "Clear weeds and other host plants in and around the field, and till the soil before planting",
+    "Where practical, let ducks into the field",
+    "Ask the agriculturist about pheromone traps to watch for the moths"
+  ],
+  "callExpertIf": "Many young plants are being stripped or the caterpillars are spreading across the field",
+  "insect": {
+    "commonName": "Armyworm",
+    "scientificName": "Mythimna separata, Spodoptera exempta",
+    "localNames": [
+      "Harabas",
+      "Arabas (Ilocano)",
+      "Anogba (Cebuano)",
+      "Alabag (Pangasinan)",
+      "Tagus-tus (Panay)"
+    ],
+    "stages": ["vegetative", "reproductive"],
+    "stageNote": "mostly on the leaves of young plants; the caterpillars can also eat the leaves of young ears",
+    "biological": [
+      "Parasitic flies and wasps",
+      "Ducks",
+      "Birds"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

@@ -1,0 +1,34 @@
+{
+  "id": "rice-whorl-maggot",
+  "crop": "rice",
+  "name": "Rice whorl maggot (langaw palay)",
+  "keywords": ["whorl maggot", "rice whorl maggot", "maggot", "langaw palay", "langaw bukid", "tiny holes at the leaf edge", "tiny holes along the leaf edges", "white patches near the leaf edge", "white streaks at the leaf edge", "yellowish streaks at the leaf edge", "leaves break in the wind", "torn by wind", "maliliit na butas sa gilid ng dahon", "puting guhit sa gilid ng dahon", "nababali ang dahon sa hangin"],
+  "signs": [
+    "Tiny holes and white or yellowish streaks along the leaf edges of young plants",
+    "Twisted leaves that break easily in the wind",
+    "Stunted plants with fewer tillers; many plants recover as they grow"
+  ],
+  "actions": [
+    "Check young plants in the first weeks after transplanting, especially where the water stands",
+    "Keep the field from standing water for long periods, following local water-management advice",
+    "Protect the small wasps, flies, and spiders that feed on the maggots and flies by avoiding unnecessary sprays"
+  ],
+  "callExpertIf": "Many young plants are stunted or the damage keeps spreading after the plants should have recovered",
+  "insect": {
+    "commonName": "Rice whorl maggot",
+    "scientificName": "Hydrellia philippina",
+    "localNames": [
+      "Langaw palay",
+      "Langaw bukid"
+    ],
+    "stages": ["vegetative"],
+    "stageNote": "from seedling to tillering, where the water stands",
+    "biological": [
+      "Small wasps that attack the eggs and maggots",
+      "Long-legged flies that eat the eggs",
+      "Spiders"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

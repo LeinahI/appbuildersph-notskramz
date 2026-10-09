@@ -6,9 +6,12 @@ import { join } from 'node:path';
 // so the team can label it later. Farmers should not type their names.
 export type LogEvent =
   | { event: 'question'; uid: string; crop: string; text: string; route?: 'match' | 'chat' }
+  | { event: 'voice'; status: string; seconds?: number; chars?: number; reason?: string; ms?: number }
+  | { event: 'photo'; uid: string; status: string; english?: string; reason?: string; ms?: number }
   | { event: 'match'; uid: string; matcher: string; ids: string[]; clear: boolean; english?: string }
   | { event: 'escalation'; uid: string; reason: 'no-match' | 'not-sure' }
   | { event: 'explanation'; uid: string; status: string; chars: number }
+  | { event: 'guardrail'; uid: string; rail: 'grounding'; names: string[] }
   | { event: 'error'; where: string; message: string };
 
 export interface Logger {

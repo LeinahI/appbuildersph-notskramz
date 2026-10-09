@@ -14,8 +14,8 @@ function loadKnowledge(): { file: string; value: unknown }[] {
 describe('knowledge base files', () => {
   const files = loadKnowledge();
 
-  it('has the eight rice and corn problems from the business plan', () => {
-    expect(files.length).toBeGreaterThanOrEqual(8);
+  it('has the eight problems from the business plan and the insect profiles added later', () => {
+    expect(files.length).toBeGreaterThanOrEqual(20);
   });
 
   it.each(files.map((f) => [f.file, f] as const))('%s is a valid entry', (_name, { file, value }) => {

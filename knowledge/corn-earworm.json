@@ -1,0 +1,35 @@
+{
+  "id": "corn-earworm",
+  "crop": "corn",
+  "name": "Corn earworm (ulod sa puso)",
+  "keywords": ["corn earworm", "earworm", "ear worm", "helicoverpa", "cotton bollworm", "bollworm", "worm in the ear", "worms in the ear", "worm at the tip of the ear", "tip of the corn ear", "tip of the ear", "worms in the corn ear", "worms on the corn ear", "eating the silk", "eating the kernels", "worms at the tip of the ear", "eaten silk", "silk eaten", "chewed silk", "clipped silk", "damaged kernels at the tip", "droppings at the tip of the ear", "droppings on the ear tip", "moldy ear tip", "uod sa puso", "ulod sa puso", "uod sa dulo ng mais", "kinain ang buhok ng mais"],
+  "signs": [
+    "Chewed silk and kernels at the tip of the ear, with many droppings",
+    "Green to brown caterpillars, often with stripes, inside the ear tip",
+    "Moldy kernels at the damaged tip; earlier, chewed leaves and tassel"
+  ],
+  "actions": [
+    "Check the ear tips and the silk during silking, and hand-pick the caterpillars",
+    "Plant at the same time as your neighbors, and avoid growing other host crops next to the corn",
+    "Ask the agriculturist about a light or pheromone trap to watch for moths",
+    "Protect ladybird beetles and spiders by avoiding unnecessary broad-spectrum sprays"
+  ],
+  "callExpertIf": "Many ears are damaged at the tip or the damage is spreading",
+  "insect": {
+    "commonName": "Corn earworm",
+    "scientificName": "Helicoverpa armigera",
+    "localNames": [
+      "Ulod sa puso (Cebuano)"
+    ],
+    "stages": ["vegetative", "reproductive", "ripening"],
+    "stageNote": "from the whorl stage to silking, mostly at the ear tip and kernels",
+    "biological": [
+      "Trichogramma egg wasps",
+      "Ladybird beetles",
+      "Spiders",
+      "The fungus Beauveria bassiana"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

@@ -18,8 +18,8 @@ export default defineConfig({
         start_url: '.',
         scope: '.',
         display: 'standalone',
-        background_color: '#faf9f5',
-        theme_color: '#faf9f5',
+        background_color: '#f1f5ee',
+        theme_color: '#1f5c2e',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -27,7 +27,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,png,svg,woff2,webmanifest}'],
         navigateFallback: 'index.html',
         // The phone AI loads its ONNX runtime (wasm) from jsDelivr, pinned to one version. Keep those files after the
         // first online load, so the model can start with the network off. The model weights are cached by

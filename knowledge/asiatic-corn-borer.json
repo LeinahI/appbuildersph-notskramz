@@ -12,6 +12,24 @@
     "Plant on a schedule coordinated with neighbors to reduce pest build-up"
   ],
   "callExpertIf": "Stalks are breaking or tunnels are found in many plants",
+  "insect": {
+    "commonName": "Asian corn borer",
+    "scientificName": "Ostrinia furnacalis",
+    "localNames": [
+      "Dalipog, Gitagit (Ilocano)",
+      "Tuhob (Cebuano)",
+      "Amasok, Tipgoy (Bicol)",
+      "Ulad (Kapampangan)"
+    ],
+    "stages": ["vegetative", "reproductive", "ripening"],
+    "stageNote": "from about four weeks after planting until harvest; worst at tasseling",
+    "biological": [
+      "Trichogramma egg wasps",
+      "Earwigs that eat the eggs and young caterpillars",
+      "Minute pirate bugs",
+      "The fungus Beauveria bassiana"
+    ]
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

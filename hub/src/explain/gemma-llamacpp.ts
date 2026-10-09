@@ -88,9 +88,9 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
     return english || null;
   }
 
-  async function chat({ text, history, notes, final }: ChatInput): Promise<string> {
+  async function chat({ text, history, ...options }: ChatInput): Promise<string> {
     // The earlier turns are set as the session's history, so the reply follows the conversation.
-    const [, ...turns] = buildChatMessages(text, history, undefined, { notes, final });
+    const [, ...turns] = buildChatMessages(text, history, undefined, options);
     const question = turns.pop()!.content;
     const items: ChatHistoryItem[] = [{ type: 'system', text: chatSystem }];
     for (const t of turns) items.push(t.role === 'user' ? { type: 'user', text: t.content } : { type: 'model', response: [t.content] });

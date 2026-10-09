@@ -10,6 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource-variable/dm-sans": "5.3.0",
+    "@fontsource-variable/manrope": "5.3.0",
     "@huggingface/transformers": "4.3.0",
     "@ugatan/shared": "workspace:*",
     "dexie": "4.4.6",

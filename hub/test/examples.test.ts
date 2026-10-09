@@ -9,7 +9,10 @@ import { loadKnowledge } from '../src/knowledge';
 // A gap may come back "not sure", never as a confident wrong answer.
 const KNOWN_ENGLISH_GAPS: ReadonlySet<string> = new Set(['stem-borer']);
 
-const rows = parseEvalCsv(readFileSync(new URL('../../eval/descriptions.csv', import.meta.url), 'utf8'));
+// descriptions.csv holds the original problems; descriptions-insects.csv holds the insect profiles added later.
+const rows = ['descriptions.csv', 'descriptions-insects.csv'].flatMap((file) =>
+  parseEvalCsv(readFileSync(new URL(`../../eval/${file}`, import.meta.url), 'utf8')),
+);
 const knowledge = loadKnowledge(new URL('../../knowledge/', import.meta.url));
 const matcher = createKeywordMatcher(knowledge);
 
