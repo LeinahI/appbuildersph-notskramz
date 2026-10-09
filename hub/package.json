@@ -1,0 +1,26 @@
+{
+  "name": "@ugatan/hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "eval": "tsx ../eval/run.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@receptron/laya": "0.1.2",
+    "@ugatan/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "tsx": "4.23.15",
+    "typescript": "5.6.3",
+    "vitest": "2.1.9"
+  }
+}
