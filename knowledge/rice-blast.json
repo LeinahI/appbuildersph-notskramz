@@ -1,0 +1,18 @@
+{
+  "id": "rice-blast",
+  "crop": "rice",
+  "name": "Rice blast",
+  "keywords": ["rice blast", "blast", "diamond", "spindle", "mata ng isda", "leeg", "gray", "grey", "itim na batik"],
+  "signs": [
+    "Diamond- or spindle-shaped lesions on leaves with gray centers and brown edges",
+    "Neck rot at the base of the panicle, where grain can fail to fill"
+  ],
+  "actions": [
+    "Avoid heavy nitrogen and overly dense planting",
+    "Keep fields weed-free and well drained to reduce humidity",
+    "In future seasons, plant varieties recommended for your area as resistant to blast"
+  ],
+  "callExpertIf": "Lesions reach the stem or the panicle neck, which can cause major grain loss",
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

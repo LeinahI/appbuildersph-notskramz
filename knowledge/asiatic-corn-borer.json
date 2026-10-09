@@ -1,0 +1,17 @@
+{
+  "id": "asiatic-corn-borer",
+  "crop": "corn",
+  "name": "Asiatic corn borer",
+  "keywords": ["asiatic corn borer", "corn borer", "tunnel", "bulok na tangkay", "tassel", "nabali ang tangkay"],
+  "signs": [
+    "Small holes in leaves arranged in rows, followed by tunnels in the stalk with frass",
+    "Broken stalks or tassels"
+  ],
+  "actions": [
+    "Remove and destroy crop residue after harvest",
+    "Plant on a schedule coordinated with neighbors to reduce pest build-up"
+  ],
+  "callExpertIf": "Stalks are breaking or tunnels are found in many plants",
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

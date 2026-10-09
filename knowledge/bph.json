@@ -1,0 +1,20 @@
+{
+  "id": "bph",
+  "crop": "rice",
+  "name": "Brown planthopper (BPH) / hopperburn",
+  "keywords": ["brown planthopper", "planthopper", "hopperburn", "bph", "hopper", "kumpol", "nasunog"],
+  "signs": [
+    "Patches of plants turn orange-brown and dry out, often in circular patches (hopperburn)",
+    "Many small brown insects at the base of the plants, especially in dense clumps",
+    "Sooty mold or honeydew at the base of the plants"
+  ],
+  "actions": [
+    "Check the base of the plants for small brown insects, especially in dense clumps",
+    "Avoid excess nitrogen fertilizer and split applications into smaller doses",
+    "Keep the field from standing water for long periods, following local water-management advice",
+    "Protect natural predators like spiders and mirid bugs by avoiding unnecessary broad-spectrum sprays"
+  ],
+  "callExpertIf": "The damage is spreading fast across the field or plants are collapsing",
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

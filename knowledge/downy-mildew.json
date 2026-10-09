@@ -1,0 +1,19 @@
+{
+  "id": "downy-mildew",
+  "crop": "corn",
+  "name": "Downy mildew",
+  "keywords": ["downy mildew", "downy", "mildew", "puting pulbos", "dilaw na guhit", "striping", "kulubot"],
+  "signs": [
+    "Yellow or white streaks along the leaves",
+    "White, fuzzy growth on the underside of leaves during humid mornings",
+    "Stunted plants or unusual tassel growth"
+  ],
+  "actions": [
+    "Use certified, resistant seed for future planting",
+    "Improve drainage and spacing to reduce humidity",
+    "Remove and destroy infected plants"
+  ],
+  "callExpertIf": "Many plants show stripes or stunting, or the disease is spreading quickly",
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

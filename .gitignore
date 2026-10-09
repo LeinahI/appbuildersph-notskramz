@@ -1,0 +1,28 @@
+# Dependencies and build output. Never commit these.
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+.cache/
+.DS_Store
+
+# Model weights and caches. Never commit these.
+*.onnx
+*.onnx_data
+*.gguf
+*.safetensors
+models/
+.laya-cache/
+LAYA_CACHE/
+web/public/models/
+
+# Local pilot logs and eval output. Logs hold farmer questions, so keep them off git.
+hub/logs/
+hub/data/
+eval/results/
+
+# Local environment
+.env
+.env.*
+!.env.example

@@ -1,0 +1,18 @@
+{
+  "id": "bacterial-leaf-blight",
+  "crop": "rice",
+  "name": "Bacterial leaf blight",
+  "keywords": ["bacterial leaf blight", "bacterial", "blight", "tuyo sa gilid", "guhit sa gilid", "gilid"],
+  "signs": [
+    "Water-soaked stripes along the leaf edges that turn yellow, then white or gray",
+    "Bacterial ooze, sometimes visible as droplets in the early morning"
+  ],
+  "actions": [
+    "Avoid overhead irrigation splash and excess nitrogen",
+    "Remove and destroy heavily infected plant residue, away from the field",
+    "Use resistant varieties in future seasons"
+  ],
+  "callExpertIf": "It is spreading across the whole field or the leaves are drying out quickly",
+  "reviewedBy": "",
+  "reviewedOn": ""
+}
