@@ -1,0 +1,36 @@
+{
+  "id": "rice-caseworm",
+  "crop": "rice",
+  "name": "Rice caseworm (mambibilot)",
+  "keywords": ["rice caseworm", "caseworm", "case worm", "case bearer", "mambibilot", "uod na nasa supot", "uod na may supot", "leaf tips cut", "cut leaf tips", "leaf tips are cut", "cut as if with scissors", "cut with scissors", "floating cases", "floating tubes", "tubes floating", "cases floating", "ladder like", "pinutol na dulo ng dahon", "lumulutang na supot", "supot na lumulutang", "putol ang dulo ng dahon"],
+  "signs": [
+    "Leaf tips cut off as if with scissors, and leaves scraped in a ladder pattern",
+    "Small tube-shaped cases made of leaf pieces, floating on the water or hanging on the plants, with a caterpillar inside",
+    "Young seedlings can die in bad attacks"
+  ],
+  "actions": [
+    "Drain the field for a few days, because the caterpillars need water to live and move",
+    "Transplant older seedlings and give them enough space",
+    "Use balanced fertilizer",
+    "Protect the spiders, dragonflies, and water beetles that eat the caterpillars by avoiding unnecessary sprays"
+  ],
+  "callExpertIf": "Many seedlings or leaves are damaged across the field",
+  "insect": {
+    "commonName": "Rice caseworm",
+    "scientificName": "Nymphula depunctalis",
+    "localNames": [
+      "Mambibilot",
+      "Uod na nasa supot"
+    ],
+    "stages": ["vegetative", "reproductive"],
+    "stageNote": "from young seedlings to flowering, where there is standing water",
+    "biological": [
+      "Water beetles that eat the caterpillars",
+      "Spiders",
+      "Dragonflies",
+      "Birds"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

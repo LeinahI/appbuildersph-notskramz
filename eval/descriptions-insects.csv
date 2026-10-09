@@ -1,0 +1,32 @@
+text,expectedId,lang
+"There are slender brown bugs on the rice grain heads and the whole field smells bad",rice-bug,en
+"Maraming atangya sa palay namin, maliliit at walang laman ang mga butil",rice-bug,taglish
+"Nakita ko ang atangya sa uhay ng palay, mabaho ang palayan",rice-bug,tl
+"Mga butil sa uhay nagkulubot ug walay sulod, naay dangaw",rice-bug,ceb
+"Black shield-shaped bugs at the base of the rice plants and the leaves are turning reddish brown",rice-black-bug,en
+"May itim na atangya sa paanan ng palay at parang nasusunog ang bukid",rice-black-bug,taglish
+"Rice black bug outbreak, the field looks burned, bug burn everywhere",rice-black-bug,en
+"Small green leafhoppers jump when I shake the rice plants, and the leaves turn yellow-orange and stunted",green-leafhopper,en
+"May tungro ang palay namin, bansot at kulay dalandan ang dahon",green-leafhopper,tl
+"Berdeng ngusong kabayo sa palay, dilaw at bansot ang mga halaman",green-leafhopper,taglish
+"The rice leaves are rolled into tubes and there are white transparent streaks, a caterpillar is inside",rice-leaffolder,en
+"Nakabilot ang mga dahon ng palay at may puting guhit, magbibilot yata ito",rice-leaffolder,taglish
+"Leaf tips of the rice are cut as if with scissors and small tube cases are floating on the water",rice-caseworm,en
+"May mambibilot sa palayan, pinutol ang dulo ng dahon at may lumulutang na supot sa tubig",rice-caseworm,taglish
+"Harabas sa palay, pinutol ang uhay at nalaglag sa lupa",rice-armyworm,tl
+"Armyworms cut the rice panicles at the base and they fall to the ground, they feed at night",rice-armyworm,en
+"Tiny holes and white streaks at the edge of the young rice leaves, langaw palay",rice-whorl-maggot,taglish
+"Stunted young corn with leaves turning yellow then black, and corn planthoppers on the plants",corn-planthopper,en
+"May ngusong kabayo sa mais, bansot ang halaman at may malagkit na dahon",corn-planthopper,taglish
+"Worms at the tip of the corn ear eating the silk and the kernels, lots of droppings",corn-earworm,en
+"May uod sa puso ng mais, kinain ang silk at ang dulo ng butil",corn-earworm,taglish
+"Harabas sa mais, kinain hanggang gitnang ugat ang mga dahon at gabi sila kumakain",corn-armyworm,taglish
+"The corn leaves are eaten down to the midrib by striped caterpillars that feed at night, armyworm",corn-armyworm,en
+"Aphids on the corn tassel and silk, sticky with black sooty mold and ants walking on it",corn-aphid,en
+"Maraming aplat sa tassel ng mais, malagkit at may langgam",corn-aphid,taglish
+"Young corn plants are cut at ground level and there are gaps in the rows, I think cutworm",common-cutworm,en
+"Naputol sa lupa ang mga bagong tanim na mais, may puwang sa hanay, cutworm yata",common-cutworm,taglish
+"Rice stem borer, aksip, dead hearts that pull out easily",stem-borer,taglish
+"Brown planthopper sa palay, ngusong kabayo ang tawag dito dito sa amin, nasunog ang bilog na bahagi",bph,taglish
+"Fall armyworm in the corn whorl with sawdust-like frass",fall-armyworm,en
+"Asian corn borer tunnels in the corn stalk, broken tassel",asiatic-corn-borer,en

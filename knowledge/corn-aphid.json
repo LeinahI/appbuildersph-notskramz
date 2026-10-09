@@ -1,0 +1,35 @@
+{
+  "id": "corn-aphid",
+  "crop": "corn",
+  "name": "Corn leaf aphid (aplat)",
+  "keywords": ["corn leaf aphid", "aphid", "aphids", "aplat", "dugos dugos", "colonies in the whorl", "aphids on the tassel", "aphids on the silk", "insects on the tassel", "insects on the silk", "sticky tassel", "sticky silk", "black sooty mold", "ants on the corn", "ants among the insects", "maliliit na insekto sa tassel", "malagkit na tassel", "langgam sa mais", "gagmay nga insekto sa tassel"],
+  "signs": [
+    "Clusters of small bluish-green soft insects in the whorl, on the tassel, and on the silk",
+    "Sticky honeydew and black sooty mold; ants may walk among the aphids",
+    "Curled, yellow or reddish leaves and stunted plants; poor pollination when the tassel and silk are coated"
+  ],
+  "actions": [
+    "Check the whorl and the tassel every week before and during tasseling",
+    "Rotate corn with a crop that is not a grass, such as legumes",
+    "Plants stressed by drought suffer more, so follow local water-management advice",
+    "Protect ladybird beetles and lacewings by avoiding unnecessary broad-spectrum sprays"
+  ],
+  "callExpertIf": "The tassels and silk are thickly coated or the plants are curling and stunting across the field",
+  "insect": {
+    "commonName": "Corn leaf aphid",
+    "scientificName": "Rhopalosiphum maidis",
+    "localNames": [
+      "Aplat (Ilocano)",
+      "Dugos-dugos (Cebuano)"
+    ],
+    "stages": ["vegetative", "reproductive"],
+    "stageNote": "from the whorl stage to tasseling and silking",
+    "biological": [
+      "Ladybird beetles",
+      "Lacewings",
+      "Parasitic wasps"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

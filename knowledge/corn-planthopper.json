@@ -1,0 +1,38 @@
+{
+  "id": "corn-planthopper",
+  "crop": "corn",
+  "name": "Corn planthopper (ngusong kabayo)",
+  "keywords": ["corn planthopper", "corn planthoppers", "planthoppers on the corn", "planthopper on corn", "planthoppers on corn", "ngusong kabayo", "waya waya", "sip sip", "silam silam", "maize mosaic", "mosaic virus", "streaked leaves", "sooty mold on corn", "leaves turn yellow then black", "honeydew on the leaves", "stunted corn", "bansot na mais", "nangingitim na dahon", "malagkit na dahon"],
+  "signs": [
+    "Stunted young plants with leaves turning yellow, then black with sooty mold, and scorched edges (hopperburn)",
+    "Small brownish hoppers and sticky honeydew on the leaves and in the whorl",
+    "Streaked, mosaic-patterned leaves and poor ears when the hopper carries maize mosaic virus"
+  ],
+  "actions": [
+    "Clear weeds and weedy fallow land after harvest, and rest the field before replanting",
+    "Prepare the land well and keep the edges of the field free of weeds",
+    "Rotate with legumes or another crop that is not a grass",
+    "Avoid too much nitrogen fertilizer",
+    "Protect spiders, earwigs, mirid bugs, and wasps by avoiding unnecessary broad-spectrum sprays"
+  ],
+  "callExpertIf": "Many young plants are stunted, turning black, or showing mosaic streaks",
+  "insect": {
+    "commonName": "Corn planthopper",
+    "scientificName": "Peregrinus maidis",
+    "localNames": [
+      "Ngusong kabayo (Tagalog)",
+      "Waya-waya (Cebuano, Ilonggo)",
+      "Sip-sip, Silam-silam (Ilocano)"
+    ],
+    "stages": ["vegetative", "reproductive"],
+    "stageNote": "mostly on young plants, but the numbers can build up later",
+    "biological": [
+      "Spiders",
+      "Earwigs",
+      "Mirid bugs",
+      "Wasps"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

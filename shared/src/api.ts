@@ -13,6 +13,28 @@ export interface ChatTurn {
  */
 export const MAX_HISTORY_TURNS = 30;
 
+/**
+ * Longest photo the hub accepts, as base64 characters. The phone shrinks a photo to about 1024 px on its long
+ * side before sending, which is a few hundred KB.
+ */
+export const MAX_IMAGE_CHARS = 1_400_000;
+
+/** Longest side, in pixels, of a photo the hub will decode. The phone sends less; this stops oversized files. */
+export const MAX_IMAGE_SIDE = 4096;
+
+/** How the hub read the photo that came with a question. Absent when the question had no photo. */
+export type PhotoStatus =
+  /** The hub described signs on the plant and matched on them together with the farmer's words. */
+  | 'ok'
+  /** The photo is not of rice or corn. */
+  | 'not-plant'
+  /** The photo shows a rice or corn plant but no clear sign, or is too unclear. */
+  | 'no-signs'
+  /** The photo could not be decoded, or the description failed the guardrail. */
+  | 'unreadable'
+  /** This hub cannot read photos. The question was answered from the farmer's words alone. */
+  | 'unavailable';
+
 /** POST /ask on the village hub. Body. */
 export interface AskRequest {
   /** Client-generated id. Lets the phone match the answer to its queued question. */
@@ -24,6 +46,13 @@ export interface AskRequest {
   history?: ChatTurn[];
   /** Id of this chat (one per "Bagong usapan"). The hub keeps the chat's notes under it, so every reply reads the whole chat. */
   sessionId?: string;
+  /** The knowledge id of a symptom picture the farmer tapped. The hub takes it as the match, instead of matching the label. */
+  symptomId?: string;
+  /**
+   * A photo of the plant: JPEG, base64 encoded, with no "data:" prefix. The hub's vision model writes down the
+   * signs it sees, and matching reads them together with `text`. The photo never decides the problem by itself.
+   */
+  image?: string;
 }
 
 /** POST /ask on the village hub. Response. The phone shows its own curated notes plus this explanation. */
@@ -44,4 +73,44 @@ export interface AskResponse {
    * Null when not available. Already guarded on the hub.
    */
   explanation: string | null;
+  /** How the photo was read. Absent when the question came without a photo. */
+  photo?: PhotoStatus;
+  /** The signs the hub saw in the photo, in plain English, so the app can show what was read. Null unless `photo` is "ok". */
+  photoSigns?: string | null;
+}
+
+/** Sample rate of the speech the phone sends to POST /transcribe, and the rate the hub's audio model reads. */
+export const AUDIO_SAMPLE_RATE = 16000;
+
+/** Longest recording the hub transcribes, in seconds. The audio model reads at most 30 seconds. */
+export const MAX_AUDIO_SECONDS = 30;
+
+/** Shortest recording the hub transcribes, in seconds. Anything shorter is a tap, not speech. */
+export const MIN_AUDIO_SECONDS = 0.3;
+
+/** Longest `audio` field, in base64 characters: 30 seconds of 16-bit samples at 16 kHz. */
+export const MAX_AUDIO_CHARS = Math.ceil((MAX_AUDIO_SECONDS * AUDIO_SAMPLE_RATE * 2) / 3) * 4;
+
+/** POST /transcribe on the village hub. Body. */
+export interface TranscribeRequest {
+  /** Speech as 16-bit little-endian PCM, mono, 16 kHz, base64 encoded. */
+  audio: string;
+}
+
+/** How the hub read a recording. */
+export type TranscribeStatus =
+  /** `text` holds what the farmer said. */
+  | 'ok'
+  /** The recording had no speech the hub could write down. */
+  | 'empty'
+  /** The recording could not be read, or the model failed. */
+  | 'unreadable'
+  /** This hub cannot transcribe speech. */
+  | 'unavailable';
+
+/** POST /transcribe on the village hub. Response. The phone puts `text` in the question box for the farmer to check. */
+export interface TranscribeResponse {
+  status: TranscribeStatus;
+  /** What the farmer said, as written text. Null unless `status` is "ok". */
+  text: string | null;
 }

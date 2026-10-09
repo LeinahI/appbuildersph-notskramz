@@ -1,0 +1,39 @@
+{
+  "id": "rice-black-bug",
+  "crop": "rice",
+  "name": "Rice black bug (itim na atangya)",
+  "keywords": ["rice black bug", "black bug", "black bugs", "itim na atangya", "scotinophara", "black shield bug", "black shield bugs", "shield shaped bugs", "black shield shaped bugs", "bug burn", "black bugs at the base", "black insects at the base", "black insects under the plants", "dark bugs at the base", "itim na insekto sa paanan", "itim na bug sa palay", "reddish brown leaves", "reddish brown plants", "turning reddish brown", "pulang kayumanggi ang dahon", "burned patches with black bugs", "light trap"],
+  "signs": [
+    "Black, shield-shaped bugs at the base of the plants and on the stems",
+    "Leaves turn reddish-brown, tillers are fewer, dead hearts do not pull out at the base, and grain heads are empty or missing",
+    "In bad attacks the plants die in patches and the field looks burned (bug burn)"
+  ],
+  "actions": [
+    "Remove weeds in and around the field, because the bugs live on them",
+    "Plant varieties that mature together, within about a month of the usual planting time in your barangay",
+    "Avoid too much nitrogen fertilizer and do not stagger planting",
+    "Raise the water so the egg masses stay under water for more than a day",
+    "Ask the agriculturist about a strong light trap at night around the full moon, the way PhilRice advises",
+    "Where practical, release ducks about a month after transplanting",
+    "Plow the field after harvest to destroy the bugs and their hiding places"
+  ],
+  "callExpertIf": "Many black bugs are on each hill, plants are dying, or patches of the field look burned",
+  "insect": {
+    "commonName": "Rice black bug",
+    "scientificName": "Scotinophara coarctata",
+    "localNames": [
+      "Itim na atangya"
+    ],
+    "stages": ["vegetative", "reproductive"],
+    "stageNote": "from seeding to flowering",
+    "biological": [
+      "Ducks released about a month after transplanting",
+      "Wasps",
+      "Ground beetles and ladybird beetles",
+      "Spiders",
+      "Red ants and damsel bugs"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

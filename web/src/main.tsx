@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import '@fontsource-variable/manrope';
+import '@fontsource-variable/dm-sans';
 import App from './App';
 import AdminLayout, { RequireAdmin } from './pages/admin/AdminLayout';
 import AuditPage from './pages/admin/AuditPage';

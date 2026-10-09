@@ -1,5 +1,6 @@
 import { carriesNotice } from './conversation.js';
 import { findViolations } from './guard.js';
+import { LAST_RESORT, insectFacts } from './insect.js';
 import type { KeywordResult } from './types.js';
 
 /**
@@ -42,8 +43,12 @@ export function composeAnswer({ result, explanation }: ComposeInput): ComposedAn
 
   if (clearMatch) {
     for (const { entry } of result.matches) {
-      lines.push('', entry.name, 'Mga senyales:', ...entry.signs.map((s) => `- ${s}`));
+      const insect = insectFacts(entry);
+      lines.push('', entry.name);
+      if (insect) lines.push(`Kulisap: ${insect.identity}`, `Tawag sa atin: ${insect.localNames}`, `Inaatake: ${insect.attacks}`);
+      lines.push('Mga senyales:', ...entry.signs.map((s) => `- ${s}`));
       lines.push('Mga hakbang:', ...entry.actions.map((a, i) => `${i + 1}. ${a}`));
+      if (insect) lines.push(`Likas na kalaban: ${insect.biological}`, `Huling opsyon: ${LAST_RESORT}`);
       lines.push(`Kumonsulta agad kung: ${entry.callExpertIf}`);
     }
   }

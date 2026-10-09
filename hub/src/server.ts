@@ -1,15 +1,23 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { KnowledgeEntry } from '@ugatan/shared';
-import { answerQuestion, MAX_BODY_BYTES, parseAskRequest, type AnswerDeps } from './answer.js';
+import type { AudioTranscriber } from './explain/index.js';
+import { parseTranscribeRequest, transcribeSpeech } from './transcribe.js';
+import { answerQuestion, MAX_BODY_BYTES, MAX_IMAGE_BODY_BYTES, parseAskRequest, type AnswerDeps } from './answer.js';
 
 export interface HubInfo {
   matcher: string;
   explainer: string;
+  /** "on" when the hub reads photos. */
+  vision: string;
+  /** "on" when the hub transcribes speech. */
+  voice: string;
 }
 
 export interface HubDeps extends AnswerDeps {
   info: HubInfo;
   knowledge: readonly KnowledgeEntry[];
+  /** Transcribes recordings. Without it, POST /transcribe answers "unavailable". */
+  transcriber?: AudioTranscriber;
 }
 
 // The hub serves the LAN only. The phone app is often hosted on another origin, so CORS is open.
@@ -26,7 +34,10 @@ function send(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 
-/** Reads the whole body so the client finishes sending before it gets a reply. Oversized bodies are dropped, not stored. */
+/**
+ * Reads the whole body so the client finishes sending before it gets a reply. Oversized bodies are dropped, not stored.
+ * The limit is the photo limit; a request without a photo is held to the smaller one by the caller.
+ */
 function readBody(req: IncomingMessage): Promise<{ body: string } | { tooLarge: true }> {
   return new Promise((resolve, reject) => {
     let size = 0;
@@ -34,7 +45,7 @@ function readBody(req: IncomingMessage): Promise<{ body: string } | { tooLarge: 
     const chunks: Buffer[] = [];
     req.on('data', (chunk: Buffer) => {
       size += chunk.length;
-      if (size > MAX_BODY_BYTES) {
+      if (size > MAX_IMAGE_BODY_BYTES) {
         tooLarge = true;
         chunks.length = 0;
         return;
@@ -80,6 +91,12 @@ export function createHubServer(deps: HubDeps): Server {
         send(res, 400, { error: 'Body must be JSON.' });
         return;
       }
+      // Only a photo may push a request past the small limit.
+      const hasImage = typeof json === 'object' && json !== null && 'image' in json;
+      if (!hasImage && Buffer.byteLength(read.body) > MAX_BODY_BYTES) {
+        send(res, 413, { error: 'Body too large.' });
+        return;
+      }
       const parsed = parseAskRequest(json);
       if (typeof parsed === 'string') {
         send(res, 400, { error: parsed });
@@ -90,6 +107,34 @@ export function createHubServer(deps: HubDeps): Server {
       } catch {
         send(res, 500, { error: 'Hindi nasagot ang tanong. Subukan ulit.' });
       }
+      return;
+    }
+
+    if (req.method === 'POST' && path === '/transcribe') {
+      let read: Awaited<ReturnType<typeof readBody>>;
+      try {
+        read = await readBody(req);
+      } catch {
+        send(res, 400, { error: 'Body could not be read.' });
+        return;
+      }
+      if ('tooLarge' in read) {
+        send(res, 413, { error: 'Body too large.' });
+        return;
+      }
+      let json: unknown;
+      try {
+        json = JSON.parse(read.body);
+      } catch {
+        send(res, 400, { error: 'Body must be JSON.' });
+        return;
+      }
+      const parsed = parseTranscribeRequest(json);
+      if (typeof parsed === 'string') {
+        send(res, 400, { error: parsed });
+        return;
+      }
+      send(res, 200, await transcribeSpeech(parsed.audio, deps));
       return;
     }
 

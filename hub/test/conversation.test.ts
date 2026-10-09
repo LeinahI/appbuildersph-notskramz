@@ -132,7 +132,7 @@ describe('follow-up questions', () => {
     const { matcher } = scriptedMatcher(() => noMatch);
     const { explainer, chats } = recordingExplainer();
     const deps = { matcher, explainer, knowledge, logger: quiet, conversations: new ConversationStore() };
-    for (const [i, text] of ['may kakaiba sa palay', 'may kakaiba pa rin sa palay', 'ano pa kaya'].entries()) {
+    for (const [i, text] of ['may kakaiba sa palay', 'may kakaiba pa rin sa palay', 'kakaiba pa rin talaga ang palay'].entries()) {
       await answerQuestion({ uid: `n${i}`, crop: 'rice', text, sessionId: 'n' }, deps);
     }
     expect(chats.map((c) => c.final)).toEqual([false, false, true]);
@@ -143,7 +143,7 @@ describe('follow-up questions', () => {
     const { matcher } = scriptedMatcher((call) => (call === 2 ? { ids: ['rice-blast'], clear: true } : { ids: ['rice-blast', 'bph'], clear: false }));
     const { explainer, explains } = recordingExplainer();
     const deps = { matcher, explainer, knowledge, logger: quiet, conversations: new ConversationStore() };
-    for (const [i, text] of ['may batik', 'may batik pa', 'may batik na may spindle', 'may ibang batik'].entries()) {
+    for (const [i, text] of ['may batik', 'may batik pa', 'may batik na may spindle', 'may ibang batik na kulay kayumanggi sa dulo ng dahon'].entries()) {
       await answerQuestion({ uid: `s${i}`, crop: 'rice', text, sessionId: 's' }, deps);
     }
     expect(explains[3]!.bestGuess).toBe(false);
@@ -154,7 +154,92 @@ describe('follow-up questions', () => {
     const { matcher } = scriptedMatcher(() => ({ ids: ['rice-blast'], clear: true }));
     const { explainer } = recordingExplainer('Ano ang kulay? Ilan ang apektado?');
     const res = await answerQuestion({ uid: 'q1', crop: 'rice', text: 'may batik' }, { matcher, explainer, knowledge, logger: quiet });
-    expect(res.explanation).toBe('Ano ang kulay?');
+    // A sure match always names the problem, even when the model left the name out.
+    expect(res.explanation).toBe('Malamang Rice blast po ito. Ano ang kulay?');
+  });
+});
+
+describe('after the app named a problem', () => {
+  const sure = { ids: ['rice-blast'], clear: true };
+
+  it('answers "ano ang gagawin ko?" from the named problem, without matching the old notes again', async () => {
+    const { matcher, seen } = scriptedMatcher(() => sure);
+    const { explainer, chats } = recordingExplainer();
+    const deps = { matcher, explainer, knowledge, logger: quiet, conversations: new ConversationStore() };
+    await answerQuestion({ uid: 'd1', crop: 'any', text: 'may diamond na batik sa dahon ng palay', sessionId: 'd' }, deps);
+    const res = await answerQuestion({ uid: 'd2', crop: 'any', text: 'ano ang gagawin ko?', sessionId: 'd' }, deps);
+    expect(seen).toHaveLength(1);
+    expect(res.matchIds).toEqual([]);
+    expect(chats[0]!.diagnosis?.id).toBe('rice-blast');
+    expect(chats[0]!.unmatched).toBe(false);
+  });
+
+  it('matches a new sign on its own, not mixed with the problem already answered', async () => {
+    const { matcher, seen } = scriptedMatcher(() => sure);
+    const { explainer } = recordingExplainer();
+    const deps = { matcher, explainer, knowledge, logger: quiet, conversations: new ConversationStore() };
+    await answerQuestion({ uid: 'n1', crop: 'any', text: 'may diamond na batik sa dahon ng palay', sessionId: 'n' }, deps);
+    await answerQuestion({ uid: 'n2', crop: 'any', text: 'may kuhol sa palayan', sessionId: 'n' }, deps);
+    expect(seen[1]!.text).toBe('may kuhol sa palayan');
+  });
+
+  it('starts a new problem when the farmer names the other crop', async () => {
+    const { matcher, seen } = scriptedMatcher(() => ({ ids: ['rice-blast', 'bph'], clear: false }));
+    const { explainer } = recordingExplainer();
+    const deps = { matcher, explainer, knowledge, logger: quiet, conversations: new ConversationStore() };
+    await answerQuestion({ uid: 'x1', crop: 'any', text: 'may batik sa dahon ng palay', sessionId: 'x' }, deps);
+    await answerQuestion({ uid: 'x2', crop: 'any', text: 'may dilaw na guhit sa mais', sessionId: 'x' }, deps);
+    expect(seen[1]).toEqual({ text: 'may dilaw na guhit sa mais', crop: 'corn' });
+  });
+});
+
+describe('fixed replies and the chat', () => {
+  it('answers a pesticide dose ask with a fixed line, never the model', async () => {
+    const { matcher, seen } = scriptedMatcher(() => noMatch);
+    const { explainer, chats } = recordingExplainer();
+    const res = await answerQuestion({ uid: 'p1', crop: 'any', text: 'ilang ml ng karate kada litro?' }, { matcher, explainer, knowledge, logger: quiet });
+    expect(seen).toEqual([]);
+    expect(chats).toEqual([]);
+    expect(res.explanationStatus).toBe('ok');
+    expect(res.explanation).toMatch(/Hindi po ako nagbibigay ng pangalan o dosis ng pesticide/);
+  });
+
+  it('never tells small talk that the problem could not be found, even after two failed questions', async () => {
+    const { matcher } = scriptedMatcher(() => noMatch);
+    const { explainer, chats } = recordingExplainer();
+    const deps = { matcher, explainer, knowledge, logger: quiet, conversations: new ConversationStore() };
+    for (const [i, text] of ['may kakaiba sa palay', 'may kakaiba pa rin sa palay', 'tulungan mo ako'].entries()) {
+      await answerQuestion({ uid: `t${i}`, crop: 'rice', text, sessionId: 't' }, deps);
+    }
+    expect(chats[2]!.unmatched).toBe(false);
+    expect(chats[2]!.final).toBe(false);
+  });
+
+  it('asks again after a final answer instead of repeating "call the agriculturist"', async () => {
+    const { matcher } = scriptedMatcher(() => noMatch);
+    const { explainer, chats } = recordingExplainer();
+    const deps = { matcher, explainer, knowledge, logger: quiet, conversations: new ConversationStore() };
+    for (const [i, text] of ['may kakaiba sa palay', 'may kakaiba pa rin', 'kakaiba talaga', 'may sira sa tangkay'].entries()) {
+      await answerQuestion({ uid: `a${i}`, crop: 'rice', text, sessionId: 'a' }, deps);
+    }
+    expect(chats.map((c) => c.final)).toEqual([false, false, true, false]);
+    expect(chats[3]!.notes).toEqual([]);
+  });
+
+  it("replaces a small-talk reply that breaks the guardrail with the app's own line", async () => {
+    const { matcher } = scriptedMatcher(() => noMatch);
+    const explainer: Explainer = {
+      name: 'gemma',
+      async explain() {
+        return { status: 'ok', text: '' };
+      },
+      async chat() {
+        return { status: 'ok', text: 'Gumamit po ng Furadan.' };
+      },
+    };
+    const res = await answerQuestion({ uid: 'b1', crop: 'any', text: 'hello po' }, { matcher, explainer, knowledge, logger: quiet });
+    expect(res.explanationStatus).toBe('ok');
+    expect(res.explanation).not.toMatch(/Furadan/);
   });
 });
 

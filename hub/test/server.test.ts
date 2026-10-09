@@ -23,7 +23,7 @@ function startServer(explainer: Explainer, logger = silentLogger): Promise<void>
     explainer,
     knowledge,
     logger,
-    info: { matcher: 'keyword', explainer: explainer.name },
+    info: { matcher: 'keyword', explainer: explainer.name, vision: 'off', voice: 'off' },
   });
   return new Promise((resolve) => {
     server.listen(0, '127.0.0.1', () => {
@@ -53,7 +53,7 @@ describe('hub HTTP', () => {
   it('answers /health with the active matcher and explainer', async () => {
     const res = await fetch(`${base}/health`);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, matcher: 'keyword', explainer: 'off' });
+    expect(await res.json()).toEqual({ ok: true, matcher: 'keyword', explainer: 'off', vision: 'off', voice: 'off' });
   });
 
   it('answers OPTIONS for CORS preflight', async () => {
@@ -83,6 +83,20 @@ describe('hub HTTP', () => {
 
   it('rejects a body larger than 16 KB', async () => {
     const res = await ask({ uid: 'big', crop: 'rice', text: 'a'.repeat(20_000) });
+    expect(res.status).toBe(413);
+  });
+
+  it('accepts a photo past 16 KB, and says this hub did not read it', async () => {
+    // A JPEG header followed by filler, so the body is well past the small limit.
+    const header = Uint8Array.from([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x01, 0xe0, 0x02, 0x80, 0x03, 0x01, 0x22, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]);
+    const image = Buffer.concat([header, Buffer.alloc(60_000, 1)]).toString('base64');
+    const res = await ask({ uid: 'photo-1', crop: 'any', text: 'May butas ang dahon ng mais', image });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as AskResponse).photo).toBe('unavailable');
+  });
+
+  it('rejects a body larger than the photo limit', async () => {
+    const res = await ask({ uid: 'photo-2', crop: 'any', text: 'x', image: 'A'.repeat(1_500_000) });
     expect(res.status).toBe(413);
   });
 });

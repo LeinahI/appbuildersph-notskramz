@@ -1,0 +1,38 @@
+{
+  "id": "rice-leaffolder",
+  "crop": "rice",
+  "name": "Rice leaffolder (magbibilot)",
+  "keywords": ["rice leaffolder", "leaffolder", "leaf folder", "leaf roller", "leaffolders", "rolled leaves", "rolled leaf", "rolled into tubes", "rolled into a tube", "leaves are rolled", "folded into tubes", "folded into a tube", "folded leaves", "folded leaf", "white streaks", "white transparent streaks", "transparent streaks", "see through streaks", "scraped leaves", "magbibilot", "maniniklop", "nakabilot na dahon", "nakatiklop na dahon", "bilot ang dahon", "puting guhit sa dahon", "transparent na guhit"],
+  "signs": [
+    "Leaves rolled or folded lengthwise into a tube, with a green caterpillar inside",
+    "White, see-through streaks on the leaves where the green part was scraped away",
+    "Many damaged leaves make the field look scorched"
+  ],
+  "actions": [
+    "Cut weeds on the banks and in the field, because grassy weeds shelter the moths",
+    "Use balanced fertilizer and avoid too much nitrogen",
+    "Avoid planting in shaded areas",
+    "Do not let the stubble regrow (no ratooning); plow or flood the stubble after harvest",
+    "Avoid unnecessary broad-spectrum sprays, so the wasps and spiders that feed on the caterpillars survive"
+  ],
+  "callExpertIf": "Many leaves are folded, especially the top leaf when the heads are forming",
+  "insect": {
+    "commonName": "Rice leaffolder",
+    "scientificName": "Cnaphalocrocis medinalis",
+    "localNames": [
+      "Magbibilot",
+      "Maniniklop"
+    ],
+    "stages": ["vegetative", "reproductive"],
+    "stageNote": "from seeding to flowering; palay recovers from early damage, but damage to the top leaf at booting hurts the yield",
+    "biological": [
+      "Trichogramma egg wasps",
+      "Wasps that attack the caterpillars",
+      "Ladybird beetles",
+      "Mirid bugs",
+      "Spiders"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

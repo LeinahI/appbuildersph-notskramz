@@ -59,9 +59,9 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
   // One model on one GPU: explaining, describing, and chatting share the queue.
   const enqueue = oneAtATime();
 
-  async function generate({ text, crop, entries, clear, bestGuess }: ExplainInput, maxTokens = opts.maxNewTokens): Promise<string> {
+  async function generate({ text, crop, entries, clear, bestGuess, photo }: ExplainInput, maxTokens = opts.maxNewTokens): Promise<string> {
     // The matcher's verdict goes in the user message, so the cached system prompt stays the same.
-    const [, user] = buildMessages(text, crop, entries, { maxWords: opts.maxWords, sure: clear, bestGuess });
+    const [, user] = buildMessages(text, crop, entries, { maxWords: opts.maxWords, sure: clear, bestGuess, photo });
     // Each question stands alone. Only the system prompt carries over.
     session.resetChatHistory();
     const result = await session.promptWithMeta(user!.content, {
@@ -88,9 +88,9 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
     return english || null;
   }
 
-  async function chat({ text, history, notes, final }: ChatInput): Promise<string> {
+  async function chat({ text, history, ...options }: ChatInput): Promise<string> {
     // The earlier turns are set as the session's history, so the reply follows the conversation.
-    const [, ...turns] = buildChatMessages(text, history, undefined, { notes, final });
+    const [, ...turns] = buildChatMessages(text, history, undefined, options);
     const question = turns.pop()!.content;
     const items: ChatHistoryItem[] = [{ type: 'system', text: chatSystem }];
     for (const t of turns) items.push(t.role === 'user' ? { type: 'user', text: t.content } : { type: 'model', response: [t.content] });

@@ -1,0 +1,33 @@
+{
+  "id": "common-cutworm",
+  "crop": "corn",
+  "name": "Common cutworm",
+  "keywords": ["cutworm", "cutworms", "cut worm", "seedlings cut at ground level", "plants cut at the base", "plants cut at ground level", "cut off at the soil", "gaps in the rows", "scratched leaves", "hairy egg masses", "egg clusters covered with hair", "eggs under hairy scales", "naputol sa lupa", "naputol ang mais sa ibaba", "may puwang sa hanay", "kinamot na dahon"],
+  "signs": [
+    "Young corn cut off at ground level, leaving gaps in the rows",
+    "Leaf surfaces scratched, holes, or leaves eaten down to the midrib",
+    "Egg clusters covered with a hairy scale on the leaves; worst in weedy fields"
+  ],
+  "actions": [
+    "Clear and till the weeds well before planting, so the young caterpillars have nothing to eat",
+    "In the morning, dig around a cut plant, find the caterpillar in the soil, and destroy it",
+    "Rotate crops and choose a clean field",
+    "Avoid unnecessary broad-spectrum sprays, so the wasps and birds that feed on the caterpillars help you"
+  ],
+  "callExpertIf": "Many seedlings are being cut or the gaps in the rows keep growing",
+  "insect": {
+    "commonName": "Common cutworm",
+    "scientificName": "Spodoptera litura",
+    "localNames": [
+      "Arabas (Ilocano)"
+    ],
+    "stages": ["vegetative"],
+    "stageNote": "young seedlings and young plants",
+    "biological": [
+      "Parasitic wasps, including braconid wasps",
+      "Birds"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

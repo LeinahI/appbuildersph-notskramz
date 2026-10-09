@@ -1,0 +1,35 @@
+{
+  "id": "rice-bug",
+  "crop": "rice",
+  "name": "Rice bug (atangya)",
+  "keywords": ["rice bug", "rice bugs", "rice seed bug", "earhead bug", "atangya", "dangaw", "long slender bug", "slender green bug", "slender brown bug", "bad smell in the field", "foul smell in the field", "bugs on the grain heads", "bugs on the rice grain heads", "bugs on the panicle", "slender brown bugs", "smells bad", "bad smell", "smelly field", "smelly bugs", "bugs sucking the grains", "empty grains", "unfilled grains", "shriveled grains", "half filled grains", "spotted grains", "discolored grains", "mabaho ang palayan", "mabahong insekto", "insekto sa uhay", "kulisap sa uhay", "lumiit na butil", "kulubot na butil", "maasim ang amoy"],
+  "signs": [
+    "Grains stay small, shriveled, spotted, or empty after the bugs suck the milk out of them",
+    "Slender brown or green bugs on the grain heads from flowering to the milk stage, with a bad smell in the field"
+  ],
+  "actions": [
+    "Weed the field and the banks, especially fallow land nearby, because the bugs live there before they fly to the palay",
+    "Plant at the same time as your neighbors so the heads do not flower over a long stretch",
+    "Check the grain heads every early morning or late afternoon from before flowering",
+    "Where there are few bugs, sweep them into a net early in the morning or late afternoon and destroy them",
+    "Ask the agriculturist about the PhilRice bait trap: a net with crushed golden apple snail hung above the plants around flowering"
+  ],
+  "callExpertIf": "Many bugs are on the grain heads at flowering or many grains are empty",
+  "insect": {
+    "commonName": "Rice bug",
+    "scientificName": "Leptocorisa oratorius",
+    "localNames": [
+      "Atangya",
+      "Dangaw (Ilocano)"
+    ],
+    "stages": ["reproductive", "ripening"],
+    "stageNote": "from flowering to the milk and soft dough stage",
+    "biological": [
+      "Small wasps that attack the eggs",
+      "Spiders",
+      "Grasshoppers that eat the eggs"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

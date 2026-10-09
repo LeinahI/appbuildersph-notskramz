@@ -3,6 +3,32 @@ import type { KnowledgeEntry } from './types.js';
 
 const ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const STAGES: readonly string[] = ['vegetative', 'reproductive', 'ripening'];
+
+const isTextList = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.length > 0 && value.every((s) => typeof s === 'string' && s.trim() !== '');
+
+/** Problems with the optional insect profile. Returns the profile's text too, so the guardrail checks it. */
+function checkInsect(value: unknown, errors: string[]): string[] {
+  if (value === undefined) return [];
+  if (typeof value !== 'object' || value === null) {
+    errors.push('insect must be an object');
+    return [];
+  }
+  const i = value as Record<string, unknown>;
+  for (const field of ['commonName', 'scientificName', 'stageNote'] as const) {
+    if (typeof i[field] !== 'string' || !i[field].trim()) errors.push(`insect.${field} is required`);
+  }
+  for (const field of ['localNames', 'biological'] as const) {
+    if (!isTextList(i[field])) errors.push(`insect.${field} must be a non-empty list of strings`);
+  }
+  if (!Array.isArray(i.stages) || i.stages.length === 0 || i.stages.some((s) => !STAGES.includes(s as string))) {
+    errors.push(`insect.stages must be a non-empty list of: ${STAGES.join(', ')}`);
+  }
+  return [i.commonName, i.scientificName, i.stageNote, ...(isTextList(i.localNames) ? i.localNames : []), ...(isTextList(i.biological) ? i.biological : [])].filter(
+    (s): s is string => typeof s === 'string',
+  );
+}
 
 /** Returns a list of problems. An empty list means the entry is valid. */
 export function validateEntry(value: unknown, fileId?: string): string[] {
@@ -36,7 +62,9 @@ export function validateEntry(value: unknown, fileId?: string): string[] {
     errors.push('reviewedOn is required once reviewedBy is set');
   }
 
-  const text = [e.name, e.callExpertIf, ...(Array.isArray(e.signs) ? e.signs : []), ...(Array.isArray(e.actions) ? e.actions : [])]
+  const insectText = checkInsect(e.insect, errors);
+
+  const text = [e.name, e.callExpertIf, ...insectText, ...(Array.isArray(e.signs) ? e.signs : []), ...(Array.isArray(e.actions) ? e.actions : [])]
     .filter((s): s is string => typeof s === 'string')
     .join(' | ');
   for (const v of findViolations(text)) {

@@ -1,42 +1,77 @@
 export * from './types.js';
-export { MAX_HISTORY_TURNS, type AskRequest, type AskResponse, type ChatTurn } from './api.js';
+export {
+  AUDIO_SAMPLE_RATE,
+  MAX_AUDIO_CHARS,
+  MAX_AUDIO_SECONDS,
+  MAX_HISTORY_TURNS,
+  MAX_IMAGE_CHARS,
+  MAX_IMAGE_SIDE,
+  MIN_AUDIO_SECONDS,
+  type AskRequest,
+  type AskResponse,
+  type ChatTurn,
+  type PhotoStatus,
+  type TranscribeRequest,
+  type TranscribeResponse,
+  type TranscribeStatus,
+} from './api.js';
 export {
   CHAT_FINAL,
   CHAT_HISTORY_TURNS,
+  CHAT_UNMATCHED,
   DESCRIBE_SYSTEM_PROMPT,
   MATCH_BEST_GUESS,
   MATCH_NOT_SURE,
   MATCH_SURE,
   NO_SIGNS,
   OTHER_CROP,
+  PHOTO_SYSTEM_PROMPT,
+  NO_SPEECH,
+  TRANSCRIBE_PROMPT,
   SYSTEM_PROMPT,
   buildChatMessages,
   buildDescribeMessages,
   buildMessages,
+  buildPhotoMessages,
+  transcriptText,
+  chatDiagnosis,
   chatSystemPrompt,
   notesToExplain,
+  photoOutcome,
   systemPrompt,
   type ChatMessage,
   type ChatOptions,
+  type PhotoOutcome,
   type PromptOptions,
 } from './prompt.js';
+export { CROP_NAME, LAST_RESORT, STAGE_NAME, insectFacts, type InsectFacts } from './insect.js';
 export { normalize, matchKeywords, keywordHits } from './keyword.js';
 export { cropOfChat, detectCrop } from './crop.js';
 export { PESTICIDE_NAMES, findViolations, isSafeText, type GuardViolation } from './guard.js';
+export { INJECTION_REPLY, isInjectionAttempt, ungroundedProblems } from './rails.js';
 export { validateEntry, assertValidEntries } from './knowledge.js';
 export {
   MAX_FOLLOW_UPS,
   SESSION_TEXT_CHARS,
   carriesNotice,
+  dropEchoQuestions,
+  fixedReply,
+  isAboutLastAnswer,
+  isQuestionWithoutSign,
   isFinalAnswer,
+  isOffTopic,
   isSmallTalk,
+  isUrgent,
   limitQuestions,
   mentionsTreatment,
   nextFollowUps,
+  notesForMatch,
   routeFor,
   sessionNotes,
   sessionText,
   smallTalkReply,
+  tidyReply,
+  withProblemName,
   type Route,
   type TurnOutcome,
 } from './conversation.js';
@@ -48,3 +83,4 @@ export {
   type ComposeInput,
   type ComposedAnswer,
 } from './answer.js';
+export { PHOTO_FORM, photoFormText, readPhotoForm, type PhotoFormReading } from './photo-form.js';

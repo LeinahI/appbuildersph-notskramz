@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { ChatTurn, Crop } from '@ugatan/shared';
+import type { ChatTurn, Crop, PhotoStatus } from '@ugatan/shared';
 
 /** A question waiting for the hub, or already answered. Stored on the phone. */
 export interface QueuedQuestion {
@@ -9,6 +9,12 @@ export interface QueuedQuestion {
   text: string;
   history?: ChatTurn[];
   symptomId?: string;
+  /** A photo of the plant, shrunk to a base64 JPEG. Only the hub reads it, so the question waits for the hub. */
+  image?: string;
+  /** How the hub read the photo, once it answered. */
+  photo?: PhotoStatus;
+  /** What the hub saw in the photo, in plain English. */
+  photoSigns?: string | null;
   sessionId?: string;
   conversationId?: string;
   route?: 'match' | 'chat';

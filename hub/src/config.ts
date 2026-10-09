@@ -38,6 +38,18 @@ export interface HubConfig {
   gemmaMaxNewTokens: number;
   /** Word limit the prompt asks for (GEMMA_MAX_WORDS). Shorter than the phone's 150 to save time. */
   gemmaMaxWords: number;
+  /** Read photos with the local Gemma 4 ONNX vision model (HUB_VISION=on). Needs GEMMA_MODEL_DIR. Off by default. */
+  vision: boolean;
+  /** Cap on the generated description of a photo (VISION_MAX_NEW_TOKENS). */
+  visionMaxNewTokens: number;
+  /** Transcribe recordings with the local Gemma 4 ONNX audio model (HUB_VOICE=on). Needs GEMMA_MODEL_DIR. Off by default. */
+  voice: boolean;
+  /** Cap on the generated transcript (VOICE_MAX_NEW_TOKENS). */
+  voiceMaxNewTokens: number;
+  /** ONNX weight variant for photo and speech reading (MULTIMODAL_DTYPE). Defaults to GEMMA_DTYPE. quantized is more exact and needs about 3 GB more memory. */
+  multimodalDtype: string;
+  /** ONNX weight variant for the audio encoder alone (AUDIO_DTYPE), when it should differ from the rest. Null leaves it with the rest. */
+  audioDtype: string | null;
   /** Folder for the pilot logs (JSON lines). Keep it off git. */
   logDir: string;
 }
@@ -105,6 +117,30 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
   const gemmaMaxNewTokens = positiveInteger('GEMMA_MAX_NEW_TOKENS', env.GEMMA_MAX_NEW_TOKENS, 128);
   const gemmaMaxWords = positiveInteger('GEMMA_MAX_WORDS', env.GEMMA_MAX_WORDS, 70);
 
+  const visionRaw = env.HUB_VISION ?? 'off';
+  if (visionRaw !== 'on' && visionRaw !== 'off') {
+    throw new Error(`HUB_VISION must be on or off. Got "${visionRaw}".`);
+  }
+  const vision = visionRaw === 'on';
+  // Photos go through the ONNX model whichever route writes the explanation: the GGUF has no vision file.
+  if (vision && gemmaModelDir === null) {
+    throw new Error('HUB_VISION=on needs GEMMA_MODEL_DIR, the folder of the Gemma 4 ONNX model.');
+  }
+  const visionMaxNewTokens = positiveInteger('VISION_MAX_NEW_TOKENS', env.VISION_MAX_NEW_TOKENS, 128);
+
+  const voiceRaw = env.HUB_VOICE ?? 'off';
+  if (voiceRaw !== 'on' && voiceRaw !== 'off') {
+    throw new Error(`HUB_VOICE must be on or off. Got "${voiceRaw}".`);
+  }
+  const voice = voiceRaw === 'on';
+  // Speech goes through the ONNX model too: the GGUF has no audio file.
+  if (voice && gemmaModelDir === null) {
+    throw new Error('HUB_VOICE=on needs GEMMA_MODEL_DIR, the folder of the Gemma 4 ONNX model.');
+  }
+  const voiceMaxNewTokens = positiveInteger('VOICE_MAX_NEW_TOKENS', env.VOICE_MAX_NEW_TOKENS, 192);
+  const multimodalDtype = env.MULTIMODAL_DTYPE?.trim() || env.GEMMA_DTYPE?.trim() || 'q4f16';
+  const audioDtype = env.AUDIO_DTYPE?.trim() || null;
+
   const port = Number(env.HUB_PORT ?? 8787);
   if (!Number.isInteger(port) || port < 0 || port > 65535) {
     throw new Error(`HUB_PORT must be a port number. Got "${env.HUB_PORT}".`);
@@ -129,6 +165,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
     gemmaDevice: env.GEMMA_DEVICE ?? 'cpu',
     gemmaMaxNewTokens,
     gemmaMaxWords,
+    vision,
+    visionMaxNewTokens,
+    voice,
+    voiceMaxNewTokens,
+    multimodalDtype,
+    audioDtype,
     logDir: resolve(cwd, env.HUB_LOG_DIR ?? 'logs'),
   };
 }

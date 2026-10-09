@@ -1,71 +1,181 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-/* Warm paper palette and serif answers, the same feel as the Claude chat screen. Dark mode follows the device. */
-:root {
-  color-scheme: light dark;
-  --c-bg: #faf9f5;
-  --c-surface: #ffffff;
-  --c-ink: #141413;
-  --c-muted: #73726c;
-  --c-line: rgba(31, 30, 29, 0.15);
-  --c-soft: rgba(31, 30, 29, 0.06);
-  --c-bubble: #f0eee6;
-  --c-accent: #c6613f;
-  --c-accent-hover: #b4552f;
-  --c-warn: #f7ecd2;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --c-bg: #262624;
-    --c-surface: #30302e;
-    --c-ink: #faf9f5;
-    --c-muted: #a8a69e;
-    --c-line: rgba(222, 220, 209, 0.18);
-    --c-soft: rgba(222, 220, 209, 0.08);
-    --c-bubble: #1f1e1d;
-    --c-accent: #d97757;
-    --c-accent-hover: #e48a6c;
-    --c-warn: #3b3524;
-  }
-}
-
-@theme inline {
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
-  --color-bg: var(--c-bg);
-  --color-surface: var(--c-surface);
-  --color-ink: var(--c-ink);
-  --color-muted: var(--c-muted);
-  --color-line: var(--c-line);
-  --color-soft: var(--c-soft);
-  --color-bubble: var(--c-bubble);
-  --color-accent: var(--c-accent);
-  --color-accent-hover: var(--c-accent-hover);
-  --color-warn: var(--c-warn);
+@theme {
+  --font-sans: 'DM Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Manrope Variable', 'DM Sans Variable', system-ui, sans-serif;
+  --color-field: #e9ede5;
+  --color-canvas: #e9ede5;
+  --color-surface: #fafbf7;
+  --color-ink: #26392d;
+  --color-leaf: #2b603e;
+  --color-leaf-soft: #e4edd9;
+  --color-sprout: #f1f5eb;
+  --color-sprout-line: #dce6d1;
+  --color-rule: #e1e6da;
+  --color-line: #d9e1d1;
+  --color-mist: #6f7c65;
+  --color-muted: #75846b;
+  --color-label: #395737;
+  --color-warn: #fff6e0;
+  /* Names used by the sign-in, admin and sidebar screens, mapped onto the green palette. */
+  --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+  --color-bg: #fafbf7;
+  --color-soft: rgb(43 96 62 / 8%);
+  --color-bubble: #e4edd9;
+  --color-accent: #2b603e;
+  --color-accent-hover: #244f34;
 }
 
 @layer base {
-  html,
-  body,
-  #root {
-    height: 100%;
+  :root {
+    color-scheme: light;
+    min-width: 320px;
+    min-height: 100%;
+  }
+
+  html {
+    min-height: 100%;
+    background: #e9ede5;
   }
 
   body {
-    @apply m-0 bg-bg font-sans text-ink antialiased;
+    @apply m-0 min-h-dvh overflow-x-hidden bg-canvas font-sans text-ink antialiased;
   }
 
-  button {
-    @apply cursor-pointer disabled:cursor-default;
+  #root {
+    min-height: 100dvh;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button,
+  select {
+    @apply cursor-pointer;
   }
 
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-accent;
+    outline: 3px solid #6b8b50;
+    outline-offset: 3px;
   }
 }
 
-/* Pieces that repeat across screens. Everything else is a utility class in the markup. */
+@layer components {
+
+  .chat-shell {
+    @apply flex h-dvh w-full flex-col bg-surface;
+  }
+
+  .chat-header {
+    @apply flex h-20 shrink-0 items-center justify-between border-b border-rule px-4 md:px-8;
+    padding-top: env(safe-area-inset-top);
+    height: calc(5rem + env(safe-area-inset-top));
+  }
+
+  .chat-main {
+    @apply flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 md:px-8;
+  }
+
+  .chat-content {
+    @apply mx-auto w-full max-w-[760px];
+    overflow-wrap: anywhere;
+  }
+
+  .chat-footer {
+    @apply shrink-0 bg-surface px-3 pt-3 md:px-8 md:pt-4;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .chat-composer {
+    @apply rounded-[26px] border border-line bg-white p-3 shadow-[0_2px_12px_rgba(43,66,43,0.04)] md:p-4;
+  }
+
+  .chat-composer:focus-within {
+    border-color: var(--color-leaf);
+    box-shadow: 0 0 0 3px rgb(43 96 62 / 14%);
+  }
+
+  .chat-textarea {
+    @apply block max-h-40 min-h-[56px] w-full resize-none overflow-y-auto border-0 bg-transparent px-2 py-1 text-base leading-6 text-ink placeholder:text-mist;
+  }
+
+  /* The rounded composer provides the textarea focus indicator. */
+  .chat-textarea:focus {
+    outline: none;
+  }
+
+  .chat-icon-button {
+    @apply grid size-12 shrink-0 place-items-center rounded-full text-leaf hover:bg-leaf-soft;
+  }
+
+  .chat-icon-button[aria-pressed='true'] {
+    @apply bg-leaf text-white;
+  }
+
+  .chat-notice {
+    @apply mb-0 mt-2 px-2 text-center text-sm leading-5 text-mist;
+  }
+
+  .chat-notice:empty {
+    @apply m-0;
+  }
+
+  .chat-history {
+    @apply m-auto w-[calc(100%_-_32px)] max-w-[640px] overflow-y-auto rounded-3xl border border-rule bg-surface p-5 text-ink shadow-xl;
+    max-height: calc(100dvh - 48px);
+  }
+
+  .chat-history::backdrop {
+    background: rgb(38 57 45 / 30%);
+  }
+
+  .card {
+    @apply mb-3.5 grid gap-3 rounded-xl bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)];
+  }
+
+  .field {
+    @apply grid gap-1.5 text-[0.95rem] font-semibold;
+  }
+
+  .input {
+    @apply box-border max-w-full rounded-lg border border-line p-2.5;
+  }
+
+  .btn {
+    @apply cursor-pointer rounded-lg bg-leaf px-4 py-2.5 font-semibold text-white disabled:cursor-default disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply bg-leaf-soft text-leaf;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+@keyframes ugatan-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.typing-dot {
+  animation: ugatan-dot 1.2s infinite ease-in-out;
+}
+
+/* Pieces shared by the sign-in, admin and sidebar screens. */
 @layer components {
   .icon-btn {
     @apply inline-flex size-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-soft hover:text-ink;
@@ -83,19 +193,4 @@
   .field-input {
     @apply box-border w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-base;
   }
-}
-
-@keyframes ugatan-dot {
-  0%,
-  80%,
-  100% {
-    opacity: 0.25;
-  }
-  40% {
-    opacity: 1;
-  }
-}
-
-.typing-dot {
-  animation: ugatan-dot 1.2s infinite ease-in-out;
 }

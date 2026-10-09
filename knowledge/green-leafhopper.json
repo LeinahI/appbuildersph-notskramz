@@ -1,0 +1,37 @@
+{
+  "id": "green-leafhopper",
+  "crop": "rice",
+  "name": "Green leafhopper (berdeng ngusong kabayo)",
+  "keywords": ["green leafhopper", "green leafhoppers", "leafhopper", "leafhoppers", "green hopper", "green hoppers", "small green hoppers", "tiny green hoppers", "berdeng ngusong kabayo", "berdeng hanip", "tungro", "may tungro", "tungro virus", "tungro disease", "tungro sa palay", "small green insects jump", "tiny green insects jump", "light green insects", "yellow orange leaves", "orange leaves", "yellow and stunted", "stunted and yellow", "bansot at dilaw", "dilaw na dahon at bansot", "kulay dalandan na dahon", "kulay dalandan ang dahon", "dilaw kahel na dahon", "orange yellow leaves"],
+  "signs": [
+    "Small bright-green insects that jump or fly off when the plants are shaken",
+    "Stunted plants with yellow to orange leaves and fewer tillers; this can be tungro, a virus the leafhopper carries",
+    "Yellow-orange leaves can look like lack of fertilizer, so look for the leafhoppers too"
+  ],
+  "actions": [
+    "Plant at the same time as your neighbors and leave a gap between crops, so there is nothing for the leafhoppers and tungro to live on",
+    "Transplant older seedlings, about three weeks old or more",
+    "Pull out and bury plants with tungro signs early, while only a few show them",
+    "Weed the field and the banks, and destroy stubble and volunteer rice after harvest",
+    "Avoid too much nitrogen fertilizer",
+    "Ask the agriculturist for tungro-resistant varieties that suit your area"
+  ],
+  "callExpertIf": "Many plants are stunted and yellow-orange, or the signs are spreading across the field",
+  "insect": {
+    "commonName": "Green leafhopper",
+    "scientificName": "Nephotettix virescens",
+    "localNames": [
+      "Berdeng ngusong kabayo"
+    ],
+    "stages": ["vegetative"],
+    "stageNote": "from seedling to panicle initiation (when the grain head starts to form)",
+    "biological": [
+      "Small wasps that attack the eggs",
+      "Spiders",
+      "Mirid bugs and other predatory bugs",
+      "Dragonflies and damselflies"
+    ]
+  },
+  "reviewedBy": "",
+  "reviewedOn": ""
+}

@@ -13,6 +13,24 @@
     "Remove stubble and crop residue after harvest"
   ],
   "callExpertIf": "Dead hearts appear on a noticeable share of the plants",
+  "insect": {
+    "commonName": "Rice stem borers (yellow, white, pink, and striped)",
+    "scientificName": "Scirpophaga incertulas, S. innotata, Sesamia inferens, Chilo suppressalis",
+    "localNames": [
+      "Aksip (stem borers in general)",
+      "Dilaw na aksip (yellow)",
+      "Puting aksip (white)",
+      "Mala-rosang aksip (pink)",
+      "Guhitang aksip (striped)"
+    ],
+    "stages": ["vegetative", "reproductive"],
+    "stageNote": "from tillering to flowering; the striped borer can stay until ripening",
+    "biological": [
+      "Small wasps that attack the egg masses",
+      "Spiders",
+      "Long-horned grasshoppers"
+    ]
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }
