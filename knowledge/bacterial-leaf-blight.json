@@ -2,7 +2,7 @@
   "id": "bacterial-leaf-blight",
   "crop": "rice",
   "name": "Bacterial leaf blight",
-  "keywords": ["bacterial leaf blight", "bacterial", "blight", "tuyo sa gilid", "guhit sa gilid", "gilid"],
+  "keywords": ["bacterial leaf blight", "bacterial", "blight", "tuyo sa gilid", "guhit sa gilid", "gilid", "water soaked", "bacterial ooze", "leaf edges", "leaf edge"],
   "signs": [
     "Water-soaked stripes along the leaf edges that turn yellow, then white or gray",
     "Bacterial ooze, sometimes visible as droplets in the early morning"

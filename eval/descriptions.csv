@@ -1,0 +1,28 @@
+text,expectedId,lang
+"Patches of rice plants are turning orange-brown and drying out in circles, with many small brown insects at the base",bph,en
+"Maraming maliliit na kayumangging insekto sa paanan ng palay, nasusunog na mga kumpol",bph,tl
+"May hopperburn sa palayan, maraming brown planthopper sa base ng mga tangkay",bph,taglish
+"Diamond-shaped spots with gray centers on the rice leaves, and the neck of the panicle is rotting",rice-blast,en
+"May mga diamond na batik na may abuhing gitna sa dahon ng palay at nabubulok ang leeg ng uhay",rice-blast,tl
+"May rice blast sa dahon, yung gray na spindle-shaped na batik, at may leeg rot na",rice-blast,taglish
+"Leaf edges look water-soaked and yellow, then turn white, with bacterial ooze in the morning",bacterial-leaf-blight,en
+"Natutuyo ang gilid ng dahon ng palay at may guhit na kulay puti, parang basang-basa",bacterial-leaf-blight,tl
+"Bacterial leaf blight ang nakikita ko, tuyo sa gilid ng dahon at may guhit na puti",bacterial-leaf-blight,taglish
+"The center shoot of the rice tillers dried up and pulls out easily, and some panicles are white and empty",stem-borer,en
+"Patay na puso ang ilang tangkay ng palay at may puting uhay na walang laman",stem-borer,tl
+"May dead heart sa palay at may whitehead na, baka stem borer",stem-borer,taglish
+"Young rice seedlings were cut off at the water line, and there are pink egg clusters on the stalks",golden-apple-snail,en
+"Pinutol ang mga punla sa tubig at may pink na itlog sa mga tangkay, maraming kuhol sa bukid",golden-apple-snail,tl
+"Maraming golden apple snail sa palayan, pinutol ang punla, may pink na itlog",golden-apple-snail,taglish
+"Ragged holes in the corn leaves with sawdust-like droppings in the whorl, and caterpillars inside",fall-armyworm,en
+"May butas ang dahon ng mais at may sawdust sa loob ng dahon, may uod sa loob",fall-armyworm,tl
+"Fall armyworm ang nasa mais ko, may sawdust at butas sa dahon",fall-armyworm,taglish
+"Corn stalks have tunnels and some are broken, with small holes in the leaves in rows",asiatic-corn-borer,en
+"Bulok na tangkay ng mais, may nabali at may lagusan sa loob",asiatic-corn-borer,tl
+"Corn borer sa mais, may tunnel sa tangkay at nabali yung iba",asiatic-corn-borer,taglish
+"Yellow streaks on the corn leaves and white fuzzy growth underneath in the morning, and the plants are stunted",downy-mildew,en
+"May dilaw na guhit sa dahon ng mais at puting pulbos sa ilalim tuwing umaga, maliliit ang halaman",downy-mildew,tl
+"Downy mildew ang mais ko, may yellow streaks at stunted na halaman",downy-mildew,taglish
+"Something is wrong with my plants but I am not sure what it is",none,en
+"May problema ang tanim ko pero hindi ko alam kung ano",none,tl
+"Parang may sakit ang palay ko pero hindi ko alam kung ano na",none,taglish

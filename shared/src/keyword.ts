@@ -1,12 +1,12 @@
 import type { Crop, KeywordMatch, KeywordResult, KnowledgeEntry } from './types.js';
 
-/** Lowercase, strip accents and punctuation, collapse spaces. Keeps hyphens. */
+/** Lowercase, strip accents, turn hyphens and punctuation into spaces, collapse spaces. */
 export function normalize(text: string): string {
   return text
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9\s-]/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
