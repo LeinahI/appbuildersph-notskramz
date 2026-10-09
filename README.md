@@ -95,7 +95,7 @@ Each problem is one file in `knowledge/`, named `<id>.json`.
 
 These need a person to decide. The code does not guess them.
 
-- **Gemma loader (web).** The model card's loader (`Gemma4ForConditionalGeneration`) also downloads vision and audio files, about 3.4 GB at q4f16. `Gemma4ForCausalLM` loads only the text files, about 3.1 GB. The app currently uses the card's loader. See `web/src/workers/llm.worker.ts`.
+- **Gemma loader (web): decided.** The app uses the text-only `Gemma4ForCausalLM` loader, about 3.1 GB at q4f16. The card's `Gemma4ForConditionalGeneration` also downloads the vision and audio files (about 3.4 GB). This departs from the spec's "card loader" rule, and the team approved it. Image and audio input are later phases. See `web/src/workers/llm.worker.ts`.
 - **Gemma E4B on the hub.** No Node.js route has been run. The static analysis predicts q4f16 fails on the CPU. `HUB_EXPLAINER=gemma-e4b` stops the hub with a message until a route is chosen.
 - **Laya pass mark and confidence threshold.** `LAYA_PASS_MARK` and `LAYA_CONFIDENCE_THRESHOLD` are required before the hub will use Laya. Laya has no abstain option, so the confidence threshold is the only "not sure" gate.
 - **Laya in Tagalog.** The default bundle is English-only (about 1.69 GB). The multilingual bundle is not published in the package's repository, so its path is unverified.

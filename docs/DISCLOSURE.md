@@ -10,6 +10,8 @@ This page lists the models, libraries, and tools behind Ugatan. Versions are the
 | `onnx-community/gemma-4-E4B-it-ONNX` | Hub explanation, planned. Not wired yet. | Apache-2.0 (per model card) | https://huggingface.co/onnx-community/gemma-4-E4B-it-ONNX |
 | `receptron/laya-onnx` (Laya English checkpoint, from Convai Innovations) | Hub matching, optional. Not enabled. | Weights: Apache-2.0 (per model card). Package code: MIT. | https://huggingface.co/receptron/laya-onnx |
 
+The web app loads the E2B model with `Gemma4ForCausalLM` (text-only). It does not use the model card's `Gemma4ForConditionalGeneration` loader, by team decision. The text-only load skips the vision and audio graphs.
+
 A third-party mirror of the E4B ONNX files says "License: gemma". The official model card says Apache-2.0. Use the official card, and check the license again before any redistribution.
 
 Model weights are not committed to this repository. `.gitignore` excludes `*.onnx`, `*.onnx_data`, `*.gguf`, `*.safetensors`, and cache folders.

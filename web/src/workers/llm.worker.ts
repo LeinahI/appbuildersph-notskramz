@@ -1,8 +1,10 @@
 /// <reference lib="webworker" />
 // Phone AI. Runs in a Web Worker so the screen stays responsive during generation.
-// Loader: the Gemma 4 loader from the model card (AutoProcessor + Gemma4ForConditionalGeneration).
-// Device: WebGPU first, then WebAssembly on the CPU if that fails.
-import { AutoProcessor, Gemma4ForConditionalGeneration, TextStreamer } from '@huggingface/transformers';
+// Loader: the Gemma 4 family from the model card, text-only. AutoProcessor + Gemma4ForCausalLM loads
+// only the embed and decoder graphs (about 3.1 GB at q4f16). The card's Gemma4ForConditionalGeneration
+// also loads the vision and audio graphs (about 3.4 GB). Chosen by the team, see README.
+// Device: WebGPU first, then WebAssembly if that fails.
+import { AutoProcessor, Gemma4ForCausalLM, TextStreamer } from '@huggingface/transformers';
 import type { ChatMessage } from '@ugatan/shared';
 import { PHONE_MODEL } from '../config/models';
 
@@ -17,7 +19,7 @@ function post(type: 'progress' | 'ready' | 'done' | 'error', data?: unknown, id?
 
 async function loadOn(device: 'webgpu' | 'wasm') {
   processor = await AutoProcessor.from_pretrained(PHONE_MODEL.id);
-  model = await Gemma4ForConditionalGeneration.from_pretrained(PHONE_MODEL.id, {
+  model = await Gemma4ForCausalLM.from_pretrained(PHONE_MODEL.id, {
     dtype: PHONE_MODEL.dtype,
     device,
     progress_callback: (info: unknown) => post('progress', info),
@@ -40,8 +42,8 @@ async function generate(id: number, messages: ChatMessage[]) {
     enable_thinking: false,
     add_generation_prompt: true,
   });
-  // Text-only input: no image and no audio.
-  const inputs = await processor(prompt, null, null, { add_special_tokens: false });
+  // Text-only input: tokenize the prompt directly. No image or audio is passed.
+  const inputs = processor.tokenizer(prompt, { add_special_tokens: false });
 
   let text = '';
   const streamer = new TextStreamer(processor.tokenizer, {
