@@ -26,3 +26,7 @@ eval/results/
 .env
 .env.*
 !.env.example
+
+.cursor/
+/gemma-onnx-folder
+/task
