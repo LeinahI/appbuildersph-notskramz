@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NO_SIGNS } from '@ugatan/shared';
+import { NO_SIGNS, OTHER_CROP } from '@ugatan/shared';
 import { createHybridMatcher } from '../src/matchers/hybrid';
 import type { MatchOutcome, Matcher } from '../src/matchers/index';
 
@@ -105,6 +105,13 @@ describe('hybrid matcher with Gemma describing first', () => {
   it('matches nothing when Gemma finds no sign, instead of letting Laya guess from a greeting', async () => {
     const laya = byText('laya', { hey: { ids: ['downy-mildew', 'rice-blast'], clear: false } });
     const res = await createHybridMatcher(byText('keyword', {}), laya, { describe: async () => NO_SIGNS }).match('hey', 'any');
+    expect(res).toEqual({ ids: [], clear: false, noSigns: true });
+    expect(laya.seen).toEqual([]);
+  });
+
+  it('matches nothing for a plant that is not rice or corn', async () => {
+    const laya = byText('laya', { 'kangkong po': { ids: ['downy-mildew'], clear: false } });
+    const res = await createHybridMatcher(byText('keyword', {}), laya, { describe: async () => OTHER_CROP }).match('kangkong po', 'any');
     expect(res).toEqual({ ids: [], clear: false, noSigns: true });
     expect(laya.seen).toEqual([]);
   });

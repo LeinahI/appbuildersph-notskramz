@@ -24,7 +24,13 @@ export async function syncQueue(hubUrl: string): Promise<{ sent: number; failed:
   let failed = 0;
   for (const q of pending) {
     try {
-      const body: AskRequest = { uid: q.uid, crop: q.crop, text: q.text, ...(q.history?.length ? { history: q.history } : {}) };
+      const body: AskRequest = {
+        uid: q.uid,
+        crop: q.crop,
+        text: q.text,
+        ...(q.history?.length ? { history: q.history } : {}),
+        ...(q.sessionId ? { sessionId: q.sessionId } : {}),
+      };
       const res = await fetch(`${hubUrl}/ask`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -40,6 +46,7 @@ export async function syncQueue(hubUrl: string): Promise<{ sent: number; failed:
         matcher: data.matcher,
         hubMatchIds: data.matchIds,
         hubClear: data.clear,
+        hubMatchedOn: data.matchedOn ?? [],
         answeredAt: new Date().toISOString(),
         lastError: undefined,
       });

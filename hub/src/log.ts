@@ -5,7 +5,7 @@ import { join } from 'node:path';
 // no IP address, no device or user-agent string, no names. The question text is kept
 // so the team can label it later. Farmers should not type their names.
 export type LogEvent =
-  | { event: 'question'; uid: string; crop: string; text: string }
+  | { event: 'question'; uid: string; crop: string; text: string; route?: 'match' | 'chat' }
   | { event: 'match'; uid: string; matcher: string; ids: string[]; clear: boolean; english?: string }
   | { event: 'escalation'; uid: string; reason: 'no-match' | 'not-sure' }
   | { event: 'explanation'; uid: string; status: string; chars: number }

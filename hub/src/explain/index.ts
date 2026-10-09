@@ -7,6 +7,8 @@ export interface ExplainInput {
   entries: readonly KnowledgeEntry[];
   /** The matcher's verdict. False when it is not sure, so the entries are only candidates. */
   clear: boolean;
+  /** Set after two questions in a row with no clear match. The reply then gives its best guess and asks nothing. */
+  bestGuess?: boolean;
 }
 
 export interface ExplainResult {
@@ -20,6 +22,10 @@ export interface ChatInput {
   text: string;
   /** Earlier turns of the chat, oldest first. */
   history: readonly ChatTurn[];
+  /** The farmer's earlier symptom messages, so the reply never asks again for what they already said. */
+  notes?: readonly string[];
+  /** Set after two questions in a row with no clear match. The reply then asks nothing and says what is uncertain. */
+  final?: boolean;
 }
 
 /**

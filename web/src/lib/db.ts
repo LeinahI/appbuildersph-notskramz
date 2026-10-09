@@ -12,17 +12,24 @@ export interface QueuedQuestion {
   history?: ChatTurn[];
   /** Set when the farmer tapped a symptom picture instead of typing. */
   symptomId?: string;
+  /** The chat this question belongs to. The hub keeps the chat's notes under it. */
+  sessionId?: string;
+  /** Whether the question went to matching ("match") or to the chat, for small talk ("chat"). */
+  route?: 'match' | 'chat';
   createdAt: string;
   status: 'queued' | 'answered';
-  /** Local keyword result at the time of asking. */
+  /** Local keyword result at the time of asking, on the whole chat so far. */
   matchIds: string[];
   clear: boolean;
+  /** The symptom words the local match was found on. */
+  matchedOn?: string[];
   explanation?: string | null;
   explanationStatus?: 'ok' | 'blocked' | 'unavailable' | 'phone';
   matcher?: 'keyword' | 'laya' | 'hybrid';
   /** The hub's match, once it answered. The hub's explanation is about these notes, so the app shows them. */
   hubMatchIds?: string[];
   hubClear?: boolean;
+  hubMatchedOn?: string[];
   answeredAt?: string;
   lastError?: string;
 }

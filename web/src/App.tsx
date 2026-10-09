@@ -1,15 +1,25 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import {
-  CHAT_HISTORY_TURNS,
+  MAX_HISTORY_TURNS,
+  NOT_SURE_TEXT,
   NO_MATCH_TEXT,
   buildChatMessages,
   buildMessages,
   cropOfChat,
+  isFinalAnswer,
+  limitQuestions,
   matchKeywords,
+  nextFollowUps,
   notesToExplain,
+  routeFor,
+  sessionNotes,
+  sessionText,
+  smallTalkReply,
   type ChatTurn,
   type Crop,
   type KnowledgeEntry,
+  type Route,
+  type TurnOutcome,
 } from '@ugatan/shared';
 import { AnswerView } from './components/AnswerView';
 import { SettingsDialog } from './components/SettingsDialog';
@@ -31,34 +41,33 @@ function entriesFor(ids: readonly string[]): KnowledgeEntry[] {
  * Once the hub answers a typed question, show the hub's match. Its explanation is about those notes, and with
  * Gemma and Laya it reads wordings and languages the phone's keywords miss. A tapped picture keeps the farmer's pick.
  */
-function matchOf(r: QueuedQuestion): { entries: KnowledgeEntry[]; clear: boolean } {
-  if (r.hubMatchIds && !r.symptomId) return { entries: entriesFor(r.hubMatchIds), clear: r.hubClear ?? false };
-  return { entries: entriesFor(r.matchIds), clear: r.clear };
+function matchOf(r: QueuedQuestion): { entries: KnowledgeEntry[]; clear: boolean; matchedOn: string[] } {
+  if (r.hubMatchIds && !r.symptomId) {
+    return { entries: entriesFor(r.hubMatchIds), clear: r.hubClear ?? false, matchedOn: r.hubMatchedOn ?? [] };
+  }
+  return { entries: entriesFor(r.matchIds), clear: r.clear, matchedOn: r.matchedOn ?? [] };
 }
 
-/** Names the models behind a reply, so the farmer can tell a model's answer from the offline notes. */
-function sourceOf(r: QueuedQuestion): string | undefined {
-  if (r.explanationStatus === 'phone') return L.sourcePhone;
-  if (r.explanationStatus === 'ok' && r.matcher) {
-    // Nothing matched, so the reply is Gemma's alone.
-    if (r.hubMatchIds?.length === 0) return `Gemma ${L.sourceHub}`;
-    const matcher = r.matcher === 'keyword' ? 'Keyword' : r.matcher === 'laya' ? 'Laya' : 'Keyword/Laya';
-    return `${matcher} + Gemma ${L.sourceHub}`;
-  }
-  return undefined;
-}
 
 /** What the farmer saw as the reply to a question, as the model reads it in the next turn. */
 function turnOf(r: QueuedQuestion): ChatTurn {
-  const { entries } = matchOf(r);
-  const reply = r.explanation?.trim() || (entries.length ? `Tugma: ${entries.map((e) => e.name).join(', ')}` : NO_MATCH_TEXT);
-  return { question: r.text, reply };
+  const { entries, clear } = matchOf(r);
+  const fallback =
+    r.route === 'chat' ? smallTalkReply(r.text) : clear && entries.length ? `Tugma: ${entries.map((e) => e.name).join(', ')}` : NOT_SURE_TEXT;
+  return { question: r.text, reply: r.explanation?.trim() || fallback };
+}
+
+/** How a question came out, counted the way the hub counts it: a clear match, small talk, or a reply that asked a question. */
+function outcomeOf(r: QueuedQuestion): TurnOutcome {
+  if (matchOf(r).clear) return 'clear';
+  return r.route === 'chat' ? 'small' : 'ask';
 }
 
 // The farmer never picks a crop. The question itself says what the plant is, and Laya and Gemma read it from there.
 const CROP: Crop | 'any' = 'any';
 
 const CHAT_FROM_KEY = 'ugatan.chatFrom';
+const SESSION_KEY = 'ugatan.sessionId';
 
 /** Questions with an id above this belong to the current chat. Older ones stay in the device, and still sync. */
 function loadChatFrom(): number {
@@ -67,6 +76,53 @@ function loadChatFrom(): number {
   } catch {
     return 0;
   }
+}
+
+/** This chat's id. The hub keeps the chat's notes under it, so a follow-up is read with what the farmer said before. */
+function loadSessionId(): string {
+  try {
+    const saved = localStorage.getItem(SESSION_KEY);
+    if (saved) return saved;
+    const fresh = newId();
+    localStorage.setItem(SESSION_KEY, fresh);
+    return fresh;
+  } catch {
+    // Storage blocked. The chat keeps one id until the page reloads.
+    return newId();
+  }
+}
+
+const hasSign = (text: string) => matchKeywords(text, 'any', KNOWLEDGE).matches.length > 0;
+
+/** What the app does with a question, as the hub does it: small talk goes to the chat, and a symptom is matched on the whole chat. */
+interface Plan {
+  route: Route;
+  /** The farmer's symptom messages so far, plus this question. The matcher and the model read it. */
+  description: string;
+  /** The farmer's earlier symptom messages, for the chat reply, so it never asks again for them. */
+  notes: string[];
+  crop: Crop | 'any';
+  entries: KnowledgeEntry[];
+  clear: boolean;
+  matchedOn: string[];
+}
+
+function planFor(question: string, earlier: readonly string[]): Plan {
+  const route = routeFor(question, hasSign(question));
+  const notes = sessionNotes(earlier, hasSign);
+  const description = sessionText([...notes, question]);
+  const crop = cropOfChat(question, earlier.map((q) => ({ question: q, reply: '' })));
+  if (route === 'chat') return { route, description, notes, crop, entries: [], clear: false, matchedOn: [] };
+  const result = matchKeywords(description, crop, KNOWLEDGE);
+  return {
+    route,
+    description,
+    notes,
+    crop,
+    entries: result.matches.map((m) => m.entry),
+    clear: result.clear,
+    matchedOn: result.matches[0]?.hits ?? [],
+  };
 }
 
 const ICON = {
@@ -87,6 +143,7 @@ export default function App() {
   // Questions that could not be saved to IndexedDB. They still show in this session.
   const [unsaved, setUnsaved] = useState<QueuedQuestion[]>([]);
   const [chatFrom, setChatFrom] = useState(loadChatFrom);
+  const [sessionId, setSessionId] = useState(loadSessionId);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [ai, setAi] = useState<PhoneAiState>({ status: 'idle', device: '', progress: '', error: '' });
   const [hubUrl, setHubUrl] = useState(loadHubUrl);
@@ -147,23 +204,37 @@ export default function App() {
     el.style.height = `${Math.min(el.scrollHeight, 192)}px`;
   }, [text]);
 
-  async function ask(question: string, entries: KnowledgeEntry[], clear: boolean, symptomId?: string) {
+  async function ask(question: string, symptomId?: string) {
     const trimmed = question.trim();
     setNotice('');
     setPickerOpen(false);
 
-    // The last few turns of this chat, so the model answers what the farmer is saying now.
-    const history = messages.slice(-CHAT_HISTORY_TURNS).map(turnOf);
+    // Matching reads everything the farmer has said in this chat, not only this message.
+    const earlier = messages.map((m) => m.text);
+    const picked = symptomId ? KNOWLEDGE_BY_ID.get(symptomId) : undefined;
+    const plan: Plan = picked
+      ? { route: 'match', description: trimmed, notes: [], crop: 'any', entries: [picked], clear: true, matchedOn: [] }
+      : planFor(trimmed, earlier);
+
+    // Two questions in a row with no clear match: the reply gives its best guess and asks nothing more.
+    const followUps = messages.reduce((n, r) => nextFollowUps(n, outcomeOf(r)), 0);
+    const final = isFinalAnswer(followUps);
+    const bestGuess = plan.route === 'match' && plan.entries.length > 0 && !plan.clear && final;
+    // The last few turns, as the farmer saw them, so the model answers what the farmer is saying now.
+    const turns = messages.slice(-MAX_HISTORY_TURNS).map(turnOf);
     const record: QueuedQuestion = {
       uid: newId(),
       crop: CROP,
       text: trimmed,
-      history,
+      history: turns,
       symptomId,
+      sessionId,
+      route: plan.route,
       createdAt: new Date().toISOString(),
       status: 'queued',
-      matchIds: entries.map((e) => e.id),
-      clear,
+      matchIds: plan.entries.map((e) => e.id),
+      clear: plan.clear,
+      matchedOn: plan.matchedOn,
     };
     let id: number | undefined;
     try {
@@ -175,15 +246,17 @@ export default function App() {
     await refresh();
 
     // Phone AI, if the farmer prepared it. Otherwise the question waits for the hub.
-    // No keyword match means nothing to explain. The model is skipped, and the hub answers instead, as the README says.
-    if (phoneAi.ready && id !== undefined && entries.length > 0) {
+    // Small talk and no-match questions have no notes to explain, so the hub (or the phone's chat) replies instead.
+    if (phoneAi.ready && id !== undefined && plan.route === 'match' && plan.entries.length > 0) {
       setBusyId(id);
       try {
         // Keyword matching decided the problem. The phone model only explains it, and is told when the match is not sure.
-        const raw = await phoneAi.generate(buildMessages(trimmed, CROP, notesToExplain(entries, clear), { sure: clear }));
+        const raw = await phoneAi.generate(
+          buildMessages(plan.description, CROP, notesToExplain(plan.entries, plan.clear || bestGuess), { sure: plan.clear, bestGuess }),
+        );
         await db.questions.update(id, {
           status: 'answered',
-          explanation: raw,
+          explanation: raw === null ? null : limitQuestions(raw),
           explanationStatus: raw === null ? 'blocked' : 'phone',
           answeredAt: new Date().toISOString(),
         });
@@ -201,12 +274,15 @@ export default function App() {
         setBusyId(null);
       }
     } else if (phoneAi.ready && id !== undefined) {
-      // No keyword match and no hub: the phone model replies to what the farmer said and asks what they see.
+      // No match and no hub: the phone model replies to the whole chat and asks what they see.
       // It stays queued, so the hub still matches it later with Laya.
       setBusyId(id);
       try {
-        const raw = await phoneAi.generate(buildChatMessages(trimmed, history));
-        await db.questions.update(id, { explanation: raw, explanationStatus: raw === null ? 'blocked' : 'phone' });
+        const raw = await phoneAi.generate(buildChatMessages(trimmed, turns, undefined, { notes: plan.notes, final }));
+        await db.questions.update(id, {
+          explanation: raw === null ? null : limitQuestions(raw),
+          explanationStatus: raw === null ? 'blocked' : 'phone',
+        });
       } catch (err) {
         setNotice(err instanceof Error ? err.message : String(err));
       } finally {
@@ -225,6 +301,14 @@ export default function App() {
     } catch {
       // Storage blocked. The new chat lasts until the page reloads.
     }
+    // A new chat gets a new id, so the hub starts its notes from nothing.
+    const fresh = newId();
+    setSessionId(fresh);
+    try {
+      localStorage.setItem(SESSION_KEY, fresh);
+    } catch {
+      // Storage blocked. The id lasts until the page reloads.
+    }
     setUnsaved([]);
     setText('');
     setNotice('');
@@ -235,15 +319,8 @@ export default function App() {
   function submit() {
     const question = text.trim();
     if (!question) return;
-    // Same crop rule as the hub: "palay" earlier in the chat keeps a follow-up like "may butas po" on rice.
-    const crop = cropOfChat(question, messages.slice(-CHAT_HISTORY_TURNS).map(turnOf));
-    const result = matchKeywords(question, crop, KNOWLEDGE);
     setText('');
-    void ask(
-      question,
-      result.matches.map((m) => m.entry),
-      result.clear,
-    );
+    void ask(question);
   }
 
   function onSubmit(e: FormEvent) {
@@ -260,7 +337,7 @@ export default function App() {
 
   function onSymptom(entry: KnowledgeEntry) {
     const tile = symptomTile(entry.id);
-    void ask(tile.labelTl || entry.name, [entry], true, entry.id);
+    void ask(tile.labelTl || entry.name, entry.id);
   }
 
   function onTranscript(spoken: string) {
@@ -365,7 +442,7 @@ export default function App() {
           <main ref={scroller} className="flex-1 overflow-y-auto px-4">
             <div className="mx-auto grid w-full max-w-3xl gap-8 py-6">
               {messages.map((r) => {
-                const { entries, clear } = matchOf(r);
+                const { entries, clear, matchedOn } = matchOf(r);
                 return (
                   <div key={r.uid} className="grid gap-6">
                     <div className="flex justify-end">
@@ -376,11 +453,12 @@ export default function App() {
                     <AnswerView
                       matches={entries}
                       clear={clear}
+                      matchedOn={matchedOn}
                       explanation={r.explanation}
                       explanationStatus={r.explanationStatus}
-                      source={sourceOf(r)}
                       waitingForHub={r.status === 'queued' && !phoneAi.ready && busyId !== r.id}
                       thinking={busyId !== null && busyId === r.id}
+                      fallback={r.route === 'chat' ? smallTalkReply(r.text) : undefined}
                     />
                   </div>
                 );

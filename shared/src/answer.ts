@@ -1,7 +1,11 @@
+import { carriesNotice } from './conversation.js';
 import { findViolations } from './guard.js';
 import type { KeywordResult } from './types.js';
 
-/** Every answer ends with this line. Exact text from the project spec. */
+/**
+ * The pesticide notice. It ends a reply that gives treatment, control, or spraying advice (a clear match, or text
+ * that advises spraying). Greetings, questions, and "not sure" replies do not carry it. Exact text from the project spec.
+ */
 export const DISCLAIMER = 'Kumpirmahin sa lokal na agriculturist bago gumamit ng anumang pesticide.';
 
 export const NO_MATCH_TEXT = 'Walang malinaw na tugma. Tawagan ang lokal na agriculturist o technician ng DA.';
@@ -14,7 +18,7 @@ export interface ComposeInput {
 }
 
 export interface ComposedAnswer {
-  /** Plain text for display or logs. Always ends with DISCLAIMER. */
+  /** Plain text for display or logs. Ends with DISCLAIMER when the reply gives treatment advice. */
   text: string;
   /** False when the explanation was missing or dropped. */
   explanationUsed: boolean;
@@ -23,11 +27,12 @@ export interface ComposedAnswer {
 }
 
 /**
- * Builds the answer a farmer sees. The curated notes always come first.
- * The AI explanation is shown only if it passes the pesticide guardrail.
+ * Builds the answer a farmer sees. The curated notes come only with a clear match: a match that is not sure
+ * gets the "not sure" line, not its steps. The AI explanation is shown only if it passes the pesticide guardrail.
  */
 export function composeAnswer({ result, explanation }: ComposeInput): ComposedAnswer {
   const lines: string[] = [];
+  const clearMatch = result.clear && result.matches.length > 0;
 
   if (result.matches.length === 0) {
     lines.push(NO_MATCH_TEXT);
@@ -35,10 +40,12 @@ export function composeAnswer({ result, explanation }: ComposeInput): ComposedAn
     lines.push(NOT_SURE_TEXT);
   }
 
-  for (const { entry } of result.matches) {
-    lines.push('', entry.name, 'Mga senyales:', ...entry.signs.map((s) => `- ${s}`));
-    lines.push('Mga hakbang:', ...entry.actions.map((a, i) => `${i + 1}. ${a}`));
-    lines.push(`Kumonsulta agad kung: ${entry.callExpertIf}`);
+  if (clearMatch) {
+    for (const { entry } of result.matches) {
+      lines.push('', entry.name, 'Mga senyales:', ...entry.signs.map((s) => `- ${s}`));
+      lines.push('Mga hakbang:', ...entry.actions.map((a, i) => `${i + 1}. ${a}`));
+      lines.push(`Kumonsulta agad kung: ${entry.callExpertIf}`);
+    }
   }
 
   let explanationUsed = false;
@@ -53,6 +60,6 @@ export function composeAnswer({ result, explanation }: ComposeInput): ComposedAn
     }
   }
 
-  lines.push('', DISCLAIMER);
+  if (carriesNotice(clearMatch, explanationUsed ? ai : null)) lines.push('', DISCLAIMER);
   return { text: lines.join('\n').trim(), explanationUsed, explanationBlocked };
 }

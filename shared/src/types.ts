@@ -23,8 +23,10 @@ export interface KnowledgeEntry {
 
 export interface KeywordMatch {
   entry: KnowledgeEntry;
-  /** Number of distinct keywords found in the description. */
+  /** Number of keywords found in the description. */
   score: number;
+  /** The keywords found, as written in the note. The app shows them as the symptom the match was made on. */
+  hits: string[];
 }
 
 export interface KeywordResult {

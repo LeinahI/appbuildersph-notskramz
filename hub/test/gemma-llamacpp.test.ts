@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { findViolations } from '@ugatan/shared';
+import { NO_SIGNS, OTHER_CROP, findViolations } from '@ugatan/shared';
 import { createGemmaLlamaCppExplainer } from '../src/explain/gemma-llamacpp';
 import type { Describer, Explainer } from '../src/explain/index';
 import { loadKnowledge } from '../src/knowledge';
@@ -42,7 +42,7 @@ describe.skipIf(!modelPath)('gemma explainer on llama.cpp with a local model', (
     expect(findViolations(res.text!)).toEqual([]);
   }, 60_000);
 
-  it('says it is not sure and points to the agriculturist when the matcher is not sure', async () => {
+  it('names the signs that tell the candidates apart and asks the farmer, when the matcher is not sure', async () => {
     const res = await explainer.explain({
       text: 'May sira ang palay ko, parang natutuyo',
       crop: 'rice',
@@ -50,8 +50,26 @@ describe.skipIf(!modelPath)('gemma explainer on llama.cpp with a local model', (
       clear: false,
     });
     expect(res.status).toBe('ok');
-    expect(res.text).toMatch(/agriculturist|technician|DA/i);
-    expect(res.text).toMatch(/hindi (ako )?(sigurado|tiyak)|not sure|di sigurado/i);
+    // The app already shows "Hindi tiyak. Tawagan ang lokal na agriculturist", so the model asks instead of repeating it.
+    expect(res.text).toContain('?');
+    expect(res.text).not.toContain('**');
+  }, 60_000);
+
+  it('marks other plants and sign-free questions, so nothing is matched for them', async () => {
+    expect(await explainer.describe('May dilaw na dahon ang kangkong ko', 'any')).toBe(OTHER_CROP);
+    expect(await explainer.describe('pwede ba kainin ang kangkong?', 'any')).toMatch(/^(No signs|Not rice or corn)\.$/);
+    expect(await explainer.describe('hello po', 'any')).toBe(NO_SIGNS);
+  }, 60_000);
+
+  it("replies to a greeting and a complaint in the farmer's language without naming a problem", async () => {
+    const hi = await explainer.chat!({ text: 'hello', history: [] });
+    expect(hi.text).toContain('?');
+    const upset = await explainer.chat!({
+      text: 'bat ganyan response mo. ayusin mo. kausapin mo ako',
+      history: [{ question: 'hey', reply: 'Walang malinaw na tugma.' }],
+    });
+    expect(upset.text).toMatch(/pasensya|paumanhin|sorry/i);
+    for (const r of [hi, upset]) expect(r.text).not.toMatch(/blast|blight|mildew|borer|armyworm|\*\*/i);
   }, 60_000);
 
   it('describes Cebuano and Tagalog questions in plain English without naming the problem', async () => {

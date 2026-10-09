@@ -168,7 +168,7 @@ describe('pilot log', () => {
     const lines = readFileSync(join(dir, files[0]), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
     const events = lines.map((l) => l.event);
     expect(events).toEqual(expect.arrayContaining(['question', 'match', 'explanation']));
-    const allowed = new Set(['ts', 'event', 'uid', 'crop', 'text', 'matcher', 'ids', 'clear', 'reason', 'status', 'chars', 'where', 'message']);
+    const allowed = new Set(['ts', 'event', 'uid', 'crop', 'text', 'route', 'matcher', 'ids', 'clear', 'reason', 'status', 'chars', 'where', 'message']);
     for (const line of lines) {
       for (const key of Object.keys(line)) expect(allowed.has(key), key).toBe(true);
     }

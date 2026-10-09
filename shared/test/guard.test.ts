@@ -42,7 +42,7 @@ describe('pesticide guardrail', () => {
 
   it('keeps every curated note free of brands and dosages', () => {
     for (const entry of KB) {
-      const answer = composeAnswer({ result: { matches: [{ entry, score: 1 }], clear: true } });
+      const answer = composeAnswer({ result: { matches: [{ entry, score: 1, hits: [] }], clear: true } });
       expect(findViolations(answer.text), entry.id).toEqual([]);
     }
   });
@@ -61,25 +61,34 @@ describe('composeAnswer', () => {
   const entry = KB[0];
 
   it('ends every answer with the exact disclaimer', () => {
-    const answer = composeAnswer({ result: { matches: [{ entry, score: 1 }], clear: true } });
+    const answer = composeAnswer({ result: { matches: [{ entry, score: 1, hits: [] }], clear: true } });
     expect(answer.text.endsWith(DISCLAIMER)).toBe(true);
     expect(DISCLAIMER).toBe('Kumpirmahin sa lokal na agriculturist bago gumamit ng anumang pesticide.');
   });
 
-  it('ends a no-match answer with the disclaimer too', () => {
+  it('leaves the disclaimer off a no-match answer, which gives no treatment', () => {
     const answer = composeAnswer({ result: { matches: [], clear: false } });
     expect(answer.text).toContain('Walang malinaw na tugma');
-    expect(answer.text.endsWith(DISCLAIMER)).toBe(true);
+    expect(answer.text).not.toContain(DISCLAIMER);
+  });
+
+  it('shows the notes and the disclaimer only for a clear match', () => {
+    const notSure = composeAnswer({ result: { matches: [{ entry, score: 1, hits: [] }], clear: false } });
+    expect(notSure.text).not.toContain(entry.name);
+    expect(notSure.text).not.toContain(DISCLAIMER);
+    const clear = composeAnswer({ result: { matches: [{ entry, score: 1, hits: [] }], clear: true } });
+    expect(clear.text).toContain(entry.name);
+    expect(clear.text.endsWith(DISCLAIMER)).toBe(true);
   });
 
   it('shows "not sure, call the agriculturist" when the match is not clear', () => {
-    const answer = composeAnswer({ result: { matches: [{ entry, score: 1 }], clear: false } });
+    const answer = composeAnswer({ result: { matches: [{ entry, score: 1, hits: [] }], clear: false } });
     expect(answer.text).toContain('Hindi tiyak. Tawagan ang lokal na agriculturist');
   });
 
   it('shows the AI explanation when it passes the guardrail', () => {
     const answer = composeAnswer({
-      result: { matches: [{ entry, score: 1 }], clear: true },
+      result: { matches: [{ entry, score: 1, hits: [] }], clear: true },
       explanation: 'Tingnan ang base ng mga halaman.',
     });
     expect(answer.explanationUsed).toBe(true);
@@ -88,7 +97,7 @@ describe('composeAnswer', () => {
 
   it('drops an AI explanation that names a brand or gives a dosage, and says so', () => {
     const answer = composeAnswer({
-      result: { matches: [{ entry, score: 1 }], clear: true },
+      result: { matches: [{ entry, score: 1, hits: [] }], clear: true },
       explanation: 'Gamitin ang Karate, 2 ml kada litro.',
     });
     expect(answer.explanationBlocked).toBe(true);

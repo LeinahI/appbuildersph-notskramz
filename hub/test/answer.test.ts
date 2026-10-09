@@ -80,7 +80,8 @@ describe('matcher and explainer together', () => {
       { uid: 'u2', crop: 'any', text: 'bat ganyan response mo, kausapin mo ako', history },
       { matcher: matcher({ ids: [], clear: false, noSigns: true }), explainer, knowledge, logger: { write: (e) => events.push(e) } },
     );
-    expect(chats).toEqual([{ text: 'bat ganyan response mo, kausapin mo ako', history }]);
+    expect(chats).toHaveLength(1);
+    expect(chats[0]).toMatchObject({ text: 'bat ganyan response mo, kausapin mo ako', history });
     expect(res.matchIds).toEqual([]);
     expect(res.explanationStatus).toBe('ok');
     expect(res.explanation).toMatch(/nakikita/);
@@ -107,6 +108,17 @@ describe('matcher and explainer together', () => {
     expect(res.explanation).toBeNull();
   });
 
+  it('matches on the crop named earlier in the chat', async () => {
+    const crops: string[] = [];
+    const spy: Matcher = { name: 'hybrid', async match(_text, crop) { crops.push(crop); return { ids: [], clear: false }; } };
+    const deps = { matcher: spy, explainer: recorder(), knowledge, logger: { write() {} } };
+    const history = [{ question: 'may mali sa palay ko', reply: 'Ano ang nakikita mo?' }];
+    await answerQuestion({ uid: 'u4', crop: 'any', text: 'may butas po', history }, deps);
+    await answerQuestion({ uid: 'u5', crop: 'any', text: 'may butas po' }, deps);
+    await answerQuestion({ uid: 'u6', crop: 'corn', text: 'may butas po', history }, deps);
+    expect(crops).toEqual(['rice', 'any', 'corn']);
+  });
+
   it('skips the explainer when the matched ids are not in the knowledge base', async () => {
     const { calls } = await run({ ids: ['no-such-problem'], clear: true });
     expect(calls).toHaveLength(0);
@@ -116,12 +128,12 @@ describe('matcher and explainer together', () => {
 describe('parseAskRequest history', () => {
   const base = { uid: 'u1', crop: 'rice', text: 'hello' };
 
-  it('accepts no history and keeps only the last few turns', () => {
+  it('accepts no history and keeps the last thirty turns, so the whole chat reaches the hub', () => {
     expect(parseAskRequest(base)).toEqual(base);
-    const history = Array.from({ length: 9 }, (_, i) => ({ question: `q${i}`, reply: `r${i}` }));
+    const history = Array.from({ length: 35 }, (_, i) => ({ question: `q${i}`, reply: `r${i}` }));
     const parsed = parseAskRequest({ ...base, history });
     expect(typeof parsed).toBe('object');
-    expect((parsed as { history: unknown[] }).history).toEqual(history.slice(-4));
+    expect((parsed as { history: unknown[] }).history).toEqual(history.slice(-30));
   });
 
   it('rejects history that is not a list of question and reply strings', () => {

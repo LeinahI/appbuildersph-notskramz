@@ -10,6 +10,7 @@ import { createLayaMatcher } from './matchers/laya.js';
 import type { Matcher } from './matchers/index.js';
 import { loadKnowledge } from './knowledge.js';
 import { createHubServer } from './server.js';
+import { ConversationStore } from './conversation/state.js';
 
 async function main(): Promise<void> {
   loadEnvFile();
@@ -76,6 +77,8 @@ async function main(): Promise<void> {
     explainer,
     knowledge,
     logger,
+    // One store for the whole hub: each phone chat keeps its notes here between questions.
+    conversations: new ConversationStore(),
     info: { matcher: matcher.name, explainer: explainer.name },
   });
   server.listen(config.port, config.host, () => {
