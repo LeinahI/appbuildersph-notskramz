@@ -1,32 +1,25 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { ChatTurn, Crop } from '@ugatan/shared';
 
-/** A question waiting for the hub, or already answered. Stored on the phone only. */
+/** A question waiting for the hub, or already answered. Stored on the phone. */
 export interface QueuedQuestion {
   id?: number;
-  /** Sent to the hub as the request id. */
   uid: string;
   crop: Crop | 'any';
   text: string;
-  /** Earlier turns of the chat at the time of asking, so the hub can reply in context. */
   history?: ChatTurn[];
-  /** Set when the farmer tapped a symptom picture instead of typing. */
   symptomId?: string;
-  /** The chat this question belongs to. The hub keeps the chat's notes under it. */
   sessionId?: string;
-  /** Whether the question went to matching ("match") or to the chat, for small talk ("chat"). */
+  conversationId?: string;
   route?: 'match' | 'chat';
   createdAt: string;
   status: 'queued' | 'answered';
-  /** Local keyword result at the time of asking, on the whole chat so far. */
   matchIds: string[];
   clear: boolean;
-  /** The symptom words the local match was found on. */
   matchedOn?: string[];
   explanation?: string | null;
   explanationStatus?: 'ok' | 'blocked' | 'unavailable' | 'phone';
   matcher?: 'keyword' | 'laya' | 'hybrid';
-  /** The hub's match, once it answered. The hub's explanation is about these notes, so the app shows them. */
   hubMatchIds?: string[];
   hubClear?: boolean;
   hubMatchedOn?: string[];
@@ -34,14 +27,55 @@ export interface QueuedQuestion {
   lastError?: string;
 }
 
+export interface ConversationRow {
+  id: string;
+  remoteId?: string;
+  title: string;
+  pinned: boolean;
+  sessionId: string;
+  updatedAt: string;
+  createdAt: string;
+}
+
 class UgatanDb extends Dexie {
   questions!: EntityTable<QueuedQuestion, 'id'>;
+  conversations!: EntityTable<ConversationRow, 'id'>;
 
   constructor() {
     super('ugatan');
     this.version(1).stores({
       questions: '++id, uid, status, createdAt',
     });
+    this.version(2)
+      .stores({
+        questions: '++id, uid, status, createdAt, sessionId, conversationId',
+        conversations: 'id, remoteId, updatedAt, pinned, sessionId',
+      })
+      .upgrade(async (tx) => {
+        const questions = tx.table('questions');
+        const conversations = tx.table('conversations');
+        const rows = await questions.toArray();
+        if (rows.length === 0) return;
+        const sessionId =
+          (rows.find((r) => r.sessionId)?.sessionId as string | undefined) ??
+          `${Date.now().toString(36)}-migrated`;
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        await conversations.add({
+          id,
+          title: 'Dating usapan',
+          pinned: false,
+          sessionId,
+          updatedAt: now,
+          createdAt: now,
+        });
+        for (const row of rows) {
+          await questions.update(row.id!, {
+            sessionId: row.sessionId ?? sessionId,
+            conversationId: id,
+          });
+        }
+      });
   }
 }
 

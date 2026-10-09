@@ -27,6 +27,10 @@ eval/results/
 .env.*
 !.env.example
 
+# ws local data (if any) — secrets stay in .env only
+ws/.env
+!ws/.env.example
+
 .cursor/
 /gemma-onnx-folder
 /task

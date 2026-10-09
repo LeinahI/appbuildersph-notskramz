@@ -8,8 +8,9 @@ Read [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md) for the plan and [docs/DISCL
 
 | Folder | What it is |
 | --- | --- |
-| `web/` | React + Vite + TypeScript PWA. Static. Runs offline on any phone. |
-| `hub/` | Node.js TypeScript service for a cooperative or barangay office. Answers `POST /ask` on the local network. |
+| `web/` | React + Vite + TypeScript PWA. Login at `/`, farmer chat (+ sidebar) at `/chat`, admin at `/admin`, QR claim at `/claim`. |
+| `hub/` | Node.js TypeScript service for crop Q&A on the LAN. Answers `POST /ask`. |
+| `ws/` | Go DDD API on Postgres 16. Admin auth, farmer registration, QR invites, audit, conversation sync. PII encrypted at rest. |
 | `shared/` | Matcher, knowledge validation, pesticide guardrail, and answer composition, used by web and hub. |
 | `knowledge/` | Curated problems, one JSON file each. |
 | `eval/` | Labeled farmer descriptions and the script that scores keyword matching and Laya. |
@@ -31,12 +32,29 @@ The phone AI is optional. To turn it on, tap **Ihanda ang AI**. That downloads G
 
 To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`), or type the hub address in the app. `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. An address typed in the app is saved on that phone and overrides it.
 
+Auth and chat history talk to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`). Open http://localhost:3000/ — admin signs in with email/password; farmers continue after QR claim. Chat is at `/chat` (claim JWT required) with a Gemini-style sidebar synced to Postgres.
+
 Build and preview the static site. The repo does not yet set up how phones load this built site over Wi-Fi (see Pending decisions, hub network):
 
 ```bash
 pnpm build
 pnpm --filter @ugatan/web preview
 ```
+
+## Run the registration API (`ws`)
+
+`ws` is the Postgres-backed Go service for admin login, farmer registration, QR invites, and claim. Crop Q&A stays on `hub`.
+
+```bash
+cd ws
+cp .env.example .env   # set PII_ENCRYPTION_KEY, JWT_SECRET
+make docker-db-up
+make migrate-up
+make seed              # admin from ws/configs/seeder.yaml
+make run-api           # http://127.0.0.1:8080
+```
+
+PII columns are AES-GCM ciphertext. ID images never leave the admin browser. Farmers claim with `/claim?token=…` (single-use, default 24h). Revoke users or invites from `/admin`. Confirm retention and LAN TLS with your co-op before production.
 
 ## Run the hub
 
