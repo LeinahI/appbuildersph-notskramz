@@ -18,6 +18,7 @@ Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Ne
 
 - [[2026-10-10-branch-and-pr]] - pending work committed on `offline-farmer-login-photo-eval` and opened as a PR
 - [[2026-10-10-photo-eval-and-confidence]] - 39-photo eval set and `pnpm eval:photo`; a photo alone is no longer "sure" on one sign (sure-and-wrong 18/31 to 2/31, healthy plants never told a sure problem)
+- [[2026-10-10-gemma-laya-on-phone]] - Gemma (with photo reading) and Laya run on the phone; the hub serves both over Wi-Fi
 - [[2026-10-10-local-only-offline]] - app reaches no internet: translated cards, chat without account, phone model from the hub, hub-only voice, local-only Laya
 - [[2026-10-10-standalone-offline-assessment]] - research only: what a hub-free, under-200 MB web app would need and which parts conflict with team decisions
 - [[2026-10-10-split-farmer-admin-login]] - separate farmer (/login) and staff (/admin/login) portals; farmer email/password needs a backend endpoint
