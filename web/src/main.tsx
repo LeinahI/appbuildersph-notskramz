@@ -15,7 +15,12 @@ import UserDetailPage from './pages/admin/UserDetailPage';
 import UsersPage from './pages/admin/UsersPage';
 import SearchChatsPage from './pages/SearchChatsPage';
 import SetupPage from './pages/SetupPage';
+import { ToastHost } from './components/ToastHost';
 import './index.css';
+import './display-preferences.css';
+import { initializeDisplayPreferences } from './config/displayPreferences';
+
+initializeDisplayPreferences();
 
 /** The Android app: no staff pages, and the setup screen until the phone is set up. */
 const NATIVE = Capacitor.isNativePlatform();
@@ -72,6 +77,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      <ToastHost />
     </QueryClientProvider>
   </React.StrictMode>,
 );

@@ -5,6 +5,7 @@ import { defineConfig, type Plugin, type ViteDevServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 /** onnxruntime-web's dist folder: the same copy Transformers.js uses, so the runtime always matches the library. */
@@ -66,6 +67,8 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,webp,woff2,webmanifest}'],
         navigateFallback: 'index.html',
+        // The admin UI preview is its own page, not the farmer app shell.
+        navigateFallbackDenylist: [/\/admin\.html$/],
         // The ONNX runtime (about 41 MB) is not precached: most farmers never prepare the AI. It is kept after the
         // first load from /ort/, so the model can start again with no hub. Transformers.js caches the weights itself.
         runtimeCaching: [
@@ -89,5 +92,14 @@ export default defineConfig(({ mode }) => ({
   worker: { format: 'es' },
   // The workers load these on "Ihanda ang AI". Listed here so `pnpm dev` does not find them then and reload the page.
   optimizeDeps: { include: ['@huggingface/transformers', '@huggingface/tokenizers', 'onnxruntime-web/webgpu'] },
-  build: { target: 'es2022' },
+  build: {
+    target: 'es2022',
+    rollupOptions: {
+      // The browser build also ships the admin UI preview page (admin.html); the Android app has no staff pages.
+      input: {
+        home: fileURLToPath(new URL('./index.html', import.meta.url)),
+        ...(mode === 'native' ? {} : { admin: fileURLToPath(new URL('./admin.html', import.meta.url)) }),
+      } as Record<string, string>,
+    },
+  },
 }));

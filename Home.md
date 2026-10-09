@@ -16,6 +16,18 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-merge-frontend-into-main]] - merged origin/FrontEnd (Figma home UI, admin pages, display preferences, Sileo toasts) into main, keeping no-login /setup, /chat, /search, guardrails
+- [[2026-10-10-toast-auto-dismiss-implementation]] - applied 3-second success and 5-second information toasts with sticky errors; build and 135 frontend tests pass, browser timing QA remains open
+- [[2026-10-10-toast-auto-dismiss-review]] - reviewed existing timers and hover behavior; proposed 3-second confirmations and 5-second information notices, pending approval
+- [[2026-10-10-stable-preferences-dialog]] - removed preference clutter and kept farmer/admin modal frames stable during text resizing; build and 134 frontend tests pass, browser QA remains open
+- [[2026-10-10-sileo-toast-implementation]] - implemented preference-aware Sileo notifications across farmer/admin entries; 132 frontend tests pass, browser QA remains open
+- [[2026-10-10-remove-registration-display-settings]] - removed preference controls from registration drawer; saved appearance still applies, build and 132 frontend tests pass
+- [[2026-10-10-display-preferences-navigation]] - moved preferences to home sliders icon and aligned admin navigation; removed login/help shortcuts, 123 frontend tests pass
+- [[2026-10-10-ui-display-preferences-implementation]] - shared text-size, weight and contrast controls across farmer/admin pages; build and 121 frontend tests pass, rendered QA pending
+- [[2026-10-10-toast-display-preferences-approach]] - recommended shared display preferences inherited by toasts, with enlarged-text and motion verification
+- [[2026-10-10-sileo-toast-review]] - reviewed Sileo compatibility and proposed accessible toast scope; no implementation or install
+- [[2026-10-10-ui-display-preferences-recommendations]] - proposed shared text-size, weight, and contrast preferences with local persistence; research only, implementation awaits approval
+- [[2026-10-10-admin-registration-drawer]] - moved admin registration to a responsive right drawer with fixed header and draft protection; build and 106 frontend tests pass, browser QA remains open
 - [[2026-10-10-merge-main-android-no-login]] - merged main (chat search, rails) into the no-login Android work; dropped ws sync, kept /search
 - [[2026-10-10-android-app-setup-no-login]] - Android APK from the hub, first-run setup with success alert, no farmer login, Gemma needs WebGPU
 - [[2026-10-10-setup-one-ai-progress]] - setup shows one "Ugatan AI" with a single download percent that never resets
@@ -37,6 +49,12 @@ Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Ne
 - [[2026-10-10-local-only-offline]] - app reaches no internet: translated cards, chat without account, phone model from the hub, hub-only voice, local-only Laya
 - [[2026-10-10-standalone-offline-assessment]] - research only: what a hub-free, under-200 MB web app would need and which parts conflict with team decisions
 - [[2026-10-10-split-farmer-admin-login]] - separate farmer (/login) and staff (/admin/login) portals; farmer email/password needs a backend endpoint
+- [[2026-10-09-admin-english-login-chat-fixes]] - translated admin UI to English, aligned the password icon field, removed login preview button, and wired home new-chat to its modal; 102 frontend tests pass
+- [[2026-10-09-admin-frontend]] - built responsive Tagalog admin frontend without an age cutoff or dummy records; build/frontend checks pass, browser QA and hub model checks remain open
+- [[2026-10-09-admin-ui-ux-scope]] - inspected admin Figma frames and proposed responsive pages/dialogs; frontend approval and backend integrations remain pending
+- [[2026-10-09-chat-and-help-dialogs]] - responsive saved-chat dialog and concise Tulong; build and frontend tests pass, browser QA and hub model checks remain open
+- [[2026-10-09-ugatan-help-tagalog]] - restored the local AI help modal, removed language selection, and added the Tagalog introduction and supplied icon
+- [[2026-10-09-home-page-design-guide]] - added an implementation-facing guide for the current Ugatan Home Page UI/UX
 - [[2026-10-09-merge-main-into-go-backend]] - merged main into go-backend for PR 1: main's home UI with the sidebar and log-out ported on, lockfile fixed
 - [[2026-10-09-ws-docker-init]] - how to init `ws`: Docker Postgres on 5433, migrate, seed, run-api (plus commit-message draft note)
 - [[2026-10-09-remove-settings-auto-hub]] - removed settings/Ihanda ang AI; hub defaults to 127.0.0.1:8787

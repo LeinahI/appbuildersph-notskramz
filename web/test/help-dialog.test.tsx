@@ -19,12 +19,14 @@ describe('Tagalog help dialog', () => {
     expect(html).toContain('id="ugatan-help-dialog"');
     expect(html).toContain('aria-labelledby="ugatan-help-heading"');
     expect(html).toContain('aria-describedby="ugatan-help-description"');
-    expect(html).toContain('Ilarawan ang problema.');
-    expect(html).toContain('Ipadala ang tanong.');
-    expect(html).toContain('Basahin ang gabay.');
-    expect(html).toContain('Gamitin ang mga icon.');
+    expect(html).toContain('Ilarawan ang pananim');
+    expect(html).toContain('pataas na arrow para ipadala');
+    expect(html).toContain('Basahin ang gabay');
+    expect((html.match(/<li /g) ?? []).length).toBe(3);
     expect(html).toContain('aria-label="Isara ang tulong"');
-    expect((html.match(/method="dialog"/g) ?? []).length).toBe(2);
+    expect(html).not.toContain('Teksto at display');
+    expect(html).not.toContain('<fieldset');
+    expect((html.match(/method="dialog"/g) ?? []).length).toBe(1);
   });
 
   it('discloses the model download and does not prepare AI when the dialog renders', () => {
@@ -40,7 +42,7 @@ describe('Tagalog help dialog', () => {
   it.each([
     ['loading', 'Nagda-download at naghahanda.'],
     ['ready', 'Handa na ang AI.'],
-    ['error', 'Hindi maihanda ang AI sa device na ito ngayon.'],
+    ['error', 'Hindi maihanda ang AI ngayon.'],
   ] as const)('explains the %s state without exposing a duplicate prepare action', (status, message) => {
     const { html } = renderHelp(status);
     expect(html).toContain(message);

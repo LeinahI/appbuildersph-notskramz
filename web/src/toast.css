@@ -1,0 +1,42 @@
+.ugatan-toasts {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  --sileo-state-success: var(--color-leaf);
+  --sileo-state-info: var(--color-leaf);
+  --sileo-state-error: var(--color-ink);
+}
+.ugatan-toasts [data-sileo-viewport] { z-index: 100; padding: 0; max-width: calc(100vw - 32px); }
+.ugatan-toasts [data-sileo-title] {
+  font-size: 1rem; line-height: 1.5; font-weight: var(--ui-label-weight); text-transform: none; color: var(--color-ink);
+}
+.ugatan-toasts [data-sileo-description] {
+  font-size: 1rem; line-height: 1.6; font-weight: var(--ui-body-weight); color: var(--color-ink); overflow-wrap: anywhere;
+}
+.ugatan-toasts [data-sileo-button] {
+  min-height: 48px; height: auto; padding: .5rem 1rem; font-size: 1rem; line-height: 1.5;
+  font-weight: var(--ui-label-weight); color: var(--color-leaf); background: var(--color-leaf-soft); white-space: normal;
+}
+.ugatan-toasts [data-sileo-button]:focus-visible { outline: 3px solid var(--color-leaf); outline-offset: 2px; }
+/* Fixed SVG geometry cannot reflow enlarged text; use a normal card for accessible layouts and keyboard focus. */
+.ugatan-toasts:is([data-simple='true'], :focus-within) [data-sileo-toast] {
+  width: min(350px, calc(100vw - 32px)); height: auto; border: 1px solid var(--color-line);
+  border-radius: 16px; background: var(--color-paper); text-align: left; transform: none !important;
+}
+.ugatan-toasts:is([data-simple='true'], :focus-within) [data-sileo-canvas] { display: none; }
+.ugatan-toasts:is([data-simple='true'], :focus-within) [data-sileo-header] {
+  position: static; height: auto; max-width: none; padding: .75rem 1rem 0; transform: none;
+}
+.ugatan-toasts:is([data-simple='true'], :focus-within) [data-sileo-header-inner] { white-space: normal; }
+.ugatan-toasts:is([data-simple='true'], :focus-within) [data-layer='prev'] { display: none; }
+.ugatan-toasts:is([data-simple='true'], :focus-within) [data-sileo-content] {
+  position: static; opacity: 1; content-visibility: visible; pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ugatan-toasts *, .ugatan-toasts *::before, .ugatan-toasts *::after {
+    animation: none !important; transition: none !important;
+  }
+}
+@media (forced-colors: active) {
+  .ugatan-toasts [data-sileo-toast] { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  .ugatan-toasts [data-sileo-button] { color: ButtonText; border: 1px solid ButtonText; }
+}

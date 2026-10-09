@@ -1,0 +1,96 @@
+/* Text scales; logos and 48px icon targets keep their geometry. */
+:root {
+  font-size: 100%;
+  --ui-body-weight: 400;
+  --ui-medium-weight: 500;
+  --ui-label-weight: 600;
+}
+:root[data-ui-text-size='large'] { font-size: 125%; }
+:root[data-ui-text-size='extra-large'] { font-size: 150%; }
+:root[data-ui-text-weight='stronger'] {
+  --ui-body-weight: 500;
+  --ui-medium-weight: 600;
+  --ui-label-weight: 650;
+  --font-weight-normal: 500;
+  --font-weight-medium: 600;
+  --font-weight-semibold: 650;
+}
+body { font-weight: var(--ui-body-weight); }
+:root[data-ui-contrast='high'] {
+  --color-canvas: #ffffff;
+  --color-field: #ffffff;
+  --color-paper: #ffffff;
+  --color-surface: #ffffff;
+  --color-ink: #102418;
+  --color-leaf: #17462b;
+  --color-mist: #263f2d;
+  --color-muted: #263f2d;
+  --color-label: #263f2d;
+  --color-leaf-soft: #e1eddf;
+  --color-sprout: #f1f6ef;
+  --color-line: #37573b;
+  --color-rule: #37573b;
+  --color-sprout-line: #37573b;
+  /* Sidebar, search, setup and staff pages from main. */
+  --color-bg: #ffffff;
+  --color-bubble: #e1eddf;
+  --color-accent: #17462b;
+  --color-accent-hover: #102418;
+  --admin-danger: #8b231c;
+}
+:root[data-ui-contrast='high'] :is(.admin-shell, .admin-login, .admin-dialog) { --admin-danger: #8b231c; }
+/* Keep the settings frame still while its text grows; scroll content, not the close button. */
+:is(#ugatan-display-dialog, #admin-display) {
+  height: min(520px, calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  padding: 20px; overflow: hidden;
+}
+:is(#ugatan-display-dialog, #admin-display)[open] { display: flex; flex-direction: column; }
+:is(#ugatan-display-dialog, #admin-display) > :first-child { flex-shrink: 0; margin-bottom: 12px; }
+:is(#ugatan-display-dialog, #admin-display) > .display-preferences {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 4px;
+}
+.display-preferences { display: grid; align-content: start; gap: 16px; min-width: 0; line-height: 1.6; }
+.display-description { margin: 0; color: var(--color-mist); font-size: .875rem; line-height: 1.7; }
+.display-preferences fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.display-preferences legend { padding: 0; margin-bottom: 8px; font-weight: var(--ui-label-weight); }
+.display-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 128px), 1fr)); gap: 8px; }
+.display-options label {
+  display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 10px;
+  border: 1px solid var(--color-line); border-radius: 10px; background: var(--color-paper);
+  font-size: .875rem; overflow-wrap: anywhere; cursor: pointer;
+}
+.display-options label:has(input:checked) { background: var(--color-leaf-soft); border-color: var(--color-leaf); }
+.display-options input { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--color-leaf); }
+.display-preferences .btn { min-height: 48px; padding: 12px 20px; white-space: normal; }
+.display-settings { margin: 1rem 0; border-block: 1px solid var(--color-rule); }
+.display-settings summary { min-height: 48px; padding-block: .625rem; color: var(--color-leaf); font-weight: var(--ui-label-weight); cursor: pointer; }
+.display-settings[open] > .display-preferences { padding-bottom: 1rem; }
+.chat-header { height: auto; min-height: calc(80px + env(safe-area-inset-top)); padding-inline: 16px; gap: 4px; }
+.chat-header > img { min-width: 0; flex-shrink: 1; }
+.chat-header > div { gap: 4px; }
+.chat-composer:focus-within { outline: 2px solid var(--color-leaf); outline-offset: 1px; }
+.admin-dialog-header > div { min-width: 0; }
+.admin-register-button { max-width: 100%; white-space: normal; }
+.admin-dialog-actions { flex-wrap: wrap; }
+.admin-panel-footer { align-items: start; }
+.admin-login-card { overflow-wrap: anywhere; }
+.admin-main, .admin-dialog, .chat-dialog { scrollbar-gutter: stable; }
+:root:is([data-ui-text-size='large'], [data-ui-text-size='extra-large']) .admin-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+:root:is([data-ui-text-size='large'], [data-ui-text-size='extra-large']) .admin-form-grid { grid-template-columns: minmax(0, 1fr); }
+:root:is([data-ui-text-size='large'], [data-ui-text-size='extra-large']) .admin-form-grid > div { grid-column: auto; }
+@media (min-width: 768px) { .chat-header { padding-inline: 32px; } }
+@media (max-width: 479px) {
+  :root[data-ui-text-size='extra-large'] .admin-metrics { grid-template-columns: minmax(0, 1fr); }
+  .chat-dialog { padding: 20px; }
+}
+@media (forced-colors: active) {
+  :root, :root[data-ui-contrast='high'] {
+    --color-canvas: Canvas; --color-field: Canvas; --color-paper: Canvas; --color-surface: Canvas;
+    --color-ink: CanvasText; --color-leaf: LinkText; --color-mist: CanvasText; --color-muted: CanvasText;
+    --color-label: CanvasText; --color-leaf-soft: Canvas; --color-sprout: Canvas;
+    --color-line: CanvasText; --color-rule: CanvasText; --color-sprout-line: CanvasText; --color-warn: Canvas;
+  }
+  .chat-composer:focus-within { outline: 3px solid Highlight; }
+  .display-options label:has(input:checked) { border: 2px solid Highlight; }
+  :focus-visible { outline-color: Highlight; }
+}

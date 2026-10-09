@@ -41,6 +41,8 @@ Direct dependencies from the `package.json` files, with the versions in `pnpm-lo
 | `dexie` | 4.4.6 | web (IndexedDB queue) | Apache-2.0 |
 | React and React DOM | 18.3.1 | web | MIT |
 | `@types/react`, `@types/react-dom` | 18.3.12, 18.3.1 | web (types only) | MIT |
+| Sileo | 0.1.5 | web (toast notifications) | MIT |
+| Motion and Framer Motion | 12.43.0 | web (Sileo animation dependency) | MIT |
 | Vite | 5.4.11 | web build | MIT |
 | `@vitejs/plugin-react` | 4.3.4 | web build | MIT |
 | `vite-plugin-pwa` | 0.21.2 | web (manifest and service worker) | MIT |

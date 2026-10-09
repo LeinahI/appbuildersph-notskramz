@@ -49,7 +49,7 @@ const tl = {
   saveError: 'Hindi ma-save ang tanong sa device.',
   nothingYet: 'Wala pang tanong.',
   footer: 'Gabay lamang ito. Kumpirmahin sa lokal na agriculturist, BPI, o PhilRice bago gumamit ng anumang pesticide.',
-  historyLabel: 'Mga nakaraang usapan',
+  historyLabel: 'Mga usapan',
   closeHistory: 'Isara ang mga nakaraang usapan',
   newConversationLabel: 'Bagong usapan',
   helpLabel: 'Tulong',
@@ -99,6 +99,9 @@ const tl = {
   searchNoResults: 'Walang nahanap.',
   searchNoChats: 'Walang usapan pa.',
   newChatLabel: 'Bagong usapan',
+  historySaved: '1 tanong · Naka-save sa device',
+  displayLabel: 'Teksto at display',
+  closeDisplay: 'Isara ang mga setting ng display',
 };
 
 export type Labels = {
@@ -203,6 +206,9 @@ const en: Labels = {
   searchNoResults: 'No results found.',
   searchNoChats: 'No chats yet.',
   newChatLabel: 'New chat',
+  historySaved: '1 question · Saved on this device',
+  displayLabel: 'Text & display',
+  closeDisplay: 'Close display settings',
 };
 
 // shortcut: Cebuano interface copy is developer-authored, replace after native-speaker review.
@@ -302,6 +308,9 @@ const ceb: Labels = {
   searchNoResults: 'Walay nakit-an.',
   searchNoChats: 'Wala pay panag-istorya.',
   newChatLabel: 'Bag-ong panag-istorya',
+  historySaved: '1 pangutana · Na-save sa device',
+  displayLabel: 'Teksto ug display',
+  closeDisplay: 'Sirad-i ang mga setting sa display',
 };
 
 export const LABELS: Record<UiLanguage, Labels> = { tl, en, ceb };

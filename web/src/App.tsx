@@ -37,7 +37,8 @@ import { AnswerView } from './components/AnswerView';
 import { HelpDialog } from './components/HelpDialog';
 import { HighlightedText } from './components/HighlightedText';
 import { HomePage } from './components/HomePage';
-import { QueueList } from './components/QueueList';
+import { ConversationDialog } from './components/ConversationDialog';
+import { notify } from './components/ToastHost';
 import { SymptomPicker } from './components/SymptomPicker';
 import { KNOWLEDGE, KNOWLEDGE_BY_ID } from './config/knowledge';
 import { DEFAULT_UI_LANGUAGE, L, localeFor } from './config/labels';
@@ -60,6 +61,7 @@ import { phoneAi, phoneAiFit, type PhoneAiState } from './lib/llm';
 import { photoSrc, shrinkPhoto } from './lib/photo';
 import { hubCapabilities, hubReachable, syncQueue } from './lib/sync';
 import { symptomTile } from './symptoms';
+import { voiceNoticeIsInline } from './lib/voice-notice';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 const ConversationSidebar = lazy(() => import('./components/ConversationSidebar'));
@@ -584,8 +586,24 @@ export default function App() {
       setPhoto(await shrinkPhoto(file));
       setNotice('');
     } catch {
-      setNotice(L.photoError);
+      notify({ title: L.photoButton, description: L.photoError, type: 'error' });
     }
+  }
+
+  /** Voice progress stays inline; voice problems show as a toast. */
+  function voiceNotice(message: string) {
+    if (voiceNoticeIsInline(message, L)) setNotice(message);
+    else {
+      setNotice('');
+      notify({ title: L.voiceStart, description: message, type: 'error' });
+    }
+  }
+
+  /** Scrolls the chat to a question picked in the history dialog. */
+  function showQuestion(question: QueuedQuestion) {
+    historyDialog.current?.close();
+    const index = messages.findIndex((m) => m.uid === question.uid);
+    if (index >= 0) requestAnimationFrame(() => rowVirtualizer.scrollToIndex(index, { align: 'center' }));
   }
 
   function onSymptom(entry: KnowledgeEntry) {
@@ -699,29 +717,23 @@ export default function App() {
           onNewConversation={newChat}
           onPhotoFile={(file) => void onPhotoChosen(file)}
           onRemovePhoto={() => setPhoto(null)}
-          onNotice={setNotice}
+          onNotice={voiceNotice}
         >
           {thread}
         </HomePage>
       </div>
       <HelpDialog ref={helpDialog} ai={ai} laya={laya} fit={aiFit} onPrepareAi={prepareAi} />
-      <dialog ref={historyDialog} className="chat-history" aria-labelledby="ugatan-history-heading">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <h2 id="ugatan-history-heading" className="m-0 text-xl font-semibold">{L.historyLabel}</h2>
-          <button
-            type="button"
-            className="chat-icon-button"
-            aria-label={L.closeHistory}
-            title={L.closeHistory}
-            onClick={() => historyDialog.current?.close()}
-          >
-            <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
-              <path d="m6 6 12 12M6 18 18 6" />
-            </svg>
-          </button>
-        </div>
-        <QueueList items={history} labels={L} locale={localeFor(DEFAULT_UI_LANGUAGE)} />
-      </dialog>
+      <ConversationDialog
+        ref={historyDialog}
+        items={history}
+        labels={L}
+        locale={localeFor(DEFAULT_UI_LANGUAGE)}
+        onNewConversation={() => {
+          historyDialog.current?.close();
+          newChat();
+        }}
+        onSelect={showQuestion}
+      />
     </div>
   );
 }

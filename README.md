@@ -59,7 +59,7 @@ Build it (needs the Android SDK and JDK 21; the script finds the SDK where Andro
 
 This is a debug build, signed with the local debug key. A build for wider sharing needs a release keystore, which must never be committed (`*.keystore`, `*.jks` are ignored). The app asks for the camera (photos) and microphone (voice through the hub). The launcher icon is `web/public/UgatanLogoSprout.webp` on white.
 
-To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`), or type the hub address under **Mga setting** (the gear button). `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. An address typed in the app is saved on that phone and overrides it.
+To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`). `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. A previously saved address on that phone still overrides it. The home page has no hub settings or manual sync controls.
 
 Only the staff portal talks to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`) and open http://localhost:3000/admin/login. Farmers open http://localhost:3000/ and land in the chat with no sign-in. Chat is at `/chat/:conversationId` (bare `/chat` opens the last active or a new chat) with a sidebar kept only on that device. Old `/login` and `/claim` links open the chat.
 
@@ -84,6 +84,26 @@ make run-api           # http://127.0.0.1:8080
 ```
 
 PII columns are AES-GCM ciphertext. ID images never leave the admin browser. Farmers claim with `/claim?token=…` (single-use, default 24h). Revoke users or invites from `/admin`. Confirm retention and LAN TLS with your co-op before production.
+
+## Admin UI preview
+
+The real staff portal is `/admin` (above, backed by `ws`). Separately, open `/admin.html` on the web dev or preview server for the English login layout. The admin entry is separate from the farmer home page. There is no preview button on login; for frontend QA, open `/admin.html#overview` directly. This is not authenticated access.
+
+This is frontend only: login, registration persistence, ID reading, duplicate checks, QR generation/redemption, and access changes are not connected. These controls explain the missing integration rather than simulating success. No credentials, ID images, sample users, or personal records are stored.
+
+Manual registration supports consent, draft validation, review, editing, and explicit discard. There is no minimum-age eligibility rule. Drafts live in memory and are lost on reload; the browser is asked to warn before leaving an unfinished draft. Record and QR previews do not create accounts or grant access.
+
+## Text and display preferences
+
+Open the sliders icon beside history on the farmer page (**Teksto at display**), or **Display preferences** from the admin sidebar/mobile menu. Login and the registration drawer have no preference controls; both still inherit saved preferences. Choose Standard/Large/Extra large text (100/125/150%), Regular/Stronger weight, and Automatic/High contrast. Changes apply immediately to both entries; Automatic follows the device contrast preference. Reset restores the defaults.
+
+Preferences are saved only in this browser on this origin and shared with its other Ugatan tabs. On a shared computer, the next operator inherits them. If storage is blocked, the controls still work for the current page and explain that saving is unavailable. Changing appearance does not alter AI language, reload a chat, save a registration, or store personal information. Browser zoom and forced-color accessibility modes remain available.
+
+## Toast messages
+
+Farmer and admin pages share Sileo notifications for photo/voice availability, display-preference resets, and explicitly discarded registration drafts. Success confirmations auto-dismiss after 3 seconds, information after 5 seconds; voice errors stay until dismissed. Hovering pauses dismissal; moving away restarts the full timeout. Use **Isara** or **Close** to dismiss a toast early. Question-save errors, AI-request failures, listening progress, and registration validation remain inline.
+
+Toasts inherit saved text size, weight, and contrast. Larger text, narrow screens, keyboard focus, and system accessibility preferences use a wrapping card layout. Notifications move inside the active native dialog so its backdrop does not hide or disable them. No notification confirms an unimplemented backend operation.
 
 ## Run the hub
 
@@ -255,7 +275,7 @@ The logic lives in `shared/src/conversation.ts` (routing, session text, the one-
 | Phone AI | A phone whose browser reports at least 8 GB of memory (or does not say) and has a WebGPU adapter with 16-bit shaders. Gemma has no CPU fallback in the browser. The repo has no phone test. | Gemma 4 E2B (with vision) and Laya in the browser, after a first download of about 3.4 GB and 1.7 GB from the hub's Wi-Fi. The phone reads photos and matches with the hub's hybrid rules; Gemma explains only the match the matcher chose. | Once loaded on that phone. Whether the browser keeps the download across visits is not checked. |
 | Village hub | Cooperative or barangay members | Keyword matching by default. Optional Laya matching and optional Gemma 4 E2B explanation (E4B not run). | Yes, on the local network |
 
-Questions the phone does not answer itself queue on the phone. The app sends them when it starts, when the browser fires an online event, when the farmer taps **Ipadala ngayon** in Mga setting, or after a new question when the hub answers its health check. Nothing polls for the hub's Wi-Fi. A question the phone AI answers is marked answered only when generation finishes, and a sync that runs during generation can still send it to the hub (see Known issues). The phone uses keyword matching only; Laya runs on the hub.
+Questions the phone does not answer itself queue on the phone. The app sends them when it starts, when the browser fires an online event, or after a new question when the hub answers its health check. Nothing polls for the hub's Wi-Fi. A question the phone AI answers is marked answered only when generation finishes, and a sync that runs during generation can still send it to the hub (see Known issues). The phone uses keyword matching only; Laya runs on the hub.
 
 No single phone runs the full model, so the plan does not promise AI on every phone.
 
@@ -329,7 +349,7 @@ These need a person to decide. The code does not guess them.
 
 - **Photos are slow on a busy CPU.** Reading one takes about 30 s when the hub machine is idle, and minutes when other programs use the CPU. The first photo after a restart waits for the model to load. A photo question sent while the hub restarts is lost on the hub side and stays queued on the phone until the next sync.
 - **Phone AI retry.** After a load error the **Ihanda ang AI** button comes back, but tapping it does nothing until the page is reloaded. The worker is kept after an error (`web/src/lib/llm.ts`).
-- **Phone AI and sync.** A question the phone AI answers is marked answered only when generation finishes. A sync that runs during generation (Ipadala ngayon, or an online event) can still send it to the hub, and a failed generation stays queued for the next sync. The app has no status that keeps it out of the sync yet.
+- **Phone AI and sync.** A question the phone AI answers is marked answered only when generation finishes. A sync that runs during generation (for example, an online event) can still send it to the hub, and a failed generation stays queued for the next sync. The app has no status that keeps it out of the sync yet.
 - **Laya errors.** A failure after startup is not retried on the CPU. In `laya` mode `/ask` returns an error. In `hybrid` mode the hub returns keyword's candidates marked not sure, or no match, and logs nothing.
 - **Browser voice input needs a network.** Typing works offline. With `HUB_VOICE` off, or when the hub cannot be reached, the mic button uses the Web Speech API, which in Chrome sends speech to a browser service (`web/src/components/VoiceInput.tsx`). With the hub's voice on and reachable, the mic works offline.
 - **Offline phone AI is not yet tested.** The model weights and the ONNX runtime files are cached after the first online load, but a network-off reload has not been run on the demo laptop. See [docs/DEMO.md](docs/DEMO.md).

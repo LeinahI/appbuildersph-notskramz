@@ -82,7 +82,7 @@ describe('Ugatan home page', () => {
 
   it('labels the icon-only camera, microphone, history, new-chat, help, and send actions, with no log-out', () => {
     const html = renderToStaticMarkup(createElement(HomePage, props()));
-    for (const label of ['Mga nakaraang usapan', 'Bagong usapan', 'Larawan', 'Magsalita', 'Ipadala ang tanong', 'Tulong']) {
+    for (const label of ['Mga usapan', 'Bagong usapan', 'Larawan', 'Magsalita', 'Ipadala ang tanong', 'Tulong']) {
       expect(html).toContain(`aria-label="${label}"`);
     }
     expect(html).not.toContain('Mag-log out');
@@ -166,4 +166,46 @@ it('connects the Tulong button to opening its dialog', () => {
   expect(help?.props['aria-controls']).toBe('ugatan-help-dialog');
   help?.props.onClick();
   expect(onHelp).toHaveBeenCalledOnce();
+});
+
+it('identifies the history control as opening the chat dialog', () => {
+  const onHistory = vi.fn();
+  const page = HomePage({ ...props(), onHistory });
+  const history = findElement(page, (element) => element.props['aria-label'] === 'Mga usapan');
+  expect(history?.props['aria-haspopup']).toBe('dialog');
+  expect(history?.props['aria-controls']).toBe('ugatan-history-dialog');
+  history?.props.onClick();
+  expect(onHistory).toHaveBeenCalledOnce();
+});
+
+it('starts a new chat from the header new-chat button', () => {
+  const onNewConversation = vi.fn();
+  const page = HomePage({ ...props(), onNewConversation });
+  const newChat = findElement(page, (element) => element.props['aria-label'] === 'Bagong usapan');
+  newChat?.props.onClick();
+  expect(onNewConversation).toHaveBeenCalledOnce();
+});
+
+it('opens display preferences from an accessible header icon without sending or changing the draft', () => {
+  const onTextChange = vi.fn();
+  const onSubmit = vi.fn();
+  const page = HomePage({ ...props('Unsent draft'), onTextChange, onSubmit });
+  const control = findElement(page, (element) => element.props['aria-label'] === 'Teksto at display');
+  const dialog = findElement(page, (element) => element.type === 'dialog' && element.props.id === 'ugatan-display-dialog');
+  expect(control).toBeDefined();
+  expect(dialog).toBeDefined();
+  const showModal = vi.fn();
+  (dialog as ReactElement & { ref: { current: unknown } }).ref.current = { showModal };
+  expect(control?.props['aria-controls']).toBe('ugatan-display-dialog');
+  expect(control?.props['aria-haspopup']).toBe('dialog');
+  control?.props.onClick();
+  expect(showModal).toHaveBeenCalledOnce();
+  expect(onTextChange).not.toHaveBeenCalled();
+  expect(onSubmit).not.toHaveBeenCalled();
+  expect(findElement(page, (element) => element.props.id === 'ugatan-question')?.props.value).toBe('Unsent draft');
+  const html = renderToStaticMarkup(page);
+  expect(html).toContain('aria-labelledby="ugatan-display-heading"');
+  expect(html).toContain('aria-label="Isara ang mga setting ng display"');
+  expect(html).toContain('method="dialog"');
+  expect(html).toContain('Laki ng teksto');
 });

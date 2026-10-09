@@ -57,7 +57,14 @@ describe('App home composition', () => {
 
   it('keeps the removed prototype controls and demo cards absent', () => {
     const html = renderApp();
-    for (const removed of ['Mga setting at sync', 'Demo lamang', 'Bakit naninilaw ang mga dahon?', 'Palay (rice)']) {
+    for (const removed of [
+      'Mga setting at sync',
+      'Address ng hub',
+      'Ipadala ngayon',
+      'Demo lamang',
+      'Bakit naninilaw ang mga dahon?',
+      'Palay (rice)',
+    ]) {
       expect(html).not.toContain(removed);
     }
   });
