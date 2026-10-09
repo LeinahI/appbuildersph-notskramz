@@ -10,6 +10,7 @@ import { createHybridMatcher, type Describe } from './matchers/hybrid.js';
 import { createLayaMatcher } from './matchers/laya.js';
 import type { Matcher } from './matchers/index.js';
 import { loadKnowledge } from './knowledge.js';
+import { lanAddresses } from './app-page.js';
 import { createHubServer } from './server.js';
 import { ConversationStore } from './conversation/state.js';
 
@@ -103,6 +104,9 @@ async function main(): Promise<void> {
     imageDescriber,
     transcriber,
     modelDir: config.gemmaModelDir,
+    apkFile: config.apkFile,
+    litertFile: config.litertFile,
+    port: config.port,
     // Laya goes to phones only with the team's threshold, so the phone never decides "sure" on a guess.
     layaDir: config.layaConfidenceThreshold !== null ? config.layaModelDir : null,
     info: {
@@ -112,6 +116,7 @@ async function main(): Promise<void> {
       voice: transcriber ? 'on' : 'off',
       phoneModel: config.gemmaModelDir ? 'on' : 'off',
       phoneLaya: config.layaModelDir && config.layaConfidenceThreshold !== null ? 'on' : 'off',
+      phoneLitert: config.litertFile ? 'on' : 'off',
       ...(config.layaConfidenceThreshold !== null ? { layaThreshold: config.layaConfidenceThreshold } : {}),
     },
   });
@@ -119,6 +124,9 @@ async function main(): Promise<void> {
     console.log(
       `Ugatan hub listening on http://${config.host}:${config.port} (matcher: ${matcher.name}, explainer: ${explainer.name}, vision: ${imageDescriber ? 'on' : 'off'}, voice: ${transcriber ? 'on' : 'off'})`,
     );
+    // Open this on the laptop to set up phones: it shows the QR code that downloads the app.
+    console.log(`Set up a phone: open http://localhost:${config.port}/ on this laptop.`);
+    for (const address of lanAddresses()) console.log(`  Phones on this Wi-Fi get the app at http://${address}:${config.port}/app`);
   });
 }
 

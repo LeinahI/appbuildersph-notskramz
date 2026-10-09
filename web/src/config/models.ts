@@ -14,10 +14,16 @@ export const PHONE_MODEL = {
   id: PHONE_MODEL_REPO,
   dtype: 'q4f16',
   device: 'webgpu',
-  fallbackDevice: 'wasm',
+  /** What the phone's GPU must hold (lib/gpu.ts): the per-layer embedding table, 1.17 GB in embed_tokens_q4f16. */
+  gpu: { f16: true, largestWeight: 1_174_405_120 },
   /**
    * Least device memory, in GB as the browser reports it (navigator.deviceMemory), to offer the download. The q4f16
    * weights are about 3.1 GB and are held in memory, so a 2 to 4 GB phone would close the tab. Chrome reports at most 8.
    */
   minMemoryGb: 8,
+  /** Rough download size in bytes (q4f16 files incl. vision and audio), the floor for the setup page's one percent. */
+  downloadBytes: 3.4e9,
 } as const;
+
+/** Rough size in bytes of the phone matcher's bundle (fp32), added to the setup percent when the hub offers it. */
+export const PHONE_LAYA_DOWNLOAD_BYTES = 1.7e9;

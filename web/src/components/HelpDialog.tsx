@@ -57,7 +57,7 @@ export const HelpDialog = forwardRef<HTMLDialogElement, HelpDialogProps>(functio
           May nakahandang gabay kahit walang model na na-download. Kapag naka-install at na-load na ang app, magagamit ang gabay kahit walang internet. Para sa dagdag na paliwanag, maaari mong ihanda ang AI sa device mo.
         </p>
         <p className='my-3 text-sm leading-6 text-mist'>
-          Hindi kailangan ng internet: ang hub ang nagbibigay ng mga model sa Wi-Fi nito sa unang paghahanda, mga 3.4 GB ang Gemma (sagot at litrato) at 1.7 GB ang Laya (pantugma). Kumonekta sa Wi-Fi ng hub at maglaan ng sapat na espasyo. Kapag handa na, magtanong sa chat. Kailangang ihanda muli ang AI kapag ni-reload ang pahina; hindi garantisadong mapapanatili ng browser ang download.
+          Hindi kailangan ng internet: ang hub ang nagbibigay ng mga model sa Wi-Fi nito sa unang paghahanda, mga 5 GB ang Ugatan AI. Kumonekta sa Wi-Fi ng hub at maglaan ng sapat na espasyo. Kapag handa na, magtanong sa chat. Kailangang ihanda muli ang AI kapag ni-reload ang pahina; hindi garantisadong mapapanatili ng browser ang download.
         </p>
         {fit === 'unknown' && ai.status === 'idle' && (
           <p className='my-3 text-sm leading-6 text-mist'>
@@ -71,11 +71,10 @@ export const HelpDialog = forwardRef<HTMLDialogElement, HelpDialogProps>(functio
             </p>
           )}
           {fit !== 'too-small' && ai.status === 'idle' && <p className='my-3'>Hindi pa handa ang AI sa device. Maaari ka nang gumamit ng nakahandang gabay.</p>}
-          {ai.status === 'loading' && <p className='my-3'>Nagda-download at naghahanda. Maaaring abutin ng ilang minuto.{ai.progress && <span className='block text-mist'>{ai.progress}</span>}</p>}
+          {ai.status === 'loading' && <p className='my-3'>Nagda-download at naghahanda. Maaaring abutin ng ilang minuto.</p>}
           {ai.status === 'ready' && <p className='my-3'>Handa na ang AI. Isara ang tulong at ipadala ang iyong tanong.{ai.device && <span className='block text-mist'>{L.phoneAiDevice} {ai.device}.</span>}</p>}
-          {laya && laya.status === 'loading' && <p className='my-3'>Inihahanda ang Laya.{laya.progress && <span className='block text-mist'>{laya.progress}</span>}</p>}
-          {laya && laya.status === 'ready' && <p className='my-3'>Handa na rin ang Laya.{laya.device && <span className='block text-mist'>{L.phoneAiDevice} {laya.device}.</span>}</p>}
-          {laya && laya.status === 'error' && <p className='my-3'>Hindi naihanda ang Laya. Keyword at Gemma ang tutugma.{laya.error && <span className='block text-mist'>{laya.error}</span>}</p>}
+          {laya && laya.status === 'loading' && <p className='my-3'>Inihahanda pa ang natitirang bahagi ng Ugatan AI.</p>}
+          {laya && laya.status === 'error' && <p className='my-3'>Hindi buong naihanda ang Ugatan AI, pero gagana pa rin ito.{laya.error && <span className='block text-mist'>{laya.error}</span>}</p>}
           {ai.status === 'error' && <p className='my-3'>Hindi maihanda ang AI sa device na ito ngayon. Maaari mo pa ring gamitin ang nakahandang gabay. I-reload ang pahina kung gusto mong subukan muli.{ai.error && <span className='block text-mist'>{ai.error}</span>}</p>}
         </div>
         {fit !== 'too-small' && ai.status === 'idle' && (

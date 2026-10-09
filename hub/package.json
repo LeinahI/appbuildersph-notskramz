@@ -19,10 +19,12 @@
     "@huggingface/transformers": "4.3.0",
     "@receptron/laya": "0.1.2",
     "@ugatan/shared": "workspace:*",
-    "node-llama-cpp": "3.22.1"
+    "node-llama-cpp": "3.22.1",
+    "qrcode": "1.5.4"
   },
   "devDependencies": {
     "@types/node": "20.19.43",
+    "@types/qrcode": "1.5.6",
     "tsx": "4.23.15",
     "typescript": "5.6.3",
     "vitest": "2.1.9"

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ugatan</string>
+    <string name="title_activity_main">Ugatan</string>
+    <string name="package_name">ph.appbuilders.ugatan</string>
+    <string name="custom_url_scheme">ph.appbuilders.ugatan</string>
+</resources>

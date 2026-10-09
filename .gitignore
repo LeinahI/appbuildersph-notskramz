@@ -22,6 +22,16 @@ hub/logs/
 hub/data/
 eval/results/
 
+# Android app build output and signing keys (web/android/). Never commit these.
+web/android/app/build/
+web/android/build/
+web/android/.gradle/
+web/android/local.properties
+*.keystore
+*.jks
+*.apk
+*.aab
+
 # Local environment
 .env
 .env.*

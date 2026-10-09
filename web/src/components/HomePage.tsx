@@ -1,7 +1,6 @@
 import { useEffect, useRef, type FormEvent, type ReactNode } from 'react';
 import { DEFAULT_UI_LANGUAGE, type Labels } from '../config/labels';
 import { photoSrc } from '../lib/photo';
-import { LogoutConfirmDialog } from './LogoutConfirmDialog';
 import { VoiceInput } from './VoiceInput';
 
 export interface HomePageProps {
@@ -24,8 +23,6 @@ export interface HomePageProps {
   onSubmit: () => void;
   onHistory: () => void;
   onHelp: () => void;
-  /** Shown when the farmer is signed in with a claim link. */
-  onLogout?: () => void;
   onNewConversation: () => void;
   onPhotoFile: (file: File | undefined) => void;
   onRemovePhoto: () => void;
@@ -35,6 +32,20 @@ export interface HomePageProps {
 export function HomePage(props: HomePageProps) {
   const textarea = useRef<HTMLTextAreaElement>(null);
   const photoInput = useRef<HTMLInputElement>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
+  const photoMenu = useRef<HTMLDetailsElement>(null);
+
+  /** Closes the photo menu and opens the camera or the gallery. */
+  function pickPhoto(input: HTMLInputElement | null) {
+    if (photoMenu.current) photoMenu.current.open = false;
+    input?.click();
+  }
+
+  function onPhotoInput(event: React.ChangeEvent<HTMLInputElement>) {
+    props.onPhotoFile(event.target.files?.[0]);
+    // The same file can be chosen again after it is removed.
+    event.target.value = '';
+  }
   const { labels } = props;
   const canSend = props.text.trim() !== '' || props.photo !== null;
 
@@ -84,24 +95,6 @@ export function HomePage(props: HomePageProps) {
           >
             <img className='size-6' src='/home/new-chat.svg' alt='' />
           </button>
-          {props.onLogout && (
-            <LogoutConfirmDialog
-              triggerClassName='chat-icon-button bg-leaf-soft'
-              copy={{
-                label: labels.logoutLabel,
-                title: labels.logoutConfirmTitle,
-                body: labels.logoutConfirmBody,
-                confirm: labels.logoutConfirmYes,
-                cancel: labels.logoutConfirmNo,
-              }}
-              onConfirm={props.onLogout}
-              trigger={
-                <svg className='size-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.7' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'>
-                  <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9' />
-                </svg>
-              }
-            />
-          )}
           <button
             type='button'
             className='chat-icon-button'
@@ -187,26 +180,26 @@ export function HomePage(props: HomePageProps) {
               }}
             />
             <div className='flex min-h-12 items-center gap-1.5 pt-2'>
-              <input
-                ref={photoInput}
-                type='file'
-                accept='image/*'
-                hidden
-                onChange={(event) => {
-                  props.onPhotoFile(event.target.files?.[0]);
-                  // The same file can be chosen again after it is removed.
-                  event.target.value = '';
-                }}
-              />
-              <button
-                type='button'
-                className={`chat-icon-button ${props.photo ? 'bg-leaf-soft' : ''}`}
-                aria-label={labels.photoButton}
-                title={labels.photoButton}
-                onClick={() => photoInput.current?.click()}
-              >
-                <img className='size-6' src='/home/photo-composer.svg' alt='' />
-              </button>
+              {/* The Android app's web view offers only the gallery for a plain file input, so the camera is its own choice. */}
+              <input ref={cameraInput} type='file' accept='image/*' capture='environment' hidden onChange={onPhotoInput} />
+              <input ref={photoInput} type='file' accept='image/*' hidden onChange={onPhotoInput} />
+              <details ref={photoMenu} className='relative'>
+                <summary
+                  className={`chat-icon-button list-none [&::-webkit-details-marker]:hidden ${props.photo ? 'bg-leaf-soft' : ''}`}
+                  aria-label={labels.photoButton}
+                  title={labels.photoButton}
+                >
+                  <img className='size-6' src='/home/photo-composer.svg' alt='' />
+                </summary>
+                <div className='absolute bottom-full left-0 z-20 mb-2 grid min-w-[12rem] gap-1 rounded-2xl border border-line bg-surface p-1.5 shadow-lg'>
+                  <button type='button' className='rounded-xl px-3 py-2.5 text-left text-[0.9375rem] hover:bg-soft' onClick={() => pickPhoto(cameraInput.current)}>
+                    {labels.photoTake}
+                  </button>
+                  <button type='button' className='rounded-xl px-3 py-2.5 text-left text-[0.9375rem] hover:bg-soft' onClick={() => pickPhoto(photoInput.current)}>
+                    {labels.photoChoose}
+                  </button>
+                </div>
+              </details>
               {props.onSymptoms && (
                 <button
                   type='button'

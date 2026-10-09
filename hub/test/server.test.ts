@@ -53,7 +53,7 @@ describe('hub HTTP', () => {
   it('answers /health with the active matcher and explainer', async () => {
     const res = await fetch(`${base}/health`);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, matcher: 'keyword', explainer: 'off', vision: 'off', voice: 'off', phoneModel: 'off' });
+    expect(await res.json()).toEqual({ ok: true, matcher: 'keyword', explainer: 'off', vision: 'off', voice: 'off', phoneModel: 'off', app: 'off' });
   });
 
   it('answers OPTIONS for CORS preflight', async () => {

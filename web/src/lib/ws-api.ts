@@ -1,4 +1,5 @@
-import { DEFAULT_WS_URL, loadAdminToken, loadFarmerToken } from '../config/ws';
+// The staff portal's client for ws. Farmers never call ws: their chats stay on the phone.
+import { DEFAULT_WS_URL, loadAdminToken } from '../config/ws';
 
 export type Address = {
   line1: string;
@@ -50,7 +51,7 @@ export class WsApiError extends Error {
   }
 }
 
-type AuthMode = boolean | 'admin' | 'farmer';
+type AuthMode = boolean | 'admin';
 
 async function request<T>(
   path: string,
@@ -62,7 +63,7 @@ async function request<T>(
   }
   const mode = opts.auth === undefined ? 'admin' : opts.auth;
   if (mode !== false) {
-    const token = mode === 'farmer' ? loadFarmerToken() : loadAdminToken();
+    const token = loadAdminToken();
     if (token) headers.set('Authorization', `Bearer ${token}`);
   }
   const res = await fetch(`${DEFAULT_WS_URL}${path}`, { ...opts, headers });
@@ -91,21 +92,6 @@ async function request<T>(
 
 export function login(email: string, password: string) {
   return request<{ token: string; user: UserDTO }>('/api/v1/auth/login', {
-    method: 'POST',
-    auth: false,
-    body: JSON.stringify({ email, password }),
-  });
-}
-
-/** The ws API has no farmer password sign-in yet; the farmer portal treats these as unavailable. */
-export function isUnavailable(err: unknown): boolean {
-  return err instanceof WsApiError && (err.status === 404 || err.status === 405 || err.status === 501);
-}
-
-export type FarmerSession = { userId: string; token: string };
-
-export function farmerLogin(email: string, password: string) {
-  return request<FarmerSession>('/api/v1/auth/farmer/login', {
     method: 'POST',
     auth: false,
     body: JSON.stringify({ email, password }),
@@ -162,65 +148,4 @@ export function revokeUser(userId: string) {
 
 export function listAudit() {
   return request<AuditDTO[]>('/api/v1/audit');
-}
-
-export function claimInvite(token: string, deviceId: string) {
-  return request<{ userId: string; token: string }>('/api/v1/invites/claim', {
-    method: 'POST',
-    auth: false,
-    body: JSON.stringify({ token, deviceId }),
-  });
-}
-
-export type ConversationDTO = {
-  id: string;
-  userId: string;
-  title: string;
-  pinned: boolean;
-  pinnedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type MessageInput = {
-  role: 'user' | 'assistant';
-  body: string;
-  clientUid?: string;
-  meta?: unknown;
-};
-
-export function listConversationsRemote(q?: string) {
-  const qs = q ? `?q=${encodeURIComponent(q)}` : '';
-  return request<ConversationDTO[]>(`/api/v1/conversations${qs}`, { auth: 'farmer' });
-}
-
-export function createConversationRemote(title?: string) {
-  return request<ConversationDTO>('/api/v1/conversations', {
-    method: 'POST',
-    auth: 'farmer',
-    body: JSON.stringify({ title: title ?? '' }),
-  });
-}
-
-export function patchConversationRemote(id: string, patch: { title?: string; pinned?: boolean }) {
-  return request<ConversationDTO>(`/api/v1/conversations/${id}`, {
-    method: 'PATCH',
-    auth: 'farmer',
-    body: JSON.stringify(patch),
-  });
-}
-
-export function deleteConversationRemote(id: string) {
-  return request<{ status: string }>(`/api/v1/conversations/${id}`, {
-    method: 'DELETE',
-    auth: 'farmer',
-  });
-}
-
-export function putConversationMessages(id: string, messages: MessageInput[]) {
-  return request<unknown>(`/api/v1/conversations/${id}/messages`, {
-    method: 'PUT',
-    auth: 'farmer',
-    body: JSON.stringify({ messages }),
-  });
 }

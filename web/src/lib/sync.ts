@@ -83,6 +83,8 @@ export interface HubCapabilities {
   phoneModel: boolean;
   /** The hub serves Laya's bundle to phones, with the team's confidence threshold. */
   phoneLaya: boolean;
+  /** The hub serves the Android app's native model (gemma-4-E2B-it.litertlm). */
+  phoneLitert: boolean;
   layaThreshold: number | null;
 }
 
@@ -91,13 +93,21 @@ export async function hubCapabilities(hubUrl: string): Promise<HubCapabilities |
   try {
     const res = await fetch(`${hubUrl}/health`, { signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
     if (!res.ok) return null;
-    const info = (await res.json()) as { vision?: string; voice?: string; phoneModel?: string; phoneLaya?: string; layaThreshold?: number };
+    const info = (await res.json()) as {
+      vision?: string;
+      voice?: string;
+      phoneModel?: string;
+      phoneLaya?: string;
+      phoneLitert?: string;
+      layaThreshold?: number;
+    };
     const threshold = typeof info.layaThreshold === 'number' ? info.layaThreshold : null;
     return {
       vision: info.vision === 'on',
       voice: info.voice === 'on',
       phoneModel: info.phoneModel === 'on',
       phoneLaya: info.phoneLaya === 'on' && threshold !== null,
+      phoneLitert: info.phoneLitert === 'on',
       layaThreshold: threshold,
     };
   } catch {

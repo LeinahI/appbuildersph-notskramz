@@ -35,12 +35,15 @@ function localOnnxRuntime(): Plugin {
   };
 }
 
-export default defineConfig({
+// `--mode native` builds the Android app (Capacitor). Its files are already inside the APK, so it needs no service
+// worker; the browser build stays an installable PWA.
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
     localOnnxRuntime(),
     VitePWA({
+      disable: mode === 'native',
       // Installs from a link and works offline after the first visit. Nothing is fetched from the internet: the app,
       // the knowledge base, and the fonts are bundled, the phone model comes from the hub, and the runtime from /ort/.
       registerType: 'autoUpdate',
@@ -87,4 +90,4 @@ export default defineConfig({
   // The workers load these on "Ihanda ang AI". Listed here so `pnpm dev` does not find them then and reload the page.
   optimizeDeps: { include: ['@huggingface/transformers', '@huggingface/tokenizers', 'onnxruntime-web/webgpu'] },
   build: { target: 'es2022' },
-});
+}));

@@ -2,7 +2,8 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { KnowledgeEntry } from '@ugatan/shared';
 import type { AudioTranscriber } from './explain/index.js';
 import { parseTranscribeRequest, transcribeSpeech } from './transcribe.js';
-import { LAYA_PREFIX, MODEL_PREFIX, modelFile, sendModelFile } from './models.js';
+import { APK_PATH, appPage, apkSizeMb, hubPage } from './app-page.js';
+import { LAYA_PREFIX, LITERT_PATH, MODEL_PREFIX, modelFile, sendModelFile } from './models.js';
 import { answerQuestion, MAX_BODY_BYTES, MAX_IMAGE_BODY_BYTES, parseAskRequest, type AnswerDeps } from './answer.js';
 
 export interface HubInfo {
@@ -16,6 +17,8 @@ export interface HubInfo {
   phoneModel: string;
   /** "on" when the hub serves Laya's bundle to phones (LAYA_MODEL_DIR and LAYA_CONFIDENCE_THRESHOLD are set). */
   phoneLaya?: string;
+  /** "on" when the hub serves the Android app's native Gemma file (PHONE_LITERT_FILE). */
+  phoneLitert?: string;
   /** The team's Laya confidence threshold, so the phone decides "sure" the same way. */
   layaThreshold?: number;
 }
@@ -27,8 +30,19 @@ export interface HubDeps extends AnswerDeps {
   transcriber?: AudioTranscriber;
   /** Folder of the Gemma 4 ONNX model. When set, the hub serves its files to phones under /models/. */
   modelDir?: string | null;
+  /** The Android app's native Gemma file (.litertlm). When set, the hub serves it at /models/litert/... */
+  litertFile?: string | null;
   /** Laya's bundle folder. When set, the hub serves its files to phones under /models/laya/. */
   layaDir?: string | null;
+  /** The Android app the hub hands out at /app/ugatan.apk, when it has been built. */
+  apkFile?: string | null;
+  /** The port the hub listens on, for the QR codes on its own page. */
+  port?: number;
+}
+
+function sendHtml(res: ServerResponse, html: string): void {
+  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+  res.end(html);
 }
 
 // The hub serves the LAN only. The phone app is often hosted on another origin, so CORS is open.
@@ -79,13 +93,49 @@ export function createHubServer(deps: HubDeps): Server {
     }
 
     if (req.method === 'GET' && path === '/health') {
-      send(res, 200, { ok: true, ...deps.info });
+      send(res, 200, { ok: true, ...deps.info, app: apkSizeMb(deps.apkFile ?? null) !== null ? 'on' : 'off' });
+      return;
+    }
+
+    // Setting up a phone: the laptop shows `/` (QR code), the phone opens `/app` and downloads the APK.
+    if (req.method === 'GET' && path === '/') {
+      sendHtml(
+        res,
+        await hubPage({
+          port: deps.port ?? 8787,
+          apkFile: deps.apkFile ?? null,
+          phoneModel: deps.info.phoneModel === 'on',
+          phoneLaya: deps.info.phoneLaya === 'on',
+        }),
+      );
+      return;
+    }
+    if (req.method === 'GET' && path === '/app') {
+      sendHtml(res, appPage(deps.apkFile ?? null));
+      return;
+    }
+    if ((req.method === 'GET' || req.method === 'HEAD') && path === APK_PATH) {
+      if (deps.apkFile && apkSizeMb(deps.apkFile) !== null) {
+        sendModelFile(req, res, deps.apkFile, {
+          ...CORS_HEADERS,
+          'content-type': 'application/vnd.android.package-archive',
+          'content-disposition': 'attachment; filename="Ugatan.apk"',
+        });
+      } else {
+        send(res, 404, { error: 'The app has not been built on this hub.' });
+      }
       return;
     }
 
     if ((req.method === 'GET' || req.method === 'HEAD') && path.startsWith(MODEL_PREFIX)) {
       const file = deps.modelDir ? modelFile(deps.modelDir, path) : null;
       if (file) sendModelFile(req, res, file, CORS_HEADERS);
+      else send(res, 404, { error: 'Not found.' });
+      return;
+    }
+
+    if ((req.method === 'GET' || req.method === 'HEAD') && path === LITERT_PATH) {
+      if (deps.litertFile && apkSizeMb(deps.litertFile) !== null) sendModelFile(req, res, deps.litertFile, CORS_HEADERS);
       else send(res, 404, { error: 'Not found.' });
       return;
     }

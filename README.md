@@ -8,9 +8,9 @@ Read [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md) for the plan and [docs/DISCL
 
 | Folder | What it is |
 | --- | --- |
-| `web/` | React + Vite + TypeScript PWA. Farmer login at `/login`, staff login at `/admin/login`, farmer chat (+ sidebar) at `/chat` or `/chat/:conversationId`, admin at `/admin`, QR claim at `/claim`. |
+| `web/` | React + Vite + TypeScript PWA, also built as an Android APK. Farmers never sign in: chat (+ sidebar) at `/chat` or `/chat/:conversationId`, first-run setup at `/setup` in the APK. Staff login at `/admin/login` and admin at `/admin` (browser build only). |
 | `hub/` | Node.js TypeScript service for crop Q&A on the LAN. Answers `POST /ask`. |
-| `ws/` | Go DDD API on Postgres 16. Admin auth, farmer registration, QR invites, audit, conversation sync. PII encrypted at rest. |
+| `ws/` | Go DDD API on Postgres 16. Admin auth, farmer registration, QR invites, audit. The farmer app no longer calls it. PII encrypted at rest. |
 | `shared/` | Matcher, knowledge validation, pesticide guardrail, and answer composition, used by web and hub. |
 | `knowledge/` | Curated problems, one JSON file each. |
 | `eval/` | Labeled farmer descriptions and the script that scores keyword matching and Laya. |
@@ -28,18 +28,40 @@ pnpm dev
 
 Open http://localhost:3000. The port is fixed in `web/vite.config.ts` for `pnpm dev` and `preview`; if something else is using 3000, the command stops with an error instead of picking another port. Keyword matching works right away. Offline reloads (no network after the first load) apply to the built site, not to `pnpm dev`, where the service worker is off.
 
-The app is local only: nothing it does at runtime reaches the internet. The app, the knowledge base (with Tagalog and Cebuano card text), and the fonts are bundled, and a farmer can start with **Gamitin nang walang account** at `/login`, with no server. Linking to the cooperative with a QR claim (`ws`) is optional and only turns on conversation sync.
+The app is local only: nothing it does at runtime reaches the internet. The app, the knowledge base (with Tagalog and Cebuano card text), and the fonts are bundled. Farmers never sign in: the chat opens at once, and chats and setup live only in the phone's own storage (IndexedDB and localStorage). Nothing is sent to `ws`.
 
 The phone AI is optional. To turn it on, open **Tulong** (the ? button) and tap **Ihanda ang AI**. The phone downloads both models from the **hub** over its Wi-Fi, never from Hugging Face, and then runs the hub's whole answer on the phone: it reads a photo, matches (keyword, then Gemma's English, then Laya, the same hybrid rules as `hub/src/matchers/hybrid.ts`, in `web/src/lib/hybrid.ts`), and explains, with no hub needed afterwards.
 
 - **Gemma 4 E2B** (`onnx-community/gemma-4-E2B-it-ONNX`, q4f16, `Gemma4ForConditionalGeneration`, about 3.4 GB with the vision and audio graphs). The hub serves `GEMMA_MODEL_DIR` at `/models/onnx-community/gemma-4-E2B-it-ONNX/` and says `phoneModel: "on"` in `/health`. It explains, puts unclear questions into English for the matcher, and reads photos with the hub's photo form (`buildPhotoMessages`, `photoSignsOf`). A photo adds signs and never decides alone (`photoIsSure`), as on the hub.
 - **Laya** (fp32, about 1.69 GB) loads after Gemma is ready, in its own worker on `onnxruntime-web` (`web/src/workers/laya.worker.ts`; the input layout is ported from `@receptron/laya`, which only runs on Node, in `web/src/lib/laya-sequence.ts`). The hub serves `LAYA_MODEL_DIR` at `/models/laya/` and gives `phoneLaya: "on"` and the team's `layaThreshold` in `/health`; without a threshold the hub does not offer Laya. If Laya fails to load, the phone matches with keyword and Gemma's English. The bundle is kept in Cache Storage; when the browser will not keep it (low storage), it loads from the hub and is downloaded again next time.
 
-Both ran on WebGPU in the desktop app's Chromium on 2026-10-10 (a photo question and a text question, the second with the hub stopped), not yet on a phone. The ONNX runtime comes from the app's own `/ort/` folder, not a CDN. The button shows only when the browser reports at least 8 GB of memory (`navigator.deviceMemory`); a phone that reports less keeps the notes only, and one that does not say gets a warning. The phone tries WebGPU first and falls back to WebAssembly on the CPU, which is slower. The model is held in memory, so a page reload starts at idle and the button shows again; Transformers.js keeps the files in the browser cache, so preparing again should not need the hub (not checked on a phone).
+Both ran on WebGPU in the desktop app's Chromium on 2026-10-10 (a photo question and a text question, the second with the hub stopped), not yet on a phone. The ONNX runtime comes from the app's own `/ort/` folder, not a CDN. The button shows only when the browser reports at least 8 GB of memory (`navigator.deviceMemory`); a phone that reports less keeps the notes only, and one that does not say gets a warning. **Gemma needs the phone's GPU (WebGPU).** Every quantized version of its embedding layer uses `GatherBlockQuantized`, which the browser runtime has only on WebGPU; the CPU-only versions are 5.5 GB (fp16) and 11 GB (fp32). So setup checks for a WebGPU adapter with 16-bit shaders (`web/src/lib/gpu.ts`) before offering the download, and a phone without one keeps the offline notes. Laya runs on WebGPU or, more slowly, the CPU. The Android emulator exposes WebGPU but no adapter (checked 2026-10-10 with the laptop's RTX 4060 as host GPU, also with `--enable-unsafe-webgpu`), so the GPU path is tested only in the desktop browser, not yet on a phone. The model is held in memory, so a page reload starts at idle and the button shows again; Transformers.js keeps the files in the browser cache, so preparing again should not need the hub (not checked on a phone).
+
+### Android app (APK)
+
+Farmers can install Ugatan as an Android app instead of opening it in a browser. The APK (about 26 MB) holds the whole app, the knowledge base, and the AI runtime, so it opens and answers from the cards with no network and no hub. The AI models are not inside it; the app's first-run setup downloads them once from the hub.
+
+Setting up a phone, with no internet:
+
+1. On the hub laptop, turn on **Mobile Hotspot** and open http://localhost:8787/. The page shows the steps, a QR code per address (the hotspot's `192.168.137.1` first), and whether the APK, Gemma, and Laya are ready on this hub. The hub also prints these addresses when it starts.
+2. The farmer joins the hotspot's Wi-Fi and scans the QR. It opens `/app`, which downloads `Ugatan.apk` (`/app/ugatan.apk`, served from `HUB_APK`, default the debug build in `web/android`).
+3. On first launch the app opens **Pag-setup ng Ugatan** (`/setup`): it checks every 3 s until it reaches the hub, then downloads Gemma and Laya with progress (a phone without the memory skips this and keeps the offline notes), and ends with a **Tapos na ang pag-setup!** alert. After that the app opens straight into the chat and loads the AI from the phone's own storage at each start, with no hub. **Ihanda ang AI** in Tulong opens the same setup.
+
+Build the APK with `VITE_HUB_URL=http://192.168.137.1:8787` in `web/.env.native`: Windows Mobile Hotspot always gives the laptop that address.
+
+Why an APK: browsers allow a service worker, the model cache, and WebGPU only on HTTPS or `localhost`. A phone that opens the app at the hub's Wi-Fi address (`http://192.168.x.x`) gets none of them, so the web version cannot work offline or run the phone AI from the hub. Inside the APK the app runs at `http://localhost` (Capacitor 8.5.2, `web/capacitor.config.ts`), which counts as secure, and the hub's plain `http` address is allowed (`usesCleartextTraffic`).
+
+Build it (needs the Android SDK and JDK 21; the script finds the SDK where Android Studio installs it):
+
+1. Put the hub's address on its Wi-Fi in `web/.env.native` (never committed), for example `VITE_HUB_URL=http://192.168.1.10:8787`. On a phone, `127.0.0.1` is the phone itself.
+2. Run `pnpm --filter @ugatan/web android:apk`. It builds the web app with `--mode native` (no service worker: the files are already in the APK), copies it into `web/android/`, and runs Gradle.
+3. The APK is `web/android/app/build/outputs/apk/debug/app-debug.apk`. Share it from the hub or by Bluetooth; the phone must allow installing from that source.
+
+This is a debug build, signed with the local debug key. A build for wider sharing needs a release keystore, which must never be committed (`*.keystore`, `*.jks` are ignored). The app asks for the camera (photos) and microphone (voice through the hub). The launcher icon is `web/public/UgatanLogoSprout.webp` on white.
 
 To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`), or type the hub address under **Mga setting** (the gear button). `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. An address typed in the app is saved on that phone and overrides it.
 
-Auth and chat history talk to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`). Open http://localhost:3000/ — admin signs in with email/password; farmers continue after QR claim. Chat is at `/chat/:conversationId` (claim JWT required; bare `/chat` redirects to the last active or a new chat) with a Gemini-style sidebar synced to Postgres.
+Only the staff portal talks to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`) and open http://localhost:3000/admin/login. Farmers open http://localhost:3000/ and land in the chat with no sign-in. Chat is at `/chat/:conversationId` (bare `/chat` opens the last active or a new chat) with a sidebar kept only on that device. Old `/login` and `/claim` links open the chat.
 
 Build and preview the static site. The repo does not yet set up how phones load this built site over Wi-Fi (see Pending decisions, hub network):
 
@@ -230,7 +252,7 @@ The logic lives in `shared/src/conversation.ts` (routing, session text, the one-
 | Tier | Who | What runs | Offline |
 | --- | --- | --- | --- |
 | Phone core | Any phone with a browser | Keyword matching, curated notes, and disclaimer. No model download. | Yes |
-| Phone AI | A phone whose browser reports at least 8 GB of memory (or does not say). WebGPU is preferred; WebAssembly is the slower fallback. The repo has no phone test. | Gemma 4 E2B (with vision) and Laya in the browser, after a first download of about 3.4 GB and 1.7 GB from the hub's Wi-Fi. The phone reads photos and matches with the hub's hybrid rules; Gemma explains only the match the matcher chose. | Once loaded on that phone. Whether the browser keeps the download across visits is not checked. |
+| Phone AI | A phone whose browser reports at least 8 GB of memory (or does not say) and has a WebGPU adapter with 16-bit shaders. Gemma has no CPU fallback in the browser. The repo has no phone test. | Gemma 4 E2B (with vision) and Laya in the browser, after a first download of about 3.4 GB and 1.7 GB from the hub's Wi-Fi. The phone reads photos and matches with the hub's hybrid rules; Gemma explains only the match the matcher chose. | Once loaded on that phone. Whether the browser keeps the download across visits is not checked. |
 | Village hub | Cooperative or barangay members | Keyword matching by default. Optional Laya matching and optional Gemma 4 E2B explanation (E4B not run). | Yes, on the local network |
 
 Questions the phone does not answer itself queue on the phone. The app sends them when it starts, when the browser fires an online event, when the farmer taps **Ipadala ngayon** in Mga setting, or after a new question when the hub answers its health check. Nothing polls for the hub's Wi-Fi. A question the phone AI answers is marked answered only when generation finishes, and a sync that runs during generation can still send it to the hub (see Known issues). The phone uses keyword matching only; Laya runs on the hub.

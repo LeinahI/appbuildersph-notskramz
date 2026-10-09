@@ -25,6 +25,12 @@ export const MAX_IMAGE_CHARS = 1_400_000;
  */
 export const PHONE_MODEL_REPO = 'onnx-community/gemma-4-E2B-it-ONNX';
 
+/**
+ * Where the hub serves the Android app's native model (PHONE_LITERT_FILE, Gemma 4 E2B for LiteRT-LM): /models/<this>.
+ * The app runs it on the phone's CPU (or GPU) natively, so it does not need WebGPU.
+ */
+export const PHONE_LITERT_PATH = 'litert/gemma-4-E2B-it.litertlm';
+
 /** Where the hub serves its Laya bundle (LAYA_MODEL_DIR) to phones: /models/<this>/<file>. */
 export const PHONE_LAYA_PATH = 'laya';
 

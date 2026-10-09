@@ -29,8 +29,8 @@ describe('Tagalog help dialog', () => {
 
   it('discloses the model download and does not prepare AI when the dialog renders', () => {
     const { html, onPrepareAi } = renderHelp();
-    expect(html).toContain('3.4 GB');
-    expect(html).toContain('1.7 GB');
+    expect(html).toContain('5 GB');
+    expect(html).not.toMatch(/Gemma|Laya/);
     expect(html).toContain('internet');
     expect(html).toContain('Wi-Fi');
     expect(html).toContain('Ihanda ang AI');

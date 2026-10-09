@@ -16,7 +16,6 @@ function props(text = ''): HomePageProps {
     onSubmit: () => {},
     onHistory: () => {},
     onHelp: () => {},
-    onLogout: () => {},
     onNewConversation: () => {},
     onPhotoFile: () => {},
     onRemovePhoto: () => {},
@@ -81,11 +80,16 @@ describe('Ugatan home page', () => {
     expect(chat).not.toContain('Piliin ito');
   });
 
-  it('labels the icon-only camera, microphone, history, new-chat, log-out, help, and send actions', () => {
+  it('labels the icon-only camera, microphone, history, new-chat, help, and send actions, with no log-out', () => {
     const html = renderToStaticMarkup(createElement(HomePage, props()));
-    for (const label of ['Mga nakaraang usapan', 'Bagong usapan', 'Mag-log out', 'Larawan', 'Magsalita', 'Ipadala ang tanong', 'Tulong']) {
+    for (const label of ['Mga nakaraang usapan', 'Bagong usapan', 'Larawan', 'Magsalita', 'Ipadala ang tanong', 'Tulong']) {
       expect(html).toContain(`aria-label="${label}"`);
     }
+    expect(html).not.toContain('Mag-log out');
+    // The photo button offers the camera and the gallery.
+    expect(html).toContain('Kumuha ng litrato');
+    expect(html).toContain('Pumili sa gallery');
+    expect(html).toContain('capture="environment"');
     expect(html).toContain('aria-pressed="false"');
   });
 

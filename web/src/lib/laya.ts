@@ -1,4 +1,5 @@
 import { LAYA_INSTRUCTIONS, problemOptions, type Crop, type KnowledgeEntry } from '@ugatan/shared';
+import { FileTally, type ByteProgress } from './download-progress';
 
 export type LayaStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -6,6 +7,8 @@ export interface LayaState {
   status: LayaStatus;
   device: string;
   progress: string;
+  /** Bytes downloaded so far across all the bundle's files, while loading. */
+  bytes?: ByteProgress;
   error: string;
 }
 
@@ -25,6 +28,7 @@ class PhoneLaya {
   private threshold = 1;
   private waiting = new Map<number, { resolve: (a: Answer) => void; reject: (e: Error) => void }>();
   private listeners = new Set<Listener>();
+  private tally = new FileTally();
   private state: LayaState = { status: 'idle', device: '', progress: '', error: '' };
 
   subscribe(listener: Listener): () => void {
@@ -71,8 +75,9 @@ class PhoneLaya {
   private onMessage(msg: { type: string; data?: any; id?: number }) {
     switch (msg.type) {
       case 'progress': {
-        const p = msg.data as { status?: string; file?: string; progress?: number };
-        this.set({ progress: p.status ?? `Nagda-download ang Laya: ${p.progress ?? 0}% ${p.file ?? ''}` });
+        const p = msg.data as { status?: string; file?: string; loaded?: number; total?: number };
+        if (p.file) this.set({ progress: p.file, bytes: this.tally.update(p.file, p.loaded ?? 0, p.total ?? 0) });
+        else if (p.status) this.set({ progress: p.status });
         return;
       }
       case 'ready':
@@ -90,6 +95,9 @@ class PhoneLaya {
           this.waiting.get(msg.id)!.reject(new Error(message));
           this.waiting.delete(msg.id);
         } else {
+          // The load failed: stop the worker so the other files stop downloading. Loading again starts a new one.
+          this.worker?.terminate();
+          this.worker = null;
           this.set({ status: 'error', error: message });
         }
         return;

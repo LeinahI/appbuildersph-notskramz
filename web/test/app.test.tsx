@@ -30,13 +30,15 @@ describe('App home composition', () => {
     expect(getItem).not.toHaveBeenCalledWith('ugatan.ui-language');
   });
 
-  it('keeps the existing flow reachable: symptom picker, photo, voice, and log out', () => {
+  it('keeps the existing flow reachable: symptom picker, photo, and voice, with no sign-in or log-out', () => {
     const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(App)));
     expect(html).toContain('Piliin ang nakikita mo');
     expect(html).toContain('aria-label="Larawan"');
     expect(html).toContain('aria-label="Magsalita"');
-    expect(html).toContain('aria-label="Mag-log out"');
     expect(html).toContain('type="file"');
+    // Farmers never sign in: the chat and its history live in the phone's own storage.
+    expect(html).not.toContain('Mag-log out');
+    expect(html).not.toContain('Mag-sign in');
   });
 
   it('keeps the removed prototype controls and demo cards absent', () => {

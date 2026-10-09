@@ -6,6 +6,7 @@
 import { Tokenizer } from '@huggingface/tokenizers';
 import * as ort from 'onnxruntime-web/webgpu';
 import { PHONE_LAYA_PATH } from '@ugatan/shared';
+import { canUseWebGpu } from '../lib/gpu';
 import { buildChoiceSequence, choiceInputs, readChoice, type LayaConfig, type SpecialIds } from '../lib/laya-sequence';
 
 type Inbound =
@@ -52,7 +53,7 @@ async function cachedFile(hubUrl: string, name: string): Promise<Response> {
         const percent = size ? Math.floor((loaded / size) * 100) : 0;
         if (percent !== lastPercent) {
           lastPercent = percent;
-          post('progress', { file: name, progress: percent });
+          post('progress', { file: name, progress: percent, loaded, total: size });
         }
         controller.enqueue(chunk);
       },
@@ -86,7 +87,10 @@ async function load(hubUrl: string) {
   post('progress', { status: 'Inihahanda ang Laya...' });
   const modelBytes = new Uint8Array(await model!.arrayBuffer());
   const dataBytes = new Uint8Array(await data!.arrayBuffer());
-  for (const device of ['webgpu', 'wasm'] as const) {
+  // Skip WebGPU where there is no adapter: once WebGPU fails to start, the runtime in this worker cannot fall back.
+  // Laya's largest weight is its 206 MB token embedding (fp32). A GPU that cannot bind it whole uses the CPU.
+  const devices = (await canUseWebGpu({ f16: false, largestWeight: 206_300_000 })) ? (['webgpu', 'wasm'] as const) : (['wasm'] as const);
+  for (const device of devices) {
     try {
       session = await ort.InferenceSession.create(modelBytes, {
         executionProviders: [device],

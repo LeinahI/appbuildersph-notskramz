@@ -8,6 +8,7 @@ export {
   MAX_IMAGE_SIDE,
   MIN_AUDIO_SECONDS,
   PHONE_LAYA_PATH,
+  PHONE_LITERT_PATH,
   PHONE_MODEL_REPO,
   type AskRequest,
   type AskResponse,

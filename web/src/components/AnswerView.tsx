@@ -29,7 +29,8 @@ export interface AnswerViewProps {
   language?: string;
 }
 
-const SUBHEAD = 'mt-3 mb-1 text-sm font-semibold text-label';
+const SUBHEAD = 'mt-4 mb-1.5 text-xs font-bold uppercase tracking-wide text-label';
+const BULLETS = 'm-0 grid gap-1.5 pl-5 marker:text-leaf';
 
 /** The model is asked for plain text but sometimes writes **bold**. Show it as bold, never as asterisks. */
 function inlineBold(text: string): ReactNode[] {
@@ -87,24 +88,29 @@ export function AnswerView({ matches, clear, labels, explanation, explanationSta
       )}
 
       {sure && !thinking && (
-        <details open={!explanationSafe} className="group rounded-2xl border border-sprout-line bg-sprout px-4 py-3">
-          <summary className="cursor-pointer list-none text-sm font-medium">
-            <span className="text-muted">{explanationSafe ? labels.matchedLabel : labels.notesOffline}:</span> {names}
+        <details open={!explanationSafe} className="group rounded-2xl border border-sprout-line bg-sprout px-4 py-3.5">
+          <summary className="flex cursor-pointer list-none items-center gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
+            <span className="min-w-0 flex-1 leading-6">
+              <span className="text-muted">{explanationSafe ? labels.matchedLabel : labels.notesOffline}:</span> {names}
+            </span>
+            <svg className="size-4 shrink-0 text-mist transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
           </summary>
           {matchedOn.length > 0 && (
             <p className="mt-2 mb-0 text-sm text-muted">
               <span className="font-medium">{labels.matchedOnLabel}:</span> {matchedOn.map((w) => `"${w}"`).join(', ')}
             </p>
           )}
-          <div className="mt-2 grid gap-4">
+          <div className="mt-3 grid gap-5">
             {matches.map((original) => {
               const r = localizeEntry(original, language);
               const insect = insectFacts(r);
               return (
-                <article key={r.id}>
-                  <h3 className="m-0 text-lg font-semibold">{r.name}</h3>
+                <article key={r.id} className="[&+article]:border-t [&+article]:border-sprout-line [&+article]:pt-5">
+                  <h3 className="m-0 text-lg font-bold leading-snug text-forest">{r.name}</h3>
                   {insect && (
-                    <dl className="m-0 mt-2 grid gap-1 text-[0.9375rem]">
+                    <dl className="m-0 mt-3 grid gap-1.5 rounded-xl border border-sprout-line bg-white/70 px-3.5 py-3 text-[0.9375rem] leading-6">
                       <div>
                         <dt className="inline font-semibold">{labels.insectHeading}: </dt>
                         <dd className="m-0 inline">{insect.identity}</dd>
@@ -120,13 +126,13 @@ export function AnswerView({ matches, clear, labels, explanation, explanationSta
                     </dl>
                   )}
                   <p className={SUBHEAD}>{labels.signsHeading}</p>
-                  <ul className="m-0 list-disc pl-6">
+                  <ul className={BULLETS + ' list-disc'}>
                     {r.signs.map((s) => (
                       <li key={s}>{s}</li>
                     ))}
                   </ul>
                   <p className={SUBHEAD}>{labels.stepsHeading}</p>
-                  <ol className="m-0 list-decimal pl-6">
+                  <ol className={BULLETS + ' list-decimal'}>
                     {r.actions.map((a) => (
                       <li key={a}>{a}</li>
                     ))}
@@ -134,18 +140,18 @@ export function AnswerView({ matches, clear, labels, explanation, explanationSta
                   {r.insect && (
                     <>
                       <p className={SUBHEAD}>{labels.naturalEnemiesHeading}</p>
-                      <ul className="m-0 list-disc pl-6">
+                      <ul className={BULLETS + ' list-disc'}>
                         {r.insect.biological.map((b) => (
                           <li key={b}>{b}</li>
                         ))}
                       </ul>
-                      <p className="mt-3 mb-0 text-[0.9375rem]">
+                      <p className="mt-4 mb-0 rounded-xl border border-sprout-line bg-white/70 px-3.5 py-2.5 text-[0.9375rem] leading-6">
                         <strong className="font-semibold">{labels.lastResortHeading}:</strong> {labels.lastResortText}
                       </p>
                     </>
                   )}
-                  <p className="mt-3 mb-0 text-[0.9375rem] text-muted">
-                    <strong className="font-semibold text-ink">{labels.consultHeading}</strong> {r.callExpertIf}
+                  <p className="mt-4 mb-0 rounded-xl bg-warn px-3.5 py-2.5 text-[0.9375rem] leading-6 text-ink">
+                    <strong className="font-semibold">{labels.consultHeading}</strong> {r.callExpertIf}
                   </p>
                   {r !== original && (
                     // The translation is the app's own; the English is the source the notes were written in.
@@ -173,7 +179,7 @@ export function AnswerView({ matches, clear, labels, explanation, explanationSta
         </details>
       )}
 
-      {notice && <p className="m-0 border-t-2 border-leaf pt-3 text-[0.9375rem] font-semibold leading-normal">{DISCLAIMER}</p>}
+      {notice && <p className="m-0 rounded-xl border-l-4 border-leaf bg-sprout px-4 py-3 text-[0.9375rem] font-semibold leading-6">{DISCLAIMER}</p>}
     </div>
   );
 }

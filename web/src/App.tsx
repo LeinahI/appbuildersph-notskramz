@@ -38,21 +38,19 @@ import { SymptomPicker } from './components/SymptomPicker';
 import { KNOWLEDGE, KNOWLEDGE_BY_ID } from './config/knowledge';
 import { DEFAULT_UI_LANGUAGE, L, localeFor } from './config/labels';
 import { loadHubUrl } from './config/hub';
-import { clearLocalProfile } from './config/profile';
-import { clearClaimLink } from './config/ws';
+import { loadSetup } from './config/setup';
 import { db, newId, type ConversationRow, type QueuedQuestion } from './lib/db';
 import {
   createLocalConversation,
   ensureActiveConversation,
   loadActiveConversationId,
-  pullRemoteConversations,
   questionsForConversation,
   renameConversation,
   resolveConversation,
   saveActiveConversationId,
-  saveConversationThread,
 } from './lib/conversations';
 import { matchOnPhone } from './lib/hybrid';
+import { prepareModels } from './lib/prepare';
 import { phoneLaya, type LayaState } from './lib/laya';
 import { phoneAi, phoneAiFit, type PhoneAiState } from './lib/llm';
 import { photoSrc, shrinkPhoto } from './lib/photo';
@@ -198,10 +196,13 @@ export default function App() {
   const [unsaved, setUnsaved] = useState<QueuedQuestion[]>([]);
   const [conversation, setConversation] = useState<ConversationRow | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
+    // Open by default on a wide screen, closed on a phone, where it would cover the chat.
+    const wide = typeof window === 'undefined' || !window.matchMedia || window.matchMedia('(min-width: 768px)').matches;
     try {
-      return localStorage.getItem(SIDEBAR_KEY) !== '0';
+      const saved = localStorage.getItem(SIDEBAR_KEY);
+      return saved === null ? wide : saved === '1' && wide;
     } catch {
-      return true;
+      return wide;
     }
   });
   const [listKey, setListKey] = useState(0);
@@ -227,13 +228,11 @@ export default function App() {
   const [laya, setLaya] = useState<LayaState>({ status: 'idle', device: '', progress: '', error: '' });
   useEffect(() => phoneLaya.subscribe(setLaya), []);
   // Laya loads after Gemma is ready, so the two downloads and loads never hold the phone's memory at once.
-  const layaFrom = useRef<{ hubUrl: string; threshold: number } | null>(null);
+  // After setup downloaded the AI, it loads from the phone's own storage at every start: no hub needed.
   useEffect(() => {
-    if (ai.status === 'ready' && layaFrom.current) {
-      phoneLaya.load(layaFrom.current.hubUrl, layaFrom.current.threshold);
-      layaFrom.current = null;
-    }
-  }, [ai.status]);
+    const setup = loadSetup();
+    if (setup?.ai === 'ready' && phoneAiFit() !== 'too-small') prepareModels(setup.hubUrl, setup.layaThreshold);
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!conversationId) return;
@@ -243,10 +242,6 @@ export default function App() {
       // IndexedDB blocked
     }
   }, [conversationId]);
-
-  useEffect(() => {
-    void pullRemoteConversations().then(() => setListKey((k) => k + 1));
-  }, []);
 
   // URL is source of truth: load :conversationId, or redirect to a valid chat.
   useEffect(() => {
@@ -277,8 +272,7 @@ export default function App() {
     setHubOnline(result.reachable);
     if (result.sent) setNotice(L.hubSent(result.sent));
     await refresh();
-    if (conversationId) void saveConversationThread(conversationId);
-  }, [hubUrl, refresh, conversationId]);
+  }, [hubUrl, refresh]);
 
   useEffect(() => {
     if (!hubUrl) return;
@@ -397,7 +391,6 @@ export default function App() {
       }
     }
     await refresh();
-    void saveConversationThread(conversation.id);
     setListKey((k) => k + 1);
   }
 
@@ -529,33 +522,15 @@ export default function App() {
     void ask(tile.labelTl || entry.name, entry.id);
   }
 
-  function logoutFarmer() {
-    clearClaimLink();
-    // The chats stay in this phone's database; signing in again on this phone shows them.
-    clearLocalProfile();
-    navigate('/login');
-  }
-
   const empty = messages.length === 0;
 
   const aiFit = phoneAiFit();
 
-  async function prepareAi() {
-    // A phone without the memory never starts the download: the notes work without it.
+  /** Downloading the AI is the setup screen's job: it checks the hub's Wi-Fi first and ends with a success alert. */
+  function prepareAi() {
     if (aiFit === 'too-small') return;
-    // The model comes from the hub over the Wi-Fi, never from the internet.
-    const caps = await hubCapabilities(hubUrl);
-    if (!caps?.phoneModel) {
-      setAi({ status: 'error', device: '', progress: '', error: L.phoneAiNeedsHub });
-      return;
-    }
-    // Laya is optional: without it the phone matches with keyword and Gemma's English, like a hub with Laya off.
-    if (caps.phoneLaya && caps.layaThreshold !== null) layaFrom.current = { hubUrl, threshold: caps.layaThreshold };
-    try {
-      phoneAi.load(hubUrl);
-    } catch {
-      setAi({ status: 'error', device: '', progress: '', error: '' });
-    }
+    helpDialog.current?.close();
+    navigate('/setup');
   }
 
   const thread = empty ? null : (
@@ -631,7 +606,6 @@ export default function App() {
           onSubmit={submit}
           onHistory={() => historyDialog.current?.showModal()}
           onHelp={() => helpDialog.current?.showModal()}
-          onLogout={logoutFarmer}
           onNewConversation={() => void newChat()}
           onPhotoFile={(file) => void onPhotoChosen(file)}
           onRemovePhoto={() => setPhoto(null)}
@@ -640,7 +614,7 @@ export default function App() {
           {thread}
         </HomePage>
       </div>
-      <HelpDialog ref={helpDialog} ai={ai} laya={laya} fit={aiFit} onPrepareAi={() => void prepareAi()} />
+      <HelpDialog ref={helpDialog} ai={ai} laya={laya} fit={aiFit} onPrepareAi={prepareAi} />
       <dialog ref={historyDialog} className="chat-history" aria-labelledby="ugatan-history-heading">
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 id="ugatan-history-heading" className="m-0 text-xl font-semibold">{L.historyLabel}</h2>

@@ -9,6 +9,7 @@
 import { AutoProcessor, Gemma4ForConditionalGeneration, RawImage, TextStreamer, env } from '@huggingface/transformers';
 import type { ChatMessage } from '@ugatan/shared';
 import { PHONE_MODEL } from '../config/models';
+import { NO_GPU_MESSAGE, canUseWebGpu } from '../lib/gpu';
 
 type Inbound =
   | { type: 'load'; hubUrl: string }
@@ -40,7 +41,7 @@ function post(type: 'progress' | 'ready' | 'done' | 'error', data?: unknown, id?
   self.postMessage({ type, data, id });
 }
 
-async function loadOn(device: 'webgpu' | 'wasm') {
+async function loadOn(device: 'webgpu') {
   processor = await AutoProcessor.from_pretrained(PHONE_MODEL.id);
   model = await Gemma4ForConditionalGeneration.from_pretrained(PHONE_MODEL.id, {
     dtype: PHONE_MODEL.dtype,
@@ -49,16 +50,15 @@ async function loadOn(device: 'webgpu' | 'wasm') {
   });
 }
 
+/**
+ * Loads Gemma on the phone's GPU (WebGPU). There is no CPU fallback: the browser's CPU runtime has no kernel for the
+ * quantized embedding layer (see lib/gpu.ts). A phone without a usable GPU is told so before anything downloads.
+ */
 async function load(hubUrl: string) {
+  if (!(await canUseWebGpu(PHONE_MODEL.gpu))) throw new Error(NO_GPU_MESSAGE);
   useLocalSources(hubUrl);
-  try {
-    await loadOn(PHONE_MODEL.device);
-    post('ready', PHONE_MODEL.device);
-  } catch {
-    // WebGPU unavailable or failed. Fall back to the CPU. Slower, same guardrails.
-    await loadOn(PHONE_MODEL.fallbackDevice);
-    post('ready', PHONE_MODEL.fallbackDevice);
-  }
+  await loadOn(PHONE_MODEL.device);
+  post('ready', PHONE_MODEL.device);
 }
 
 async function generate(id: number, messages: ChatMessage[], maxNewTokens = 260, image?: string) {

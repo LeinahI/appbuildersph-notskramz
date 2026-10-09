@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export type MatcherName = 'keyword' | 'laya' | 'hybrid';
 export type ExplainerName = 'off' | 'gemma';
@@ -16,6 +17,10 @@ export interface HubConfig {
   layaCache: string;
   /** Local Laya bundle folder. When set, Laya downloads nothing. */
   layaModelDir: string | null;
+  /** The Android app the hub hands out to phones (HUB_APK). Defaults to the debug build in web/android. */
+  apkFile: string;
+  /** The Android app's native Gemma model (PHONE_LITERT_FILE, gemma-4-E2B-it.litertlm). Null when not set. */
+  litertFile: string | null;
   /** Required before the hub will use Laya. The team sets it before the labeled test. */
   layaPassMark: number | null;
   /** Required before the hub will use Laya. Below this confidence the hub says "not sure". */
@@ -54,6 +59,9 @@ export interface HubConfig {
   /** Folder for the pilot logs (JSON lines). Keep it off git. */
   logDir: string;
 }
+
+/** The debug APK that `pnpm --filter @ugatan/web android:apk` builds, from hub/src or hub/dist. */
+const DEFAULT_APK = fileURLToPath(new URL('../../web/android/app/build/outputs/apk/debug/app-debug.apk', import.meta.url));
 
 const MATCHERS: readonly MatcherName[] = ['keyword', 'laya', 'hybrid'];
 const EXPLAINERS: readonly ExplainerName[] = ['off', 'gemma'];
@@ -159,6 +167,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
     // LAYA_CACHE replaces the whole Laya cache root. It is used as-is.
     layaCache: resolve(cwd, env.LAYA_CACHE ?? '.laya-cache'),
     layaModelDir: env.LAYA_MODEL_DIR ? resolve(cwd, env.LAYA_MODEL_DIR) : null,
+    apkFile: env.HUB_APK ? resolve(cwd, env.HUB_APK) : DEFAULT_APK,
+    litertFile: env.PHONE_LITERT_FILE ? resolve(cwd, env.PHONE_LITERT_FILE) : null,
     layaPassMark,
     layaConfidenceThreshold,
     layaFallbackToKeyword: (env.HUB_LAYA_FALLBACK ?? 'keyword') === 'keyword',

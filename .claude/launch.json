@@ -56,6 +56,27 @@
       "env": {
         "VITE_HUB_URL": "http://127.0.0.1:8788"
       }
+    },
+    {
+      "name": "hub-phone",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@ugatan/hub",
+        "exec",
+        "tsx",
+        "src/main.ts"
+      ],
+      "port": 8790,
+      "env": {
+        "HUB_PORT": "8790",
+        "HUB_HOST": "0.0.0.0",
+        "HUB_MATCHER": "keyword",
+        "HUB_EXPLAINER": "off",
+        "HUB_VISION": "off",
+        "HUB_VOICE": "off",
+        "PHONE_LITERT_FILE": "E:/models/gemma-4-E2B-it-litert-lm/gemma-4-E2B-it.litertlm"
+      }
     }
   ]
 }

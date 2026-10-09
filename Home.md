@@ -16,6 +16,9 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-android-app-setup-no-login]] - Android APK from the hub, first-run setup with success alert, no farmer login, Gemma needs WebGPU
+- [[2026-10-10-setup-one-ai-progress]] - setup shows one "Ugatan AI" with a single download percent that never resets
+
 - [[2026-10-10-merge-offline-login-into-main]] - merged the offline/split-login branch into main; split login kept, deep links and logout dialog kept
 
 - [[2026-10-10-logout-confirm-modal]] - farmer + admin Log out opens a confirm dialog before signing out

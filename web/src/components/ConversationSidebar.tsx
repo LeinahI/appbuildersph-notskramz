@@ -66,8 +66,18 @@ export default function ConversationSidebar({
 
   return (
     <>
+      {/* On a phone the list slides over the chat instead of squeezing it; a tap beside it closes it. */}
+      {open ? (
+        <button
+          type="button"
+          className="fixed inset-0 z-20 bg-black/30 md:hidden"
+          onClick={onToggle}
+          aria-label="Close sidebar"
+          tabIndex={-1}
+        />
+      ) : null}
       <aside
-        className={`flex h-dvh shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-200 ${
+        className={`flex h-dvh shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-200 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-30 max-md:shadow-lg ${
           open ? 'w-[16.5rem]' : 'w-0 overflow-hidden border-r-0'
         }`}
         aria-hidden={!open}
@@ -180,7 +190,8 @@ export default function ConversationSidebar({
       {!open ? (
         <button
           type="button"
-          className="icon-btn absolute top-3 left-3 z-10 bg-surface/90 shadow-sm"
+          // On a phone the header's history button opens the chats; this one would sit on top of it.
+          className="icon-btn absolute top-3 left-3 z-10 bg-surface/90 shadow-sm max-md:hidden"
           onClick={onToggle}
           aria-label="Open sidebar"
           title="Open sidebar"
