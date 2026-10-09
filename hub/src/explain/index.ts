@@ -13,7 +13,7 @@ export interface ExplainResult {
   text: string | null;
 }
 
-/** Writes the Taglish explanation for matched notes. The Gemma E4B route implements it once decided. */
+/** Writes the Taglish explanation for matched notes. The Gemma route implements it (gemma.ts). */
 export interface Explainer {
   readonly name: string;
   explain(input: ExplainInput): Promise<ExplainResult>;

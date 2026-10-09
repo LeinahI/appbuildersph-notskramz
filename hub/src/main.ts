@@ -1,5 +1,6 @@
 import { loadConfig } from './config.js';
 import { loadEnvFile } from './env.js';
+import { createGemmaExplainer } from './explain/gemma.js';
 import { offExplainer, type Explainer } from './explain/index.js';
 import { fileLogger } from './log.js';
 import { createKeywordMatcher } from './matchers/keyword.js';
@@ -35,9 +36,20 @@ async function main(): Promise<void> {
   }
 
   let explainer: Explainer = offExplainer;
-  if (config.explainer === 'gemma-e4b') {
-    // Pending: Gemma E4B route, after the runtime decision.
-    throw new Error('HUB_EXPLAINER=gemma-e4b is not wired yet. Use HUB_EXPLAINER=off until the E4B route is decided.');
+  if (config.explainer === 'gemma') {
+    try {
+      explainer = await createGemmaExplainer({
+        modelDir: config.gemmaModelDir!,
+        dtype: config.gemmaDtype,
+        device: config.gemmaDevice,
+        maxNewTokens: config.gemmaMaxNewTokens,
+      });
+    } catch (err) {
+      // The explanation is optional. Keep answering with the matched notes only.
+      const message = err instanceof Error ? err.message : String(err);
+      logger.write({ event: 'error', where: 'gemma-load', message });
+      console.warn(`Gemma failed to load, answering without an AI explanation: ${message}`);
+    }
   }
 
   const server = createHubServer({

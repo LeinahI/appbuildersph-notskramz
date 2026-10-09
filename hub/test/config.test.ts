@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config';
 
@@ -44,6 +45,20 @@ describe('loadConfig', () => {
   it('rejects an unknown matcher or explainer', () => {
     expect(() => loadConfig({ HUB_MATCHER: 'bert' })).toThrow(/HUB_MATCHER/);
     expect(() => loadConfig({ HUB_EXPLAINER: 'cloud' })).toThrow(/HUB_EXPLAINER/);
+  });
+
+  it('refuses the gemma explainer without a model folder', () => {
+    expect(() => loadConfig({ HUB_EXPLAINER: 'gemma' }, '/repo/hub')).toThrow(/GEMMA_MODEL_DIR/);
+  });
+
+  it('reads the Gemma settings, with the tested route as the default', () => {
+    const c = loadConfig({ HUB_EXPLAINER: 'gemma', GEMMA_MODEL_DIR: '/models/gemma' }, '/repo/hub');
+    expect(c.explainer).toBe('gemma');
+    expect(c.gemmaModelDir).toBe(resolve('/repo/hub', '/models/gemma'));
+    expect(c.gemmaDtype).toBe('q4f16');
+    expect(c.gemmaDevice).toBe('cpu');
+    expect(c.gemmaMaxNewTokens).toBe(150);
+    expect(() => loadConfig({ GEMMA_MAX_NEW_TOKENS: '0' })).toThrow(/GEMMA_MAX_NEW_TOKENS/);
   });
 
   it('puts the Laya cache under LAYA_CACHE, resolved from the working folder', () => {

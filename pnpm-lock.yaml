@@ -15,6 +15,9 @@ importers:
 
   hub:
     dependencies:
+      '@huggingface/transformers':
+        specifier: 4.3.0
+        version: 4.3.0(@types/node@20.19.43)
       '@receptron/laya':
         specifier: 0.1.2
         version: 0.1.2(patch_hash=24f0a061ce0b4b7cb2f4c34bdb8d17a7287c3b943b7e852f738226a687ca0bf8)

@@ -1,14 +1,14 @@
 import { resolve } from 'node:path';
 
 export type MatcherName = 'keyword' | 'laya' | 'hybrid';
-export type ExplainerName = 'off' | 'gemma-e4b';
+export type ExplainerName = 'off' | 'gemma';
 
 export interface HubConfig {
   host: string;
   port: number;
   /** Which matcher answers questions on the hub. Keyword matching is the default and the fallback. Hybrid asks keyword first, then Laya. */
   matcher: MatcherName;
-  /** Which explainer writes the Taglish answer. "off" until the E4B route is decided. */
+  /** Which explainer writes the Taglish answer. "off" is the default. */
   explainer: ExplainerName;
   /** Where Laya keeps its downloaded weights (LAYA_CACHE). */
   layaCache: string;
@@ -20,12 +20,20 @@ export interface HubConfig {
   layaConfidenceThreshold: number | null;
   /** If Laya fails to load, answer with keyword matching instead of stopping the hub. */
   layaFallbackToKeyword: boolean;
+  /** Local Gemma 4 ONNX folder (GEMMA_MODEL_DIR). Required when the explainer is gemma. */
+  gemmaModelDir: string | null;
+  /** ONNX weight variant (GEMMA_DTYPE). q4f16 is the default. */
+  gemmaDtype: string;
+  /** onnxruntime device (GEMMA_DEVICE). cpu is the tested route. */
+  gemmaDevice: string;
+  /** Cap on generated tokens per answer (GEMMA_MAX_NEW_TOKENS). */
+  gemmaMaxNewTokens: number;
   /** Folder for the pilot logs (JSON lines). Keep it off git. */
   logDir: string;
 }
 
 const MATCHERS: readonly MatcherName[] = ['keyword', 'laya', 'hybrid'];
-const EXPLAINERS: readonly ExplainerName[] = ['off', 'gemma-e4b'];
+const EXPLAINERS: readonly ExplainerName[] = ['off', 'gemma'];
 
 function optionalNumber(name: string, raw: string | undefined): number | null {
   const trimmed = raw?.trim();
@@ -59,6 +67,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
     }
   }
 
+  const gemmaModelDir = env.GEMMA_MODEL_DIR ? resolve(cwd, env.GEMMA_MODEL_DIR) : null;
+  if (explainer === 'gemma' && gemmaModelDir === null) {
+    throw new Error('HUB_EXPLAINER=gemma needs GEMMA_MODEL_DIR, the folder of the Gemma 4 ONNX model.');
+  }
+  const gemmaMaxNewTokens = optionalNumber('GEMMA_MAX_NEW_TOKENS', env.GEMMA_MAX_NEW_TOKENS) ?? 150;
+  if (!Number.isInteger(gemmaMaxNewTokens) || gemmaMaxNewTokens < 1) {
+    throw new Error(`GEMMA_MAX_NEW_TOKENS must be a positive whole number. Got "${env.GEMMA_MAX_NEW_TOKENS}".`);
+  }
+
   const port = Number(env.HUB_PORT ?? 8787);
   if (!Number.isInteger(port) || port < 0 || port > 65535) {
     throw new Error(`HUB_PORT must be a port number. Got "${env.HUB_PORT}".`);
@@ -75,6 +92,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
     layaPassMark,
     layaConfidenceThreshold,
     layaFallbackToKeyword: (env.HUB_LAYA_FALLBACK ?? 'keyword') === 'keyword',
+    gemmaModelDir,
+    gemmaDtype: env.GEMMA_DTYPE ?? 'q4f16',
+    gemmaDevice: env.GEMMA_DEVICE ?? 'cpu',
+    gemmaMaxNewTokens,
     logDir: resolve(cwd, env.HUB_LOG_DIR ?? 'logs'),
   };
 }
