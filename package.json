@@ -19,6 +19,9 @@
     "onlyBuiltDependencies": [
       "esbuild",
       "onnxruntime-node"
-    ]
+    ],
+    "patchedDependencies": {
+      "@receptron/laya@0.1.2": "patches/@receptron__laya@0.1.2.patch"
+    }
   }
 }

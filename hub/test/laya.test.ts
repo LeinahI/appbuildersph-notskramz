@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { Laya, type ChoiceAnswer } from '@receptron/laya';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { loadKnowledge } from '../src/knowledge';
-import { createLayaMatcher, LAYA_INSTRUCTIONS, problemCriteria } from '../src/matchers/laya';
+import { createLayaMatcher, LAYA_INSTRUCTIONS, problemOptions } from '../src/matchers/laya';
 import type { Matcher } from '../src/matchers/index';
 
 // Runs the real Laya model. Only runs with a local bundle (LAYA_MODEL_DIR), so the default test run downloads nothing.
@@ -13,6 +13,8 @@ const modelDir = process.env.LAYA_MODEL_DIR?.trim() || '';
 const knowledge = loadKnowledge(new URL('../../knowledge/', import.meta.url));
 const knownIds = new Set(knowledge.map((e) => e.id));
 const cropOf = new Map(knowledge.map((e) => [e.id, e.crop]));
+
+const options = problemOptions(knowledge);
 
 const riceText =
   'Diamond-shaped spots with gray centers on the rice leaves, and the neck of the panicle is rotting';
@@ -33,10 +35,10 @@ describe.skipIf(!modelDir)('laya matcher with a local bundle', () => {
     const laya = await Laya.load({ modelDir });
     const res = await laya.systemOne(
       { description: riceText },
-      { problem: { type: 'choice', instructions: LAYA_INSTRUCTIONS, criteria: problemCriteria(knowledge) } },
+      { problem: { type: 'choice', instructions: LAYA_INSTRUCTIONS, criteria: options.texts } },
     );
     const answer = res.answers.problem as ChoiceAnswer;
-    topChoice = answer.choice;
+    topChoice = options.ids[options.texts.indexOf(answer.choice)]!;
     await laya.close();
 
     atConfidence = await createLayaMatcher(knowledge, {

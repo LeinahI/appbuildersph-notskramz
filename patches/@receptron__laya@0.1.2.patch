@@ -1,0 +1,30 @@
+diff --git a/dist/laya.js b/dist/laya.js
+index 6ea05046dfc012f2934fe92c454348a0eae8a899..8af78c9aba8704a5ae98cb7699cf2aab2d1c64e1 100644
+--- a/dist/laya.js
++++ b/dist/laya.js
+@@ -33,13 +33,19 @@ export class Laya {
+         const read = async (f) => JSON.parse(await readFile(path.join(modelDir, f), "utf8"));
+         const config = (await read("laya_config.json"));
+         const tok = new Tokenizer((await read("tokenizer/tokenizer.json")), (await read("tokenizer/tokenizer_config.json")));
+-        const id = (t) => {
+-            const v = tok.token_to_id(t);
+-            if (v === undefined)
+-                throw new Error(`special token ${t} missing from tokenizer`);
+-            return v;
++        // BERT checkpoints name the special tokens [CLS]/[SEP]/[MASK]/[PAD]. The multilingual (mmBERT)
++        // tokenizer names the same roles <bos>/<eos>/<mask>/<pad>, as rl_common.py does through the
++        // tokenizer's cls/sep/mask/pad tokens.
++        const special = (...names) => {
++            for (const name of names) {
++                const v = tok.token_to_id(name);
++                if (v !== undefined)
++                    return { id: v, name };
++            }
++            throw new Error(`special token ${names[0]} missing from tokenizer`);
+         };
+-        const ids = { cls: id("[CLS]"), sep: id("[SEP]"), mask: id("[MASK]"), pad: id("[PAD]"), maskTok: "[MASK]" };
++        const mask = special("[MASK]", "<mask>");
++        const ids = { cls: special("[CLS]", "<bos>").id, sep: special("[SEP]", "<eos>").id, mask: mask.id, pad: special("[PAD]", "<pad>").id, maskTok: mask.name };
+         const session = await ort.InferenceSession.create(path.join(modelDir, "laya.onnx"), {
+             executionProviders: opts.executionProviders ?? ["cpu"],
+             graphOptimizationLevel: "all",

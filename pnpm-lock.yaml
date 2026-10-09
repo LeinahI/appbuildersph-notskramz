@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@receptron/laya@0.1.2':
+    hash: 24f0a061ce0b4b7cb2f4c34bdb8d17a7287c3b943b7e852f738226a687ca0bf8
+    path: patches/@receptron__laya@0.1.2.patch
+
 importers:
 
   .: {}
@@ -12,7 +17,7 @@ importers:
     dependencies:
       '@receptron/laya':
         specifier: 0.1.2
-        version: 0.1.2
+        version: 0.1.2(patch_hash=24f0a061ce0b4b7cb2f4c34bdb8d17a7287c3b943b7e852f738226a687ca0bf8)
       '@ugatan/shared':
         specifier: workspace:*
         version: link:../shared
@@ -3709,7 +3714,7 @@ snapshots:
 
   '@protobufjs/utf8@1.1.2': {}
 
-  '@receptron/laya@0.1.2':
+  '@receptron/laya@0.1.2(patch_hash=24f0a061ce0b4b7cb2f4c34bdb8d17a7287c3b943b7e852f738226a687ca0bf8)':
     dependencies:
       '@huggingface/tokenizers': 0.2.0
       onnxruntime-node: 1.30.0

@@ -32,6 +32,15 @@ describe('loadConfig', () => {
     expect(c.layaConfidenceThreshold).toBe(0.5);
   });
 
+  it('treats hybrid like Laya: both team decisions are required', () => {
+    expect(() => loadConfig({ HUB_MATCHER: 'hybrid' }, '/repo/hub')).toThrow(/hybrid needs LAYA_PASS_MARK/);
+    expect(() => loadConfig({ HUB_MATCHER: 'hybrid', LAYA_PASS_MARK: '0.7' }, '/repo/hub')).toThrow(
+      /LAYA_CONFIDENCE_THRESHOLD/,
+    );
+    const c = loadConfig({ HUB_MATCHER: 'hybrid', LAYA_PASS_MARK: '0.7', LAYA_CONFIDENCE_THRESHOLD: '0.5' }, '/repo/hub');
+    expect(c.matcher).toBe('hybrid');
+  });
+
   it('rejects an unknown matcher or explainer', () => {
     expect(() => loadConfig({ HUB_MATCHER: 'bert' })).toThrow(/HUB_MATCHER/);
     expect(() => loadConfig({ HUB_EXPLAINER: 'cloud' })).toThrow(/HUB_EXPLAINER/);

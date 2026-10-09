@@ -1,12 +1,12 @@
 import { resolve } from 'node:path';
 
-export type MatcherName = 'keyword' | 'laya';
+export type MatcherName = 'keyword' | 'laya' | 'hybrid';
 export type ExplainerName = 'off' | 'gemma-e4b';
 
 export interface HubConfig {
   host: string;
   port: number;
-  /** Which matcher answers questions on the hub. Keyword matching is the default and the fallback. */
+  /** Which matcher answers questions on the hub. Keyword matching is the default and the fallback. Hybrid asks keyword first, then Laya. */
   matcher: MatcherName;
   /** Which explainer writes the Taglish answer. "off" until the E4B route is decided. */
   explainer: ExplainerName;
@@ -24,7 +24,7 @@ export interface HubConfig {
   logDir: string;
 }
 
-const MATCHERS: readonly MatcherName[] = ['keyword', 'laya'];
+const MATCHERS: readonly MatcherName[] = ['keyword', 'laya', 'hybrid'];
 const EXPLAINERS: readonly ExplainerName[] = ['off', 'gemma-e4b'];
 
 function optionalNumber(name: string, raw: string | undefined): number | null {
@@ -49,13 +49,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
   const layaPassMark = optionalNumber('LAYA_PASS_MARK', env.LAYA_PASS_MARK);
   const layaConfidenceThreshold = optionalNumber('LAYA_CONFIDENCE_THRESHOLD', env.LAYA_CONFIDENCE_THRESHOLD);
 
-  if (matcher === 'laya') {
+  if (matcher === 'laya' || matcher === 'hybrid') {
     // Both values are team decisions. Refuse to start with Laya until they are set.
     if (layaPassMark === null) {
-      throw new Error('HUB_MATCHER=laya needs LAYA_PASS_MARK, set by the team before the labeled test.');
+      throw new Error(`HUB_MATCHER=${matcher} needs LAYA_PASS_MARK, set by the team before the labeled test.`);
     }
     if (layaConfidenceThreshold === null) {
-      throw new Error('HUB_MATCHER=laya needs LAYA_CONFIDENCE_THRESHOLD, set by the team from the labeled test.');
+      throw new Error(`HUB_MATCHER=${matcher} needs LAYA_CONFIDENCE_THRESHOLD, set by the team from the labeled test.`);
     }
   }
 

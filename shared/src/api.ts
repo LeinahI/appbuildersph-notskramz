@@ -13,7 +13,7 @@ export interface AskRequest {
 export interface AskResponse {
   uid: string;
   /** Which matcher ran on the hub. */
-  matcher: 'keyword' | 'laya';
+  matcher: 'keyword' | 'laya' | 'hybrid';
   /** Knowledge ids the hub matched, best first. */
   matchIds: string[];
   /** False when the hub is not sure. */

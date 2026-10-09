@@ -17,7 +17,7 @@ export interface QueuedQuestion {
   clear: boolean;
   explanation?: string | null;
   explanationStatus?: 'ok' | 'blocked' | 'unavailable' | 'phone';
-  matcher?: 'keyword' | 'laya';
+  matcher?: 'keyword' | 'laya' | 'hybrid';
   answeredAt?: string;
   lastError?: string;
 }

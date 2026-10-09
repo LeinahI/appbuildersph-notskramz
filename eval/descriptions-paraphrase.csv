@@ -1,0 +1,32 @@
+text,expectedId,lang
+"Whole spots in my paddy look scorched like burned patches, and when I part the plants near the water I see lots of tiny brown bugs and a sticky black film",bph,en
+"May mga bilog na parte ng palayan na parang nasunog at natutuyo, tapos sa ilalim ng mga tanim ang daming maliliit na kulay kapeng insekto",bph,tl
+"Yung ibang part ng field namin parang na-burn na, dry na dry, tapos pag hinawi ko yung tanim sa ibaba ang daming maliliit na brown na bugs",bph,taglish
+"Eye-shaped lesions with ashy centers and brown edges on the leaves, and the stalk just under the grain head turned black and snapped",rice-blast,en
+"May mga batik na hugis mata at abo ang gitna sa dahon ng palay, tapos itim at nabali yung ilalim ng uhay",rice-blast,tl
+"Yung dahon may batik na hugis diamond na gray sa gitna, tapos yung leeg ng uhay nangitim at nabali",rice-blast,taglish
+"The tips and edges of the leaves turn yellow then straw-colored and dry in long wavy stripes, and I saw milky droplets on the leaf at dawn",bacterial-leaf-blight,en
+"Nagdidilaw at natutuyo ang dulo at gilid ng dahon na parang kulot na guhit, at may patak na parang gatas sa umaga",bacterial-leaf-blight,tl
+"Yellow tapos tuyo yung gilid ng dahon, kulot-kulot na guhit, tapos may parang gatas na patak sa umaga",bacterial-leaf-blight,taglish
+"Young tillers wilt and the central leaf turns brown and comes out with a gentle tug, and later the grain heads stand upright, pale and empty",stem-borer,en
+"Natutuyo ang gitnang dahon ng suwi at madaling mabunot, at ang mga uhay ay nakatayo, maputi at walang laman",stem-borer,tl
+"Yung gitnang dahon ng tiller natuyo at madaling hugutin, tapos yung uhay maputi at walang laman",stem-borer,taglish
+"Seedlings in the newly transplanted field were cut off at the water line, and there are bright pink egg clusters stuck on the stalks",golden-apple-snail,en
+"Pinutol ang mga bagong tanim na punla sa may tubig, at may mga kulay rosas na itlog na nakadikit sa tangkay",golden-apple-snail,tl
+"Putol yung mga bagong tanim na seedlings sa tubig tapos may pink na itlog na nakadikit sa mga tangkay",golden-apple-snail,taglish
+"Ragged holes chewed in the young corn leaves and the whorl is full of sawdust-like droppings, with caterpillars hiding inside",fall-armyworm,en
+"Butas-butas ang batang dahon ng mais at puno ng parang sawdust na dumi ang puso ng halaman, may mga uod sa loob",fall-armyworm,tl
+"Butas-butas yung dahon ng mais tapos sa loob ng whorl may parang sawdust na dumi at may mga uod",fall-armyworm,taglish
+"Corn plants snap over in the middle of the stalk, I find little tunnels with sawdust inside the stem, and the tassel droops",asiatic-corn-borer,en
+"Nababali sa gitna ang mga tangkay ng mais at may mga lagusan sa loob na may dumi, at nakalaylay ang bulaklak sa tuktok",asiatic-corn-borer,tl
+"Nabali yung stalk ng mais sa gitna, may tunnel sa loob na may dumi, at lumaylay yung tassel",asiatic-corn-borer,taglish
+"Young corn is pale and stunted with long yellow-green stripes, and in the early morning there is a white fuzz on the underside of the leaves",downy-mildew,en
+"Maputla at pandak ang batang mais na may mahabang dilaw-berdeng guhit, at may puting himulmol sa ilalim ng dahon tuwing umaga",downy-mildew,tl
+"Pandak at maputla yung batang mais na may yellow-green na guhit, tapos may puting fuzz sa ilalim ng dahon pag umaga",downy-mildew,taglish
+"How much rain do we expect next week?",none,en
+"Magkano ang bili ng abono ngayon?",none,tl
+"Saan ako makakabili ng murang binhi?",none,taglish
+"My tomato plants have curled leaves and the fruit is cracking",none,en
+"Kumukulot ang dahon ng talong ko at nalalagas ang bulaklak",none,tl
+"Yung sili namin nalalanta tapos may puting amag sa lupa",none,taglish
+"My cow stopped eating and has a fever",none,en

@@ -3,6 +3,7 @@ import { loadEnvFile } from './env.js';
 import { offExplainer, type Explainer } from './explain/index.js';
 import { fileLogger } from './log.js';
 import { createKeywordMatcher } from './matchers/keyword.js';
+import { createHybridMatcher } from './matchers/hybrid.js';
 import { createLayaMatcher } from './matchers/laya.js';
 import type { Matcher } from './matchers/index.js';
 import { loadKnowledge } from './knowledge.js';
@@ -17,13 +18,14 @@ async function main(): Promise<void> {
   // Keyword matching is always loaded. It is the fallback if Laya is off or fails.
   const keyword = createKeywordMatcher(knowledge);
   let matcher: Matcher = keyword;
-  if (config.matcher === 'laya') {
+  if (config.matcher === 'laya' || config.matcher === 'hybrid') {
     try {
-      matcher = await createLayaMatcher(knowledge, {
+      const laya = await createLayaMatcher(knowledge, {
         cacheDir: config.layaCache,
         modelDir: config.layaModelDir,
         confidenceThreshold: config.layaConfidenceThreshold!,
       });
+      matcher = config.matcher === 'hybrid' ? createHybridMatcher(keyword, laya) : laya;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.write({ event: 'error', where: 'laya-load', message });

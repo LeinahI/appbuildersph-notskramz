@@ -7,8 +7,8 @@ export interface MatchOutcome {
   clear: boolean;
 }
 
-/** A matcher turns a farmer's description into knowledge ids. Keyword and Laya both implement it. */
+/** A matcher turns a farmer's description into knowledge ids. Keyword, Laya, and the hybrid of the two implement it. */
 export interface Matcher {
-  readonly name: 'keyword' | 'laya';
+  readonly name: 'keyword' | 'laya' | 'hybrid';
   match(text: string, crop: Crop | 'any'): Promise<MatchOutcome>;
 }
