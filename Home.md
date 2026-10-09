@@ -16,6 +16,7 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-09-insect-identification]] - 12 insect notes plus insect profiles (English, scientific, and Filipino names, crop stage, natural enemies, last-resort line with PPE), name-weighted matching, and research on sources and open datasets
 - [[2026-10-09-chat-behaviour-20-chats]] - 320-message real-model chat test with fixes after each chat: fixed lines for pesticide, health, office, and growing questions, no re-matching of answered problems, problem name always said
 - [[2026-10-09-open-source-guardrail-patterns]] - input rail for prompt injection, grounding check on replies, wider dosage guard
 - [[2026-10-09-merge-frontend-branch]] - pulled the FrontEnd branch's Figma home UI (green theme, logo, Tulong and history dialogs, tl/en/ceb labels) into the chat, photo, voice, and hub flow; web typecheck and 81 web tests pass

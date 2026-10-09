@@ -8,7 +8,7 @@ Ugatan is an offline advisor for Filipino rice and corn farmers. It helps them m
 
 The core runs on any phone and works without mobile data. Full AI explanations run on a shared village hub or a small on-device model, so no farmer is locked out by their hardware.
 
-The hackathon build is a working prototype. It uses a curated knowledge base of eight rice and corn problems and an on-device language model. The next step is a pilot with a local agriculturist or farmer cooperative to test accuracy and adoption.
+The hackathon build is a working prototype. It uses a curated knowledge base of twenty rice and corn problems and an on-device language model. The next step is a pilot with a local agriculturist or farmer cooperative to test accuracy and adoption.
 
 ## Problem
 
@@ -93,7 +93,7 @@ The offline core works everywhere, so connectivity only affects the AI explanati
 
 - Queue and sync in the app, so questions wait offline and send on reconnect.
 - Hub answer service, which runs the model for queued questions on the local network.
-- Symptom picture list, drawn from the knowledge base. The eight current notes are not yet reviewed by an agronomist.
+- Symptom picture list, drawn from the knowledge base. The twenty current notes are not yet reviewed by an agronomist.
 - Voice input tests in Tagalog on the pilot phones.
 
 A connected fallback for farmers with signal and no capable device is possible later. It would send questions to a cloud model. It is not part of the offline core, and it is excluded from the hackathon build.
@@ -216,7 +216,7 @@ Each phase ends at a gate. The team sets the gate criteria before starting the p
 
 | Phase | Milestone | Gate to next phase |
 | --- | --- | --- |
-| 0. Hackathon | Working prototype with eight rice and corn problems and an on-device model. Demo on October 10, 2026, in Makati. | Demo delivered and judged |
+| 0. Hackathon | Working prototype with twenty rice and corn problems and an on-device model. Demo on October 10, 2026, in Makati. | Demo delivered and judged |
 | 1. Pilot prep | Pilot partner signed. Agronomist review of the knowledge base. Model chosen by a Taglish test: E2B by default if it passes, E4B on the hub. | Partner and reviewed content in place |
 | 2. Field pilot | One full crop cycle at two sites, one with a village hub, with match and escalation logs. | Accuracy and adoption thresholds met, to be set |
 | 3. Expand | Photo diagnosis, weather-based alerts, and broader corn coverage. | Paid pilot or LGU interest confirmed |

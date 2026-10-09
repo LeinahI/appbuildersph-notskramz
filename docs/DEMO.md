@@ -48,7 +48,7 @@ What the screen shows, checked in the browser on the dev server (keyword path, A
 
 > Ang knowledge base namin ay walong tala lang, at hindi pa ito nire-review ng agronomist. Iyon ang susunod naming gagawin.
 
-English: "Our knowledge base is eight notes, and an agronomist has not reviewed them yet. That is our next step."
+English: "Our knowledge base is twenty notes, sixteen of them insects with their English, scientific, and Filipino names, and an agronomist has not reviewed them yet. That is our next step."
 
 ## Do not show
 

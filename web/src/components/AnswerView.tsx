@@ -97,53 +97,53 @@ export function AnswerView({ matches, clear, labels, explanation, explanationSta
             {matches.map((r) => {
               const insect = insectFacts(r);
               return (
-              <article key={r.id}>
-                <h3 className="m-0 text-lg font-semibold">{r.name}</h3>
-                {insect && (
-                  <dl className="m-0 mt-2 grid gap-1 text-[0.9375rem]">
-                    <div>
-                      <dt className="inline font-semibold">{labels.insectHeading}: </dt>
-                      <dd className="m-0 inline">{insect.identity}</dd>
-                    </div>
-                    <div>
-                      <dt className="inline font-semibold">{labels.localNamesLabel}: </dt>
-                      <dd className="m-0 inline">{insect.localNames}</dd>
-                    </div>
-                    <div>
-                      <dt className="inline font-semibold">{labels.attacksLabel}: </dt>
-                      <dd className="m-0 inline">{insect.attacks}</dd>
-                    </div>
-                  </dl>
-                )}
-                <p className={SUBHEAD}>{labels.signsHeading}</p>
-                <ul className="m-0 list-disc pl-6">
-                  {r.signs.map((s) => (
-                    <li key={s}>{s}</li>
-                  ))}
-                </ul>
-                <p className={SUBHEAD}>{labels.stepsHeading}</p>
-                <ol className="m-0 list-decimal pl-6">
-                  {r.actions.map((a) => (
-                    <li key={a}>{a}</li>
-                  ))}
-                </ol>
-                {r.insect && (
-                  <>
-                    <p className={SUBHEAD}>{labels.naturalEnemiesHeading}</p>
-                    <ul className="m-0 list-disc pl-6">
-                      {r.insect.biological.map((b) => (
-                        <li key={b}>{b}</li>
-                      ))}
-                    </ul>
-                    <p className="mt-3 mb-0 text-[0.9375rem]">
-                      <strong className="font-semibold">{labels.lastResortHeading}:</strong> {labels.lastResortText}
-                    </p>
-                  </>
-                )}
-                <p className="mt-3 mb-0 text-[0.9375rem] text-muted">
-                  <strong className="font-semibold text-ink">{labels.consultHeading}</strong> {r.callExpertIf}
-                </p>
-              </article>
+                <article key={r.id}>
+                  <h3 className="m-0 text-lg font-semibold">{r.name}</h3>
+                  {insect && (
+                    <dl className="m-0 mt-2 grid gap-1 text-[0.9375rem]">
+                      <div>
+                        <dt className="inline font-semibold">{labels.insectHeading}: </dt>
+                        <dd className="m-0 inline">{insect.identity}</dd>
+                      </div>
+                      <div>
+                        <dt className="inline font-semibold">{labels.localNamesLabel}: </dt>
+                        <dd className="m-0 inline">{insect.localNames}</dd>
+                      </div>
+                      <div>
+                        <dt className="inline font-semibold">{labels.attacksLabel}: </dt>
+                        <dd className="m-0 inline">{insect.attacks}</dd>
+                      </div>
+                    </dl>
+                  )}
+                  <p className={SUBHEAD}>{labels.signsHeading}</p>
+                  <ul className="m-0 list-disc pl-6">
+                    {r.signs.map((s) => (
+                      <li key={s}>{s}</li>
+                    ))}
+                  </ul>
+                  <p className={SUBHEAD}>{labels.stepsHeading}</p>
+                  <ol className="m-0 list-decimal pl-6">
+                    {r.actions.map((a) => (
+                      <li key={a}>{a}</li>
+                    ))}
+                  </ol>
+                  {r.insect && (
+                    <>
+                      <p className={SUBHEAD}>{labels.naturalEnemiesHeading}</p>
+                      <ul className="m-0 list-disc pl-6">
+                        {r.insect.biological.map((b) => (
+                          <li key={b}>{b}</li>
+                        ))}
+                      </ul>
+                      <p className="mt-3 mb-0 text-[0.9375rem]">
+                        <strong className="font-semibold">{labels.lastResortHeading}:</strong> {labels.lastResortText}
+                      </p>
+                    </>
+                  )}
+                  <p className="mt-3 mb-0 text-[0.9375rem] text-muted">
+                    <strong className="font-semibold text-ink">{labels.consultHeading}</strong> {r.callExpertIf}
+                  </p>
+                </article>
               );
             })}
           </div>

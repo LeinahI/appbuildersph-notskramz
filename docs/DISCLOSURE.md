@@ -74,7 +74,9 @@ The answer path needs no cloud AI API. The app and hub make these network calls:
 
 ## Knowledge base review
 
-- `knowledge/` holds eight problem notes. **None is reviewed by an agronomist.** `reviewedBy` and `reviewedOn` are empty in all eight files.
+- `knowledge/` holds 20 problem notes: the original eight, and 12 insect notes added on 2026-10-09. **None is reviewed by an agronomist.** `reviewedBy` and `reviewedOn` are empty in all 20 files.
+- Sixteen of the notes (the insects) carry an `insect` profile: common name, scientific name, Filipino and regional names, crop stage, and natural enemies. The names and facts are paraphrased from PhilRice (leaflet "Harmful organisms in Philippine rice fields" and its website articles, which say "public domain unless otherwise stated"), the DA-Caraga corn technoguide *Mga Dangan sa Mais* (no licence stated), and ACIAR/IRRI fact sheets (all rights reserved, so facts only, no text copied). Sources, licences, and doubts are in `docs/agent-notes/2026-10-09-insect-identification.md`.
+- Most regional names (Ilocano, Cebuano, and others) come from the one DA-Caraga guide and are not cross-checked. The armyworm species is uncertain, so the note says `Mythimna sp.`. A name nobody sourced is left out, not guessed.
 - The eval sets in `eval/` were written by the developer, not labeled by an agronomist, and the scores are optimistic. The README gives the details.
 
 ## AI coding tools
