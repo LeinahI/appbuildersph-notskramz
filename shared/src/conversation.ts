@@ -49,6 +49,9 @@ const OFF_TOPIC =
 /** Another crop. Its problems are not rice or corn problems, so the chat answers them, even with a yellow leaf. */
 const OTHER_CROP =
   /\b(kangkong|kamatis|talong|saging|niyog|gulay|okra|sili|ampalaya|pechay|repolyo|sitaw|kalabasa|mangga|patatas|kamote|camote|bawang|sibuyas|mani|lubi|petsay|pipino|upo|patola|luya|monggo|mongo|ube|balinghoy|cassava|kamoteng kahoy|malunggay|kamunggay|cacao|tomato|tomatoes|eggplant|banana|coconut|onion|garlic|cabbage|pepper|chili|mango|squash|peanut|sweet potato|vegetable|vegetables)\b/;
+/** General "other crops" / not rice or corn — no named vegetable required. */
+const OTHER_CROP_GENERAL =
+  /\b(maliban sa (?:mga )?(?:palay|mais)|bukod sa (?:mga )?(?:palay|mais)|hindi (?:mga )?(?:palay|mais)|ibang (?:pananim|halaman|tanim|taniman|crop|crops)|(?:pananim|halaman|tanim|crop|crops) (?:na )?(?:maliban|bukod) sa (?:mga )?(?:palay|mais)|other crops?|crops? other than (?:rice|corn)|besides (?:rice|corn))\b/;
 /**
  * Plant parts and symptom words. A message with one of these describes a problem, even when it also says "tulong"
  * or "salamat", so it goes to matching. Crop names are left out on purpose: "presyo ng palay" is not a symptom.
@@ -108,8 +111,6 @@ export function fixedReply(text: string): string | null {
   }
   if (ACK.test(t.trim())) return 'Sige po. Sabihin lang po ninyo kung may iba pa kayong nakikita sa palay o mais.';
   if (isGibberish(t)) return 'Hindi ko po naintindihan. Ano po ang nakikita ninyo sa dahon, tangkay, o uhay ng palay o mais?';
-  // "May tanong ako": the farmer has not asked yet. The model's "ano po ang tanong ninyo?" looks like an echo and gets dropped.
-  if (ASK.test(t) && !SYMPTOM_WORD.test(t)) return 'Opo, ano po ang itatanong ninyo tungkol sa palay o mais?';
   if (OFFICE.test(t)) {
     return 'Hindi ko po ito masasagot nang tama. Para sa reklamo, lupa, pautang, insurance, ayuda, o RSBSA, magtanong po sa Municipal Agriculture Office (MAO), sa inyong kooperatiba, o sa barangay. Nandito po ako para sa problema ng palay at mais.';
   }
@@ -120,11 +121,18 @@ export function fixedReply(text: string): string | null {
   if (crop) {
     return `Palay at mais lang po ang alam kong problema, kaya hindi ko po masasagot ang tungkol sa ${crop}. Para sa ${crop}, kumonsulta po sa lokal na agriculturist.`;
   }
+  if (OTHER_CROP_GENERAL.test(t)) {
+    return 'Palay at mais lang po ang alam kong problema, kaya hindi ko po masasagot ang tungkol sa ibang pananim. Para sa ibang pananim, kumonsulta po sa lokal na agriculturist.';
+  }
   if (EAT.test(t)) {
     return 'Hindi ko po masasabi kung ligtas itong kainin. Itanong po muna sa lokal na agriculturist, lalo na kung nag-spray kayo kamakailan.';
   }
   if (IDENTITY.test(t)) {
     return 'Ako po si Ugatan, katulong ninyo sa problema ng palay at mais. Ilarawan po ninyo ang nakikita ninyo sa dahon, tangkay, o uhay, at sasabihin ko ang posibleng problema at ang mga hakbang.';
+  }
+  // "May tanong ako": after topic guardrails, so "magtanong … maliban sa palay" is not mistaken for a soft ask.
+  if (ASK.test(t) && !SYMPTOM_WORD.test(t) && !OFF_TOPIC.test(t)) {
+    return 'Opo, ano po ang itatanong ninyo tungkol sa palay o mais?';
   }
   return null;
 }
@@ -154,7 +162,11 @@ export function isSmallTalk(text: string): boolean {
 /** True for a message about a topic that is not a rice or corn problem. */
 export function isOffTopic(text: string): boolean {
   const t = ` ${normalize(text)} `;
-  return OFF_TOPIC.test(t) || [PESTICIDE_ASK, HEALTH, EMERGENCY, OFFICE, CROP_CARE, EAT].some((re) => re.test(t));
+  return (
+    OFF_TOPIC.test(t) ||
+    OTHER_CROP_GENERAL.test(t) ||
+    [PESTICIDE_ASK, HEALTH, EMERGENCY, OFFICE, CROP_CARE, EAT].some((re) => re.test(t))
+  );
 }
 
 /**
@@ -167,6 +179,7 @@ export function routeFor(text: string, hasSign: boolean): Route {
   const t = ` ${normalize(text)} `;
   // "May itim na batik ang mangga" has a rice keyword, but it is about a mango. Naming palay or mais too keeps it a match.
   if (OTHER_CROP.test(t) && !detectCrop(text)) return 'chat';
+  if (OTHER_CROP_GENERAL.test(t)) return 'chat';
   // "Anong gamot sa kuhol?" names a pest, but it asks for a pesticide: it gets the fixed pesticide line, not a match.
   if (PESTICIDE_ASK.test(t) && isQuestion(text)) return 'chat';
   if (hasSign) return 'match';
@@ -213,7 +226,7 @@ const QUESTION_OPENER = /^ (ano|anong|paano|bakit|pwede|puwede|pede|kailan|ilan|
 export function isAboutLastAnswer(text: string, hasSign: boolean): boolean {
   if (hasSign) return false;
   const t = ` ${normalize(text)} `;
-  if (OTHER_CROP.test(t)) return false;
+  if (OTHER_CROP.test(t) || OTHER_CROP_GENERAL.test(t)) return false;
   // A short detail ("sa tangkay din po", "may batik sa dahon") adds to the problem already named. A longer report
   // with no keyword is still matched, since Laya may read it as a new problem.
   return isQuestion(text) || !SYMPTOM_WORD.test(t) || contentWords(text).length <= 3;
@@ -226,7 +239,7 @@ export function isAboutLastAnswer(text: string, hasSign: boolean): boolean {
 export function isQuestionWithoutSign(text: string, hasSign: boolean): boolean {
   if (hasSign) return false;
   const t = ` ${normalize(text)} `;
-  return isQuestion(text) && !SYMPTOM_WORD.test(t) && !OTHER_CROP.test(t);
+  return isQuestion(text) && !SYMPTOM_WORD.test(t) && !OTHER_CROP.test(t) && !OTHER_CROP_GENERAL.test(t);
 }
 
 /** Ends in "?" or opens with a question word. */

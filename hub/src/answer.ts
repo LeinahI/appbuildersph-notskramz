@@ -10,7 +10,9 @@ import {
   isAboutLastAnswer,
   isQuestionWithoutSign,
   isFinalAnswer,
+  INJECTION_REPLY,
   isInjectionAttempt,
+  leaksInstructions,
   isOffTopic,
   isSmallTalk,
   keywordHits,
@@ -338,8 +340,14 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
           logger.write({ event: 'guardrail', uid: req.uid, rail: 'grounding', names: ungrounded });
         }
         if (findViolations(reply).length === 0 && ungrounded.length === 0) {
-          status = 'ok';
-          explanation = reply;
+          if (leaksInstructions(reply)) {
+            logger.write({ event: 'guardrail', uid: req.uid, rail: 'injection-output' });
+            status = 'ok';
+            explanation = INJECTION_REPLY;
+          } else {
+            status = 'ok';
+            explanation = reply;
+          }
         } else if (!matched && (isSmallTalk(asked) || isOffTopic(asked))) {
           // Guardrail: the model's words never leave the hub, but small talk still gets the app's own line.
           status = 'ok';

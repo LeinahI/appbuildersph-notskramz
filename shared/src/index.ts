@@ -48,7 +48,13 @@ export { CROP_NAME, LAST_RESORT, STAGE_NAME, insectFacts, type InsectFacts } fro
 export { normalize, matchKeywords, keywordHits } from './keyword.js';
 export { cropOfChat, detectCrop } from './crop.js';
 export { PESTICIDE_NAMES, findViolations, isSafeText, type GuardViolation } from './guard.js';
-export { INJECTION_REPLY, isInjectionAttempt, ungroundedProblems } from './rails.js';
+export {
+  INJECTION_REPLY,
+  guardPromptLeak,
+  isInjectionAttempt,
+  leaksInstructions,
+  ungroundedProblems,
+} from './rails.js';
 export { validateEntry, assertValidEntries } from './knowledge.js';
 export {
   MAX_FOLLOW_UPS,
