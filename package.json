@@ -10,6 +10,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "dev": "pnpm --filter @ugatan/web dev",
     "build": "pnpm -r build",
     "test": "pnpm -r build && pnpm -r test",
     "eval": "pnpm --filter @ugatan/hub eval"
