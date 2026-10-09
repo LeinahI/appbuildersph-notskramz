@@ -84,40 +84,6 @@ function Overview({ onRegister }: { onRegister: () => void }) {
   </>;
 }
 
-export function Login() {
-  const [showPassword, setShowPassword] = useState(false);
-  return <main className='admin-login'>
-    <section className='admin-login-card' aria-labelledby='admin-login-heading'>
-      <Logo />
-      <p className='admin-eyebrow'>{A.workspace}</p>
-      <h1 id='admin-login-heading'>{A.login}</h1>
-      <p className='admin-description'>{A.loginDescription}</p>
-      <form onSubmit={(event) => event.preventDefault()}>
-        <label className='admin-field' htmlFor='admin-username'>{A.username}
-          <input id='admin-username' autoComplete='off' disabled aria-describedby='admin-login-unavailable' />
-        </label>
-        <label className='admin-field mt-4' htmlFor='admin-password'>{A.password}</label>
-        <div className='admin-password'>
-          <input id='admin-password' type={showPassword ? 'text' : 'password'} autoComplete='off' disabled aria-describedby='admin-login-unavailable' />
-          <button type='button' aria-label={showPassword ? A.hidePassword : A.showPassword}
-            title={showPassword ? A.hidePassword : A.showPassword} aria-controls='admin-password'
-            aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
-            <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor'
-              strokeWidth='1.7' strokeLinecap='round' strokeLinejoin='round' aria-hidden={true}>
-              <path d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z' />
-              <circle cx='12' cy='12' r='3' />
-              {showPassword && <path d='m3 3 18 18' />}
-            </svg>
-          </button>
-        </div>
-        <p id='admin-login-unavailable' className='admin-callout'>{A.loginUnavailable}</p>
-        <button type='submit' className='btn w-full' disabled aria-describedby='admin-login-unavailable'>{A.signIn}</button>
-      </form>
-      <a className='admin-text-button' href='/'>{A.backHome}</a>
-    </section>
-  </main>;
-}
-
 export function AdminApp() {
   const [page, setPage] = useState<AdminPage>(() => adminPage(typeof window === 'undefined' ? '' : window.location.hash));
   const [dialog, setDialog] = useState<'registration' | 'menu' | 'help' | 'hub' | 'display' | null>(null);
@@ -128,41 +94,45 @@ export function AdminApp() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
   useEffect(() => {
+    if (page === 'login') {
+      window.location.replace('/admin/login');
+      return;
+    }
     document.title = 'Ugatan | ' + A[page];
     document.documentElement.lang = 'en';
     heading.current?.focus();
   }, [page]);
+  if (page === 'login') return <main className='p-6'><a className='admin-text-button' href='/admin/login'>{A.login}</a></main>;
+
   const register = () => setDialog('registration');
 
   return <>
-    {page === 'login' ? <Login /> : <div className='admin-shell'>
+    <div className='admin-shell'>
     <a className='admin-skip-link' href='#admin-main' onClick={(event) => { event.preventDefault(); document.getElementById('admin-main')?.focus(); }}>{A.skipContent}</a>
     <aside className='admin-sidebar'>
       <a href='#overview' aria-label='Ugatan'><Logo /></a>
       <p className='admin-eyebrow'>{A.workspace}</p>
       <div className='admin-hub'><AdminIcon name='hub' /><span>{A.hubTitle}<small>{A.notConfigured}</small></span></div>
       <Navigation page={page} />
-      <p className='admin-connection'><AdminIcon name='lock' />{A.disconnected}</p>
       <div className='admin-sidebar-bottom'>
         <button type='button' className='admin-nav-action' onClick={() => setDialog('display')} aria-haspopup='dialog' aria-controls='admin-display'><DisplayPreferencesIcon /><span>Display preferences</span></button>
         <button type='button' className='admin-nav-action' onClick={() => setDialog('hub')}><AdminIcon name='settings' />{A.hubInfo}</button>
         <button type='button' className='admin-nav-action' onClick={() => setDialog('help')}><AdminIcon name='help' />{A.help}</button>
-        <a className='admin-nav-action' href='#login'>{A.login}</a>
+        <a className='admin-nav-action' href='/admin/login'>{A.login}</a>
       </div>
     </aside>
     <div className='admin-workspace'>
       <header className='admin-header'>
         <button type='button' className='admin-menu-button' onClick={() => setDialog('menu')} aria-haspopup='dialog' aria-controls='admin-menu'>{A.menu}</button>
         <p className='admin-breadcrumb'><span>{A.workspace}</span><span aria-hidden='true'>/</span><strong>{A[page]}</strong></p>
-        <span className='admin-preview-badge'>{A.preview}</span>
-        <button type='button' className='chat-icon-button lg:hidden' onClick={() => setDialog('help')} aria-label={A.help} title={A.help}><AdminIcon name='help' /></button>
+        <button type='button' className='chat-icon-button ml-auto lg:hidden' onClick={() => setDialog('help')} aria-label={A.help} title={A.help}><AdminIcon name='help' /></button>
       </header>
       <main id='admin-main' tabIndex={-1} className='admin-main'>
         <div className='admin-page-heading'>
           <div><p className='admin-eyebrow'>UGATAN ADMIN HUB</p><h1 ref={heading} tabIndex={-1}>{pageCopy[page].title}</h1><p>{pageCopy[page].description}</p></div>
           <button type='button' className='btn admin-register-button' onClick={register} aria-haspopup='dialog' aria-controls='admin-registration'><AdminIcon name='plus' />{A.register}</button>
         </div>
-        <p className='admin-preview-notice'>{A.previewNotice}</p>
+
         {page === 'overview' ? <Overview onRegister={register} /> : page === 'activity' ? <section className='admin-panel'>
           <div className='admin-panel-heading'><h2>{A.hubActivity}</h2></div>
           <div className='admin-empty'><span className='admin-icon-tile'><AdminIcon name='activity' /></span><h3>{A.noActivity}</h3><p>{A.unavailableList}</p></div>
@@ -170,14 +140,14 @@ export function AdminApp() {
         <footer className='admin-footer'><span>{A.adminTitle}</span><a href='/'>{A.backHome}</a></footer>
       </main>
     </div>
-    </div>}
+    </div>
     {dialog === 'registration' && <RegistrationDialog onClose={() => setDialog(null)} />}
     {dialog === 'menu' && <AdminDialog id='admin-menu' title={A.menuTitle} drawer='left' onClose={() => setDialog(null)}>
       <Navigation page={page} onSelect={() => setDialog(null)} />
       <button type='button' className='admin-nav-action' onClick={() => setDialog('display')} aria-haspopup='dialog' aria-controls='admin-display'><DisplayPreferencesIcon /><span>Display preferences</span></button>
       <button type='button' className='admin-nav-action' onClick={() => setDialog('hub')}><AdminIcon name='settings' />{A.hubInfo}</button>
       <button type='button' className='admin-nav-action' onClick={() => setDialog('help')}><AdminIcon name='help' />{A.help}</button>
-      <a className='admin-nav-action' href='#login' onClick={() => setDialog(null)}>{A.login}</a>
+      <a className='admin-nav-action' href='/admin/login' onClick={() => setDialog(null)}>{A.login}</a>
     </AdminDialog>}
     {dialog === 'display' && <AdminDialog id='admin-display' title='Display preferences' onClose={() => setDialog(null)}>
       <DisplayPreferencesPanel language='en' id='admin-display-options' />
@@ -193,7 +163,7 @@ export function AdminApp() {
         <div><dt>{A.location}</dt><dd>{A.notConfigured}</dd></div>
         <div><dt>{A.qr}</dt><dd>{A.qrPolicy}</dd></div>
       </dl>
-      <p className='admin-callout'>{A.backendRequired}</p>
+      <p className='admin-callout'>{A.actionUnavailable}</p>
     </AdminDialog>}
   </>;
 }

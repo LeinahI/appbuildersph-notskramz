@@ -13,7 +13,6 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
-  const [showForgot, setShowForgot] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -83,22 +82,7 @@ export default function AdminLoginPage() {
           hideLabel="Hide password"
           aria-label="Password"
         />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Checkbox label="Remember me" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-          <button
-            type="button"
-            aria-expanded={showForgot}
-            onClick={() => setShowForgot((v) => !v)}
-            className="text-sm font-medium text-sage underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
-          >
-            Forgot password? / Nakalimutan ang password?
-          </button>
-        </div>
-        {showForgot ? (
-          <p role="note" className="m-0 rounded-xl bg-warn px-3.5 py-3 text-sm text-ink">
-            Contact the system administrator to reset your password. / Makipag-ugnayan sa system administrator para ma-reset ang password.
-          </p>
-        ) : null}
+        <Checkbox label="Remember me" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
         <FormError>{formError}</FormError>
         <SubmitButton busy={busy} busyLabel="Signing in…">
           Sign in

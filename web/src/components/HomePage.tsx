@@ -24,6 +24,8 @@ export interface HomePageProps {
   onTextChange: (text: string) => void;
   onSubmit: () => void;
   onHistory: () => void;
+  sidebarOpen?: boolean;
+  sidebarDesktop?: boolean;
   onHelp: () => void;
   onNewConversation: () => void;
   onPhotoFile: (file: File | undefined) => void;
@@ -79,9 +81,10 @@ export function HomePage(props: HomePageProps) {
             type='button'
             className='chat-icon-button'
             aria-label={labels.historyLabel}
-            title={labels.historyLabel}
-            aria-haspopup='dialog'
-            aria-controls='ugatan-history-dialog'
+            title={props.sidebarOpen ? labels.sidebarCloseLabel : labels.sidebarOpenLabel}
+            aria-haspopup={props.sidebarDesktop ? undefined : 'dialog'}
+            aria-expanded={props.sidebarOpen ?? false}
+            aria-controls='ugatan-conversation-sidebar'
             onClick={props.onHistory}
           >
             <img className='size-6' src='/home/history.svg' alt='' />

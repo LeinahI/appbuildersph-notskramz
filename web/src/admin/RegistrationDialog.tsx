@@ -19,7 +19,7 @@ export function QrInvitation() {
     </div>
     <p className='admin-description'>{A.qrRequirement}</p>
     <p className='admin-policy'>{A.qrPolicy}</p>
-    <p id='admin-qr-unavailable' className='admin-callout'>{A.backendRequired}</p>
+    <p id='admin-qr-unavailable' className='admin-callout'>{A.actionUnavailable}</p>
     <div className='admin-actions'>
       <button type='button' className='btn' disabled aria-describedby='admin-qr-unavailable'>{A.generateQr}</button>
       <button type='button' className='btn btn-secondary' disabled aria-describedby='admin-qr-unavailable'>{A.regenerateQr}</button>
@@ -106,7 +106,6 @@ export function RegistrationDialog({ onClose }: { onClose: () => void }) {
             <AdminIcon name='arrow' />
           </button>)}
         </div>
-        <p className='admin-privacy'><AdminIcon name='lock' />{A.draftOnly}</p>
       </> : step === 'details' ? <>
         <p className='admin-eyebrow'>{method === 'manual' ? A.manualStep : A.scanStep}</p>
         <p className='admin-description'>{A.detailsDescription}</p>

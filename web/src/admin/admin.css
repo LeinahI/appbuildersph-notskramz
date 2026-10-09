@@ -1,5 +1,5 @@
 /* Isolated admin layout; fonts, colors, buttons and focus treatment come from index.css. */
-.admin-shell, .admin-login, .admin-dialog { --admin-danger: #a23d36; }
+.admin-shell, .admin-dialog { --admin-danger: #a23d36; }
 .admin-shell { min-height: 100dvh; background: var(--color-surface); }
 .admin-sidebar {
   position: fixed; inset: 0 auto 0 0; z-index: 10; width: 13.125rem;
@@ -20,19 +20,16 @@
 .admin-nav a:hover, .admin-nav-action:hover { background: var(--color-leaf-soft); }
 .admin-nav a[aria-current='page'] { color: var(--color-leaf); background: var(--color-leaf-soft); font-weight: var(--ui-label-weight, 600); }
 .admin-nav-action { width: 100%; }
-.admin-connection { display: flex; align-items: start; gap: 10px; margin: 0; padding: 14px 10px; border: 1px solid var(--color-rule); border-radius: 10px; font-size: 0.75rem; line-height: 1.6; color: var(--color-label); }
 .admin-sidebar-bottom { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--color-rule); }
 .admin-workspace { min-width: 0; margin-left: 13.125rem; }
 .admin-header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; min-height: 76px; padding: 12px 28px; border-bottom: 1px solid var(--color-rule); background: var(--color-paper); }
 .admin-breadcrumb { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 0; font-size: 0.8125rem; color: var(--color-label); }
-.admin-preview-badge { margin-left: auto; flex-shrink: 0; border: 1px solid var(--color-rule); border-radius: 5px; padding: 6px 8px; font-size: 0.625rem; letter-spacing: 1px; color: var(--color-label); }
 .admin-menu-button { display: none; }
 .admin-main { max-width: 1500px; padding: 28px; margin: auto; overflow-wrap: anywhere; }
 .admin-page-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
-.admin-page-heading h1, .admin-login h1 { margin: 0; font-family: var(--font-display); font-size: 1.75rem; line-height: 1.4; letter-spacing: -0.8px; font-weight: 800; }
+.admin-page-heading h1 { margin: 0; font-family: var(--font-display); font-size: 1.75rem; line-height: 1.4; letter-spacing: -0.8px; font-weight: 800; }
 .admin-page-heading p:last-child { margin: 10px 0 0; color: var(--color-label); font-size: 0.875rem; line-height: 1.7; }
 .admin-register-button { display: flex; align-items: center; justify-content: center; gap: 9px; flex-shrink: 0; min-height: 48px; font-size: 0.875rem; }
-.admin-preview-notice { margin: 0 0 24px; padding: 12px 16px; border: 1px solid var(--color-rule); background: var(--color-sprout); border-radius: 10px; color: var(--color-label); font-size: 0.8125rem; line-height: 1.6; }
 .admin-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; }
 .admin-metric { min-width: 0; padding: 16px; border: 1px solid var(--color-rule); border-radius: 12px; background: var(--color-paper); }
 .admin-metric > div { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
@@ -57,25 +54,15 @@
 .admin-footer a { text-decoration: underline; text-underline-offset: 4px; }
 .admin-skip-link { position: fixed; left: 16px; top: 12px; z-index: 50; padding: 12px; transform: translateY(-160%); border-radius: 8px; background: var(--color-leaf); color: white; }
 .admin-skip-link:focus { transform: none; }
-.admin-login { display: grid; place-items: center; min-height: 100dvh; padding: 24px 16px; background: var(--color-canvas); }
-.admin-login-card { width: 100%; max-width: 440px; padding: 32px; border: 1px solid var(--color-rule); border-radius: 24px; background: var(--color-surface); }
-.admin-login-card .admin-logo { margin: -12px auto 0; }
-.admin-login-card > .admin-eyebrow { text-align: center; }
-.admin-login-card form { margin-top: 24px; }
 .admin-field { display: grid; min-width: 0; gap: 8px; font-size: 0.875rem; font-weight: var(--ui-label-weight, 600); }
-.admin-field input, .admin-field select, .admin-password input {
+.admin-field input, .admin-field select {
   box-sizing: border-box; width: 100%; min-width: 0; min-height: 48px; border: 1px solid var(--color-line);
   border-radius: 10px; padding: 11px 12px; background: var(--color-paper); color: var(--color-ink); font-size: 1rem; font-weight: var(--ui-body-weight, 400);
 }
-.admin-field input:disabled, .admin-field select:disabled, .admin-password input:disabled { background: var(--color-sprout); color: var(--color-label); cursor: not-allowed; }
+.admin-field input:disabled, .admin-field select:disabled { background: var(--color-sprout); color: var(--color-label); cursor: not-allowed; }
 .admin-field input[aria-invalid='true'] { border-color: var(--admin-danger); }
-.admin-password { position: relative; margin-top: 8px; }
-.admin-password input { padding-right: 60px; }
-.admin-password button { position: absolute; top: 0; right: 4px; display: grid; place-items: center; width: 48px; height: 100%; min-height: 48px; border-radius: 8px; color: var(--color-leaf); }
-.admin-password button:hover { background: var(--color-leaf-soft); }
 .admin-text-button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 8px; border-radius: 8px; color: var(--color-leaf); font-size: 0.875rem; text-decoration: underline; text-underline-offset: 4px; }
 .admin-text-button:disabled { cursor: not-allowed; opacity: .5; }
-.admin-login-card > .admin-text-button { display: flex; margin-top: 8px; }
 .admin-dialog {
   width: calc(100% - 32px); max-width: 460px; max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow-y: auto; overscroll-behavior: contain; margin: auto; padding: 24px 32px 32px; border: 1px solid var(--color-rule);
@@ -153,7 +140,6 @@ html:has(.admin-drawer-right[open]) { overflow: hidden; }
   .admin-table-head { display: none; }
   .admin-panel-heading { padding: 18px; }
   .admin-panel-footer { justify-content: start; }
-  .admin-login-card { padding: 24px; }
   .admin-dialog { padding: 20px; }
   .admin-drawer-right { padding: 0; border-left: 0; }
   .admin-drawer-right .admin-dialog-header { padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 16px calc(16px + env(safe-area-inset-left)); }

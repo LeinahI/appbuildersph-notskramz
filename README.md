@@ -61,7 +61,11 @@ This is a debug build, signed with the local debug key. A build for wider sharin
 
 To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`). `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. A previously saved address on that phone still overrides it. The home page has no hub settings or manual sync controls.
 
-Only the staff portal talks to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`) and open http://localhost:3000/admin/login. Farmers open http://localhost:3000/ and land in the chat with no sign-in. Chat is at `/chat/:conversationId` (bare `/chat` opens the last active or a new chat) with a sidebar kept only on that device. Old `/login` and `/claim` links open the chat.
+Only the staff portal talks to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`) and open http://localhost:3000/admin/login. Farmers open http://localhost:3000/ and land in the chat with no sign-in. Saved chats are at `/chat/:conversationId`; bare `/chat` is always an empty draft, not the last active chat. Chats and their sidebar history stay on that device. Old `/login` and `/claim` links open the chat.
+
+The left header button opens conversations. Desktop screens (1024 px+) have a collapsible panel; tablet/phone screens have a closed-by-default modal drawer. Chat actions offer rename, pin/unpin, and confirmed deletion with inline retry feedback and no success toast. Deleting while searching stays on search.
+
+Both New Chat buttons keep saved conversations, ask before discarding unsent text/photos or unsaved questions, and focus the empty composer. A row is saved only on the first send. Switching/searching also protects unsent drafts. Delayed saves, replies, and photo processing remain tied to the original chat; loading a deep link blocks sends until it resolves and offers retry on failure.
 
 Build and preview the static site. The repo does not yet set up how phones load this built site over Wi-Fi (see Pending decisions, hub network):
 
@@ -85,13 +89,13 @@ make run-api           # http://127.0.0.1:8080
 
 PII columns are AES-GCM ciphertext. ID images never leave the admin browser. Farmers claim with `/claim?token=…` (single-use, default 24h). Revoke users or invites from `/admin`. Confirm retention and LAN TLS with your co-op before production.
 
-## Admin UI preview
+## Admin interfaces
 
-The real staff portal is `/admin` (above, backed by `ws`). Separately, open `/admin.html` on the web dev or preview server for the English login layout. The admin entry is separate from the farmer home page. There is no preview button on login; for frontend QA, open `/admin.html#overview` directly. This is not authenticated access.
+The staff sign-in page is `/admin/login`; it authenticates against `ws` and opens the real staff console at `/admin`. There is no forgot-password control. The older `/admin.html` entry and its `#login` view redirect to this same sign-in page.
 
-This is frontend only: login, registration persistence, ID reading, duplicate checks, QR generation/redemption, and access changes are not connected. These controls explain the missing integration rather than simulating success. No credentials, ID images, sample users, or personal records are stored.
+The separate sidebar dashboard remains at `/admin.html#overview` for layout QA; it is not authenticated access and is not connected to the staff API. Development-status banners have been removed. Unavailable record and invitation controls remain disabled with action-specific guidance rather than simulating success. It contains no sample users or saved personal records.
 
-Manual registration supports consent, draft validation, review, editing, and explicit discard. There is no minimum-age eligibility rule. Drafts live in memory and are lost on reload; the browser is asked to warn before leaving an unfinished draft. Record and QR previews do not create accounts or grant access.
+Manual registration in the sidebar dashboard supports consent, draft validation, review, editing, and explicit discard. There is no minimum-age eligibility rule. Drafts live in memory and are lost on reload; the browser is asked to warn before leaving an unfinished draft. Record and QR previews do not create accounts or grant access. Use the authenticated `/admin` console for actual registration and access management.
 
 ## Text and display preferences
 

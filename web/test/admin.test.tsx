@@ -1,7 +1,7 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AdminApp, Login, adminPage } from '../src/admin/AdminApp';
+import { AdminApp, adminPage } from '../src/admin/AdminApp';
 import { AdminDialog } from '../src/admin/AdminDialog';
 import { RegistrationDialog, QrInvitation } from '../src/admin/RegistrationDialog';
 import { A } from '../src/admin/copy';
@@ -53,6 +53,31 @@ beforeEach(() => {
   hooks.slots = []; hooks.index = 0; hooks.effects = []; onClose.mockClear();
   vi.stubGlobal('requestAnimationFrame', vi.fn());
 });
+describe('admin presentation cleanup', () => {
+  it.each(['overview', 'users', 'qr', 'activity'])('removes development indicators on %s', (page) => {
+    vi.stubGlobal('window', { location: { hash: '#' + page } });
+    expect(renderToStaticMarkup(AdminApp())).not.toMatch(/UI preview|Front.?end only|This preview|admin-preview-|API is not connected/i);
+  });
+  it.each(['', '#login', '#unknown'])('routes the legacy login %s to the canonical staff login', (hash) => {
+    const replace = vi.fn();
+    vi.stubGlobal('window', { location: { hash, replace } });
+    const html = renderToStaticMarkup(AdminApp());
+    expect(html).not.toContain('<input');
+    expect(html).toContain('href="/admin/login"');
+    hooks.effects[1]();
+    expect(replace).toHaveBeenCalledWith('/admin/login');
+  });
+  it('removes the draft-only banner while preserving registration and consent', () => {
+    expect(renderToStaticMarkup(wizard())).not.toContain('Draft only.');
+    fillDraft();
+    const html = renderToStaticMarkup(wizard());
+    expect(html).not.toContain('This preview');
+    expect(html).toContain(A.consent);
+    submitReview();
+    expect(button(wizard(), A.confirm).props.disabled).toBe(true);
+    expect(renderToStaticMarkup(wizard())).toContain('id="admin-save-unavailable"');
+  });
+});
 afterEach(() => vi.unstubAllGlobals());
 
 describe('registration validation without an age cutoff', () => {
@@ -77,7 +102,7 @@ describe('admin pages and backend boundaries', () => {
     const html = renderToStaticMarkup(<AdminApp />);
     expect(html).not.toMatch(/Carla|Elena|Juan Dela|UG-001|18 or older|Simulate/);
     expect(html).not.toContain('figma.com/api/mcp/asset');
-    if (page !== 'login') expect(html).toContain(A.previewNotice);
+    expect(html).not.toMatch(/UI preview|Front.?end only|admin-preview-/i);
   });
   it('falls back to login for unknown fragments', () => {
     expect(adminPage('#admin-main')).toBe('login');
@@ -90,22 +115,6 @@ describe('admin pages and backend boundaries', () => {
     expect(html).toContain('—');
     expect(html).not.toContain('Hub is online');
   });
-  it('does not collect credentials or pretend to authenticate', () => {
-    const view = Login();
-    expect(find(view, (element) => element.props.id === 'admin-username').props.disabled).toBe(true);
-    expect(find(view, (element) => element.props.id === 'admin-password').props.disabled).toBe(true);
-    expect(button(view, A.signIn).props.disabled).toBe(true);
-    const toggle = find(view, (element) => element.type === 'button' && element.props['aria-label'] === A.showPassword);
-    expect(toggle.props['aria-pressed']).toBe(false);
-    expect(find(toggle, (element) => element.type === 'svg').props['aria-hidden']).toBe(true);
-    toggle.props.onClick();
-    hooks.index = 0;
-    const shown = Login();
-    expect(find(shown, (element) => element.props.id === 'admin-password').props.type).toBe('text');
-    expect(find(shown, (element) => element.props['aria-label'] === A.hidePassword).props['aria-pressed']).toBe(true);
-    expect(renderToStaticMarkup(view)).not.toContain('href="#overview"');
-    expect(renderToStaticMarkup(view)).not.toContain('admin-preview-link');
-  });
   it('uses English copy for admin pages, dialogs, and validation', () => {
     expect(A.overview).toBe('Overview');
     expect(A.help).toBe('Help');
@@ -115,7 +124,6 @@ describe('admin pages and backend boundaries', () => {
     expect(A.confirm).toBe('Confirm and save');
     expect(A.discardTitle).toBe('Discard this draft?');
     expect(A.helpSteps[0]).toBe('Choose manual entry or ID scan and ask for the user’s consent.');
-    expect(A.loginDescription).toBe('For Ugatan hub administrators.');
   });
   it('never presents a fake QR or enables access mutations', () => {
     const html = renderToStaticMarkup(<QrInvitation />);
@@ -259,7 +267,8 @@ describe('registration draft interactions', () => {
 
 describe('display preference entry points and draft safety', () => {
   it('keeps display preferences out of the login page', () => {
-    const html = renderToStaticMarkup(Login());
+    vi.stubGlobal('window', { location: { hash: '#login' } });
+    const html = renderToStaticMarkup(AdminApp());
     expect(html).not.toContain('Text &amp; display');
     expect(html).not.toContain('Display preferences');
     expect(html).not.toContain('aria-controls="admin-display"');

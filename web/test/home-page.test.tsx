@@ -67,7 +67,7 @@ describe('Ugatan home page', () => {
   it('offers the symptom picker toggle only once the chat has started', () => {
     const fresh = renderToStaticMarkup(createElement(HomePage, props()));
     const started = renderToStaticMarkup(createElement(HomePage, { ...props(), onSymptoms: () => {}, children: createElement('p', {}, 'Hi') }));
-    expect(fresh).not.toContain('aria-expanded');
+    expect(fresh).not.toContain('aria-label='+JSON.stringify(L.symptomsHeading));
     expect(started).toContain('aria-expanded="false"');
   });
 
@@ -173,7 +173,7 @@ it('identifies the history control as opening the chat dialog', () => {
   const page = HomePage({ ...props(), onHistory });
   const history = findElement(page, (element) => element.props['aria-label'] === 'Mga usapan');
   expect(history?.props['aria-haspopup']).toBe('dialog');
-  expect(history?.props['aria-controls']).toBe('ugatan-history-dialog');
+  expect(history?.props['aria-controls']).toBe('ugatan-conversation-sidebar');
   history?.props.onClick();
   expect(onHistory).toHaveBeenCalledOnce();
 });

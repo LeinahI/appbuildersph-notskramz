@@ -37,11 +37,12 @@ import { AnswerView } from './components/AnswerView';
 import { HelpDialog } from './components/HelpDialog';
 import { HighlightedText } from './components/HighlightedText';
 import { HomePage } from './components/HomePage';
-import { ConversationDialog } from './components/ConversationDialog';
+import { ConfirmDialog } from './components/ConfirmDialog';
+import { useConversationSidebar } from './components/useConversationSidebar';
 import { notify } from './components/ToastHost';
 import { SymptomPicker } from './components/SymptomPicker';
 import { KNOWLEDGE, KNOWLEDGE_BY_ID } from './config/knowledge';
-import { DEFAULT_UI_LANGUAGE, L, localeFor } from './config/labels';
+import { DEFAULT_UI_LANGUAGE, L } from './config/labels';
 import { loadHubUrl } from './config/hub';
 import { loadSetup } from './config/setup';
 import { db, newId, type ConversationRow, type QueuedQuestion } from './lib/db';
@@ -192,8 +193,6 @@ function PhotoNote({ r, reading }: { r: QueuedQuestion; reading: boolean }) {
   );
 }
 
-const SIDEBAR_KEY = 'ugatan.sidebarOpen';
-
 export default function App() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -202,16 +201,9 @@ export default function App() {
   const [text, setText] = useState('');
   const [unsaved, setUnsaved] = useState<QueuedQuestion[]>([]);
   const [conversation, setConversation] = useState<ConversationRow | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    // Open by default on a wide screen, closed on a phone, where it would cover the chat.
-    const wide = typeof window === 'undefined' || !window.matchMedia || window.matchMedia('(min-width: 768px)').matches;
-    try {
-      const saved = localStorage.getItem(SIDEBAR_KEY);
-      return saved === null ? wide : saved === '1' && wide;
-    } catch {
-      return wide;
-    }
-  });
+  const [routeLoadKey, setRouteLoadKey] = useState(0);
+  const [routeLoadFailed, setRouteLoadFailed] = useState(false);
+  const sidebar = useConversationSidebar();
   const [listKey, setListKey] = useState(0);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [ai, setAi] = useState<PhoneAiState>({ status: 'idle', device: '', progress: '', error: '' });
@@ -225,13 +217,20 @@ export default function App() {
   const [highlightNeedle, setHighlightNeedle] = useState('');
   const endOfChat = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
-  const historyDialog = useRef<HTMLDialogElement>(null);
+  const draftDialog = useRef<HTMLDialogElement>(null);
+  const pendingNavigation = useRef<(() => void) | null>(null);
+  const navigationVersion = useRef(0);
+  const currentId = useRef(routeId ?? '');
+  const loadedRoute = useRef<string | null>(null);
+  const draftCreation = useRef<{ version: number; promise: Promise<ConversationRow> } | null>(null);
   const helpDialog = useRef<HTMLDialogElement>(null);
   const scrolledToMatch = useRef('');
 
   const conversationId = conversation?.id ?? '';
   const focusUid = searchParams.get('m') ?? '';
   const focusQ = searchParams.get('q') ?? '';
+
+  useEffect(() => () => { navigationVersion.current++; }, []);
 
   useEffect(() => {
     document.documentElement.lang = DEFAULT_UI_LANGUAGE;
@@ -261,13 +260,31 @@ export default function App() {
 
   // URL is source of truth: load :conversationId, or stay on draft `/chat` with no row.
   useEffect(() => {
+    if (loadedRoute.current === (routeId ?? '')) return;
+    const version = ++navigationVersion.current;
+    const initialLoad = loadedRoute.current === null;
+    loadedRoute.current = null;
+    setRouteLoadFailed(false);
+    if (!initialLoad) { setConversation(null); setText(''); setPhoto(null); }
+    if (!routeId) {
+      loadedRoute.current = '';
+      currentId.current = '';
+      saveActiveConversationId('');
+      return;
+    }
     let cancelled = false;
     void (async () => {
-      const c = await resolveConversation(routeId);
-      if (cancelled) return;
+      let c: ConversationRow | null;
+      try { c = await resolveConversation(routeId); }
+      catch {
+        if (!cancelled && version === navigationVersion.current) { setRouteLoadFailed(true); setNotice(L.chatLoadError); }
+        return;
+      }
+      if (cancelled || version !== navigationVersion.current) return;
+      loadedRoute.current = c?.id ?? '';
+      currentId.current = c?.id ?? '';
+      saveActiveConversationId(c?.id ?? '');
       setConversation(c);
-      setUnsaved([]);
-      setText('');
       setPickerOpen(false);
       setNotice('');
       scrolledToMatch.current = '';
@@ -281,13 +298,13 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [routeId, navigate]);
+  }, [routeId, navigate, routeLoadKey]);
 
-  const syncNow = useCallback(async () => {
+  const syncNow = useCallback(async (version = navigationVersion.current, id = currentId.current) => {
     const result = await syncQueue(hubUrl);
     setHubOnline(result.reachable);
-    if (result.sent) setNotice(L.hubSent(result.sent));
-    await refresh();
+    if (result.sent && version === navigationVersion.current) setNotice(L.hubSent(result.sent));
+    await refresh(id);
   }, [hubUrl, refresh]);
 
   useEffect(() => {
@@ -341,34 +358,32 @@ export default function App() {
     endOfChat.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
   }, [lastKey, highlightUid, focusUid]);
 
-  function toggleSidebar() {
-    setSidebarOpen((o) => {
-      const next = !o;
-      try {
-        localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0');
-      } catch {
-        // ignore
-      }
-      return next;
-    });
-  }
-
   function selectConversation(c: ConversationRow) {
+    setRouteLoadFailed(false);
+    navigationVersion.current++;
+    currentId.current = c.id;
+    loadedRoute.current = c.id;
+    sidebar.closeOnMobile();
     saveActiveConversationId(c.id);
     setConversation(c);
-    setUnsaved([]);
     setText('');
+    setPhoto(null);
     setPickerOpen(false);
-    setNotice('');
+    setNotice(unsaved.some(row => row.conversationId === c.id) ? L.saveError : '');
     if (c.id !== routeId) {
       navigate(`/chat/${c.id}`);
     }
   }
 
   function newChat() {
+    setRouteLoadFailed(false);
+    navigationVersion.current++;
+    currentId.current = '';
+    loadedRoute.current = '';
+    sidebar.closeOnMobile();
     saveActiveConversationId('');
     setConversation(null);
-    setUnsaved([]);
+    setUnsaved(rows => rows.filter(row => row.conversationId !== conversationId));
     setText('');
     setPhoto(null);
     setPickerOpen(false);
@@ -377,20 +392,51 @@ export default function App() {
     setHighlightNeedle('');
     navigate('/chat');
     setListKey((k) => k + 1);
+    requestAnimationFrame(() => document.getElementById('ugatan-question')?.focus());
+  }
+
+  function requestNavigation(proceed: () => void) {
+    if (text.trim() || photo || unsaved.some(row => row.conversationId === conversationId)) {
+      pendingNavigation.current = proceed;
+      draftDialog.current?.showModal();
+    } else proceed();
+  }
+
+  function openSearch() {
+    navigationVersion.current++;
+    sidebar.closeOnMobile();
+    navigate('/search');
   }
 
   async function ask(question: string, symptomId?: string, image?: string) {
+    if (routeId && loadedRoute.current !== routeId) { setNotice(routeLoadFailed ? L.chatLoadError : L.chatLoading); return; }
+    const version = navigationVersion.current;
+    const stillHere = () => version === navigationVersion.current;
     let active = conversation;
     if (!active) {
-      active = await createLocalConversation('Bagong usapan');
-      selectConversation(active);
+      try {
+        if (draftCreation.current?.version !== version) draftCreation.current = { version, promise: createLocalConversation('Bagong usapan') };
+        active = await draftCreation.current.promise;
+      } catch {
+        if (draftCreation.current?.version === version) draftCreation.current = null;
+        if (stillHere()) {
+          setNotice(L.saveError);
+          setText(current => [question, current].filter(Boolean).join('\n'));
+          setPhoto(current => current ?? image ?? null);
+        }
+        return;
+      }
+      if (stillHere()) {
+        currentId.current = active.id;
+        loadedRoute.current = active.id;
+        setConversation(active);
+        saveActiveConversationId(active.id);
+        navigate(`/chat/${active.id}`);
+      }
       setListKey((k) => k + 1);
     }
-    setHighlightUid('');
-    setHighlightNeedle('');
+    if (stillHere()) { setHighlightUid(''); setHighlightNeedle(''); setNotice(''); setPickerOpen(false); }
     const trimmed = question.trim().slice(0, MAX_QUESTION_CHARS);
-    setNotice('');
-    setPickerOpen(false);
 
     // Matching reads everything the farmer has said in this chat, not only this message.
     // A clear match closes a problem, so the next sign is matched on its own, not mixed with one already answered.
@@ -427,36 +473,43 @@ export default function App() {
     };
     let id: number | undefined;
     try {
-      id = await db.questions.add(record);
-      if (messages.length === 0 && active.title === 'Bagong usapan') {
-        const title = trimmed.slice(0, 48);
-        await renameConversation(active.id, title);
-        setConversation({ ...active, title });
-        setListKey((k) => k + 1);
-      }
+      id = await db.transaction('rw', db.conversations, db.questions, async () => {
+        if (!await db.conversations.get(active.id)) return undefined;
+        return db.questions.add(record);
+      });
     } catch {
-      setNotice(L.saveError);
+      if (stillHere()) setNotice(L.saveError);
       setUnsaved((u) => [...u, record]);
+    }
+    if (id !== undefined && messages.length === 0 && active.title === 'Bagong usapan') {
+      const title = trimmed.slice(0, 48);
+      try {
+        await renameConversation(active.id, title);
+        if (stillHere() && currentId.current === active.id) setConversation({ ...active, title });
+        setListKey((k) => k + 1);
+      } catch { /* The saved question remains usable with its existing chat title. */ }
     }
     await refresh(active.id);
 
     // With the phone AI prepared, everything runs on the phone: the photo, the matching (keyword, Gemma's English,
     // and Laya), and the reply. Nothing waits for the hub. Without it, the question waits for the hub.
     if (phoneAi.ready && id !== undefined) {
-      setBusyId(id);
+      if (stillHere()) setBusyId(id);
       try {
-        await answerOnPhone(id, { text: trimmed, plan, picked, image, turns, final });
+        await answerOnPhone(id, { conversationId: active.id, text: trimmed, plan, picked, image, turns, final });
       } catch (err) {
-        setNotice(err instanceof Error ? err.message : String(err));
+        if (stillHere()) setNotice(err instanceof Error ? err.message : String(err));
       } finally {
-        setBusyId(null);
+        setBusyId(current => current === id ? null : current);
       }
     } else if (hubUrl && (await hubReachable(hubUrl))) {
-      if (id !== undefined) setBusyId(id);
+      if (id !== undefined && stillHere()) setBusyId(id);
       try {
-        await syncNow();
+        await syncNow(version, active.id);
+      } catch {
+        if (stillHere()) setNotice(L.aiRequestError);
       } finally {
-        setBusyId(null);
+        setBusyId(current => current === id ? null : current);
       }
     }
     await refresh(active.id);
@@ -470,7 +523,7 @@ export default function App() {
    */
   async function answerOnPhone(
     id: number,
-    q: { text: string; plan: Plan; picked?: KnowledgeEntry; image?: string; turns: ChatTurn[]; final: boolean },
+    q: { conversationId: string; text: string; plan: Plan; picked?: KnowledgeEntry; image?: string; turns: ChatTurn[]; final: boolean },
   ) {
     const { text, plan, picked, image, turns, final } = q;
     const injection = isInjectionAttempt(text);
@@ -480,7 +533,7 @@ export default function App() {
     if (image && !picked && !injection) {
       photo = await readPhotoOnPhone(image, text, plan.crop);
       await db.questions.update(id, { photo: photo.status, photoSigns: photo.signs });
-      await refresh();
+      await refresh(q.conversationId);
     }
     const asked = photo?.status === 'ok' ? `${plan.description.replace(/[.\s]+$/, '')}. ${photo.signs}` : plan.description;
     // The chat reply hears the photo as a marked English note, so it answers in the farmer's language.
@@ -524,7 +577,7 @@ export default function App() {
         matchedOn,
         matcher: phoneLaya.ready ? 'hybrid' : 'keyword',
       });
-      await refresh();
+      await refresh(q.conversationId);
     }
 
     const bestGuess = route === 'match' && entries.length > 0 && !clear && final;
@@ -572,6 +625,7 @@ export default function App() {
   }
 
   function submit() {
+    if (routeId && loadedRoute.current !== routeId) { setNotice(routeLoadFailed ? L.chatLoadError : L.chatLoading); return; }
     const typed = text.trim();
     if (!typed && !photo) return;
     const image = photo ?? undefined;
@@ -582,11 +636,14 @@ export default function App() {
 
   async function onPhotoChosen(file: File | undefined) {
     if (!file) return;
+    const version = navigationVersion.current;
     try {
-      setPhoto(await shrinkPhoto(file));
+      const next = await shrinkPhoto(file);
+      if (version !== navigationVersion.current) return;
+      setPhoto(next);
       setNotice('');
     } catch {
-      notify({ title: L.photoButton, description: L.photoError, type: 'error' });
+      if (version === navigationVersion.current) notify({ title: L.photoButton, description: L.photoError, type: 'error' });
     }
   }
 
@@ -597,13 +654,6 @@ export default function App() {
       setNotice('');
       notify({ title: L.voiceStart, description: message, type: 'error' });
     }
-  }
-
-  /** Scrolls the chat to a question picked in the history dialog. */
-  function showQuestion(question: QueuedQuestion) {
-    historyDialog.current?.close();
-    const index = messages.findIndex((m) => m.uid === question.uid);
-    if (index >= 0) requestAnimationFrame(() => rowVirtualizer.scrollToIndex(index, { align: 'center' }));
   }
 
   function onSymptom(entry: KnowledgeEntry) {
@@ -677,18 +727,22 @@ export default function App() {
     <div className="relative flex h-dvh">
       <Suspense fallback={null}>
         <ConversationSidebar
-          open={sidebarOpen}
+          open={sidebar.open}
+          desktop={sidebar.desktop}
           activeId={conversationId}
           labels={L}
-          onToggle={toggleSidebar}
-          onSelect={selectConversation}
-          onNewChat={newChat}
-          onSearch={() => navigate('/search')}
+          onToggle={sidebar.toggle}
+          onSelect={chat => requestNavigation(() => selectConversation(chat))}
+          onNewChat={() => requestNavigation(newChat)}
+          onSearch={() => requestNavigation(openSearch)}
           onDeleted={async (id) => {
-            if (id === conversationId) {
-              const next = await ensureActiveConversation();
-              if (next) selectConversation(next);
-              else newChat();
+            const version = navigationVersion.current;
+            if (id === currentId.current) {
+              const next = await ensureActiveConversation().catch(() => null);
+              if (version === navigationVersion.current && id === currentId.current) {
+                if (next) selectConversation(next);
+                else newChat();
+              }
             }
             setListKey((k) => k + 1);
             void queryClient.invalidateQueries({ queryKey: ['chat-search'] });
@@ -701,20 +755,22 @@ export default function App() {
       <div className="min-w-0 flex-1">
         <HomePage
           labels={L}
+          sidebarOpen={sidebar.open}
+          sidebarDesktop={sidebar.desktop}
           text={text}
           notice={notice}
           hubUrl={hubUrl}
           photo={photo}
           mainRef={mainRef}
           suggestions={empty ? <SymptomPicker labels={L} onPick={onSymptom} /> : undefined}
-          tray={!empty && pickerOpen ? <SymptomPicker labels={L} onPick={onSymptom} /> : undefined}
+          tray={routeLoadFailed ? <button type='button' className='pill-btn min-h-12' onClick={() => setRouteLoadKey(key => key + 1)}>{L.chatRetryLabel}</button> : !empty && pickerOpen ? <SymptomPicker labels={L} onPick={onSymptom} /> : undefined}
           symptomsOpen={pickerOpen}
           onSymptoms={empty ? undefined : () => setPickerOpen((open) => !open)}
           onTextChange={setText}
           onSubmit={submit}
-          onHistory={() => historyDialog.current?.showModal()}
+          onHistory={sidebar.toggle}
           onHelp={() => helpDialog.current?.showModal()}
-          onNewConversation={newChat}
+          onNewConversation={() => requestNavigation(newChat)}
           onPhotoFile={(file) => void onPhotoChosen(file)}
           onRemovePhoto={() => setPhoto(null)}
           onNotice={voiceNotice}
@@ -723,16 +779,15 @@ export default function App() {
         </HomePage>
       </div>
       <HelpDialog ref={helpDialog} ai={ai} laya={laya} fit={aiFit} onPrepareAi={prepareAi} />
-      <ConversationDialog
-        ref={historyDialog}
-        items={history}
-        labels={L}
-        locale={localeFor(DEFAULT_UI_LANGUAGE)}
-        onNewConversation={() => {
-          historyDialog.current?.close();
-          newChat();
+      <ConfirmDialog
+        ref={draftDialog}
+        copy={{ title: L.newChatConfirmTitle, body: L.newChatConfirmBody, confirm: L.newChatConfirmYes, cancel: L.newChatConfirmNo }}
+        onConfirm={() => {
+          const proceed = pendingNavigation.current;
+          pendingNavigation.current = null;
+          setUnsaved(rows => rows.filter(row => row.conversationId !== conversationId));
+          proceed?.();
         }}
-        onSelect={showQuestion}
       />
     </div>
   );

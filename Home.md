@@ -16,6 +16,11 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-admin-login-dashboard-cleanup]] - kept /admin/login, removed duplicate login/recovery UI and developer banners; build and 319 frontend tests pass, browser and local-model gates remain
+
+- [[2026-10-10-chat-sidebar-refinements-implementation]] - rename/delete dialogs, responsive shared sidebar, quiet actions, and draft-safe New Chat; build/311 frontend tests pass, browser/Android and hub-model gates remain
+- [[2026-10-10-quiet-chat-action-feedback]] - excluded rename/delete/pin/unpin success toasts; sidebar state provides feedback, confirmations and failures remain
+- [[2026-10-10-chat-sidebar-refinement-review]] - mapped merged chat/sidebar gaps and proposed rename modal, quiet mutation feedback, responsive drawer, and protected New Chat flow; awaiting design approval
 - [[2026-10-10-merge-frontend-into-main]] - merged origin/FrontEnd (Figma home UI, admin pages, display preferences, Sileo toasts) into main, keeping no-login /setup, /chat, /search, guardrails
 - [[2026-10-10-toast-auto-dismiss-implementation]] - applied 3-second success and 5-second information toasts with sticky errors; build and 135 frontend tests pass, browser timing QA remains open
 - [[2026-10-10-toast-auto-dismiss-review]] - reviewed existing timers and hover behavior; proposed 3-second confirmations and 5-second information notices, pending approval

@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
+import { L } from '../src/config/labels';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -21,15 +22,16 @@ function renderApp() {
 }
 
 describe('App home composition', () => {
-  it('renders the Tagalog home, help dialog, and separate history dialog', () => {
+  it('renders the Tagalog home, help dialog, sidebar toggle and draft confirmation', () => {
     const html = renderApp();
     expect(html).toContain('id="ugatan-question"');
     expect(html).toContain('src="/UgatanLogo.png"');
     expect(html).toContain('src="/UgatanLogoIcon.svg"');
     expect(html).toContain('aria-label="Tulong"');
     expect(html).toContain('id="ugatan-help-dialog"');
-    expect(html).toContain('aria-labelledby="ugatan-history-heading"');
-    expect(html).toContain('aria-label="Isara ang mga nakaraang usapan"');
+    expect(html).toContain('aria-controls="ugatan-conversation-sidebar"');
+    expect(html).not.toContain('id="ugatan-history-dialog"');
+    expect(html).toContain(L.newChatConfirmTitle);
     expect(html).not.toContain('id="ugatan-language"');
     expect(html).not.toContain('<select');
   });

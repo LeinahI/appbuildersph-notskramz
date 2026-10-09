@@ -45,12 +45,7 @@ export async function ensureActiveConversation(): Promise<ConversationRow | null
     if (existing) return existing;
   }
   const all = await listLocalConversations();
-  if (all[0]) {
-    saveActiveConversationId(all[0].id);
-    return all[0];
-  }
-  saveActiveConversationId('');
-  return null;
+  return all[0] ?? null;
 }
 
 /** Deep-link path for a conversation, or bare `/chat` when no id is known. */
@@ -63,10 +58,7 @@ export function chatHref(id?: string): string {
 export async function resolveConversation(id: string | undefined): Promise<ConversationRow | null> {
   if (!id) return null;
   const existing = await db.conversations.get(id);
-  if (existing) {
-    saveActiveConversationId(existing.id);
-    return existing;
-  }
+  if (existing) return existing;
   // Unknown deep-link id: fall back for delete-nav / stale URLs; bare `/chat` never reaches here.
   return ensureActiveConversation();
 }
@@ -82,22 +74,25 @@ export async function createLocalConversation(title = 'Bagong usapan'): Promise<
     createdAt: now,
   };
   await db.conversations.add(row);
-  saveActiveConversationId(row.id);
+  // The caller selects only after checking that this asynchronous work is still current.
   return row;
 }
 
 export async function renameConversation(id: string, title: string): Promise<void> {
   const trimmed = title.trim();
-  if (!trimmed) return;
-  await db.conversations.update(id, { title: trimmed, updatedAt: new Date().toISOString() });
+  if (!trimmed) throw new Error('A chat title is required');
+  const changed = await db.conversations.update(id, { title: trimmed, updatedAt: new Date().toISOString() });
+  if (!changed) throw new Error('Chat not found');
 }
 
 export async function setPinned(id: string, pinned: boolean): Promise<void> {
-  await db.conversations.update(id, { pinned, updatedAt: new Date().toISOString() });
+  const changed = await db.conversations.update(id, { pinned, updatedAt: new Date().toISOString() });
+  if (!changed) throw new Error('Chat not found');
 }
 
 export async function deleteConversation(id: string): Promise<void> {
   await db.transaction('rw', db.conversations, db.questions, async () => {
+    if (!await db.conversations.get(id)) throw new Error('Chat not found');
     await db.questions.where('conversationId').equals(id).delete();
     await db.conversations.delete(id);
   });

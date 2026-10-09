@@ -38,7 +38,7 @@ body { font-weight: var(--ui-body-weight); }
   --color-accent-hover: #102418;
   --admin-danger: #8b231c;
 }
-:root[data-ui-contrast='high'] :is(.admin-shell, .admin-login, .admin-dialog) { --admin-danger: #8b231c; }
+:root[data-ui-contrast='high'] :is(.admin-shell, .admin-dialog) { --admin-danger: #8b231c; }
 /* Keep the settings frame still while its text grows; scroll content, not the close button. */
 :is(#ugatan-display-dialog, #admin-display) {
   height: min(520px, calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
@@ -73,7 +73,7 @@ body { font-weight: var(--ui-body-weight); }
 .admin-register-button { max-width: 100%; white-space: normal; }
 .admin-dialog-actions { flex-wrap: wrap; }
 .admin-panel-footer { align-items: start; }
-.admin-login-card { overflow-wrap: anywhere; }
+
 .admin-main, .admin-dialog, .chat-dialog { scrollbar-gutter: stable; }
 :root:is([data-ui-text-size='large'], [data-ui-text-size='extra-large']) .admin-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 :root:is([data-ui-text-size='large'], [data-ui-text-size='extra-large']) .admin-form-grid { grid-template-columns: minmax(0, 1fr); }
