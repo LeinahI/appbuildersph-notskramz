@@ -1,0 +1,54 @@
+text,expectedId,lang
+"Ang palay namin sa may sulok nangangamatis ang kulay tapos parang tuyot na, pag sinilip mo sa puno andaming maliliit na insektong tumatalon",bph,tl
+"Ung palay nmin may part na parang luto na sa init, brownish na at tuyo, tas pag tiningnan sa baba madaming lumilipad na maliit na kulisap",bph,taglish
+"pati yung puno ng palay may parang malagkit na itim tapos ang dami ng maliliit na brown na insekto, nagdry yung isang buong area",bph,taglish
+"A round area of my rice field has gone rusty brown and dried up, and small brown jumping insects are crowded at the bottom of the stems",bph,en
+"Yung dahon ng palay may mga mantsa na pahaba at matulis ang dulo, puti-abo sa gitna, tapos nalalanta yung tangkay sa ilalim ng butil",rice-blast,taglish
+"May mga sugat sa dahon na parang hugis bangka, abuhin ang loob at kayumanggi ang gilid, at nangingitim ang puno ng uhay",rice-blast,tl
+"lesions sa leaves na pointed both ends, tas yung leeg ng panicle nangitim at bumagsak yung uhay",rice-blast,taglish
+"The rice leaves have boat-shaped spots that are whitish gray in the middle, and the panicles are falling over because the neck turned dark",rice-blast,en
+"Nagkukulay dayami ang dahon ng palay mula sa dulo pababa sa gilid, at may parang gatas na patak sa umaga",bacterial-leaf-blight,tl
+"Yung leaves ng palay naninilaw from the tip tapos pumuputi, kulot pa yung linya sa gilid, parang napaso",bacterial-leaf-blight,taglish
+"ang dulo ng dahon nanunuyo at puti na, tas basa basa yung itsura sa gilid pag madaling araw",bacterial-leaf-blight,taglish
+"The edges of the rice leaves are drying from the tip down in a wavy yellow-white band, and I see little cloudy drops in the early morning",bacterial-leaf-blight,en
+"Yung suwi ng palay patay yung gitna, pag hinila mo sumasama agad, tapos pag nag-uhay puti lahat walang bigas",stem-borer,taglish
+"Natuyo ang usbong sa gitna ng palay at madaling hilahin, at ang mga uhay ay puti at hungkag",stem-borer,tl
+"my palay center leaf brown na tas natatanggal pag hinila, and the heads stand straight but no grain",stem-borer,taglish
+"In some rice hills the middle leaf has died and slips right out, and the grain heads came out white with nothing inside",stem-borer,en
+"Kinain ang mga bagong lipat na punla, putol hanggang tubig, at may mga kumpol na itlog na rosas sa gilid ng pilapil",golden-apple-snail,tl
+"Ubos yung mga bagong tanim na punla namin, parang may kumain sa may tubig, tas may pink na kumpol sa tangkay at pader",golden-apple-snail,taglish
+"andaming suso sa palayan, kinakain yung mga batang tanim tapos may mapula pulang itlog sa mga tangkay",golden-apple-snail,taglish
+"Something is eating my newly planted rice right at the water surface, and there are bright pink egg masses stuck on the stems",golden-apple-snail,en
+"Gutay-gutay ang dahon ng mais at may parang kusot ng kahoy sa ubod, may higad na itim ang ulo sa loob",fall-armyworm,tl
+"yung mais namin punit punit yung leaves, tapos sa gitna may dumi na parang pinagkataman, may worm na may stripes",fall-armyworm,taglish
+"Grabe yung butas butas sa dahon ng mais, may uod na nakatago sa pinakagitna tsaka maraming dumi",fall-armyworm,taglish
+"The corn leaves look shredded and torn, there is a pile of droppings like wood shavings in the middle, and a striped worm with a dark head is hiding there",fall-armyworm,en
+"Ang tangkay ng mais may mga butas na daanan sa loob at may parang pulbos na dumi, bali-bali na ang iba",asiatic-corn-borer,tl
+"Yung mais nababali yung stalk, pag binuksan mo may hollow na daanan sa loob, at may maliliit na butas na nakahanay sa dahon",asiatic-corn-borer,taglish
+"nababali ung tangkay ng mais tsaka yung bulaklak sa taas, may butas sa katawan ng tangkay",asiatic-corn-borer,taglish
+"My corn stems snap easily and when I split one open there is a hollow channel inside, and the leaves have small holes in a straight line",asiatic-corn-borer,en
+"Maliliit at maputla ang mga batang mais, may mahahabang guhit na dilaw sa dahon at puting balahibo sa ilalim pag umaga",downy-mildew,tl
+"Yung corn seedlings namin bansot, may stripes na light yellow sa leaves tapos may parang white na amag sa likod ng dahon",downy-mildew,taglish
+"pandak ang mais at may puting amag sa ilalim ng dahon tuwing maulan na umaga",downy-mildew,taglish
+"Young corn plants are short and pale with long light yellow stripes, and a white downy coating forms on the underside of the leaves on wet mornings",downy-mildew,en
+"Hindi maganda ang tubo ng palay ko ngayon, ano kaya problema",none,tl
+"Ok naman dati yung mais ko pero ngayon parang may mali, help po",none,taglish
+"My crops do not look healthy this season",none,en
+"Ang humay sa among uma nangalaya ug nangabrown sama sa nasunog, ug daghan kaayong gagmay nga insekto sa punoan sa humay",bph,ceb
+"Naay lingin nga bahin sa humayan nga nauga ug pula-pula na, pag tan-aw nako sa ubos daghang gagmay nga kolor kape nga insekto",bph,ceb
+"Naay mga tulbok sa dahon sa humay nga porma og mata, abuhon ang tunga ug brown ang kilid, ug nangitom ang liog sa uhay",rice-blast,ceb
+"Ang liog sa uhay sa humay nangitom ug nabali, ug ang dahon naay taas nga mantsa nga hait ang tumoy",rice-blast,ceb
+"Ang kilid sa dahon sa humay nauga gikan sa tumoy, nadalag dayon nahimong puti, ug morag basa ang linya",bacterial-leaf-blight,ceb
+"Sa buntag naay gagmay nga tulo nga morag gatas sa dahon sa humay, ug nauga ang tumoy ug kilid sa dahon",bacterial-leaf-blight,ceb
+"Ang tunga nga dahon sa humay nauga ug dali ra ibton, ug ang uhay puti ug walay sulod",stem-borer,ceb
+"Nangamatay ang tunga nga bahin sa tanom nga humay, dali ra kaayo ibton, unya ang uhay nagtindog nga puti ug walay bugas",stem-borer,ceb
+"Gikaon ang bag-ong tanom nga semilya duol sa tubig, ug naay rosas nga itlog nga nagpilit sa punoan",golden-apple-snail,ceb
+"Daghang kuhol sa humayan, giputol ang mga bata nga tanom, ug naay pink nga pundok sa itlog sa kilid sa uma",golden-apple-snail,ceb
+"Gisi-gisi ang dahon sa mais ug naay hugaw nga morag sawdust sa tunga, naay ulod nga itom ang ulo sa sulod",fall-armyworm,ceb
+"Ang leaves sa akong mais daghan og lungag, ug naay ulod nga naay linya nga nagtago sa tunga",fall-armyworm,ceb
+"Ang punoan sa mais naay lungag ug agianan sa sulod, ug ang uban nabali na",asiatic-corn-borer,ceb
+"Nabali ang tukog sa mais ug ang bulak sa ibabaw, naay gagmay nga lungag nga sunod-sunod sa dahon",asiatic-corn-borer,ceb
+"Ang bata nga mais mubo ug luspad, naay taas nga dalag nga linya sa dahon ug puti nga agup-op sa ilawom sa dahon sa buntag",downy-mildew,ceb
+"Dili motubo og maayo ang akong corn, luspad ug naay yellow nga stripes sa dahon, ug naay puti nga morag balhibo sa ilawom inig buntag",downy-mildew,ceb
+"Murag naay sakit akong humay pero wala ko kahibalo unsa",none,ceb
+"Dili maayo ang tubo sa akong mais karon, unsa kaha ni",none,ceb

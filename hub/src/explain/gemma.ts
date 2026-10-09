@@ -57,8 +57,8 @@ export async function createGemmaExplainer(opts: GemmaExplainerOptions): Promise
 
   const enqueue = oneAtATime();
 
-  async function generate({ text, crop, entries }: ExplainInput): Promise<string> {
-    const messages = buildMessages(text, crop, entries, opts.maxWords);
+  async function generate({ text, crop, entries, clear }: ExplainInput): Promise<string> {
+    const messages = buildMessages(text, crop, entries, { maxWords: opts.maxWords, sure: clear });
     const prompt = processor.apply_chat_template(messages, {
       enable_thinking: false,
       add_generation_prompt: true,

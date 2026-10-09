@@ -22,6 +22,7 @@ describe.skipIf(!modelDir)('gemma explainer with a local model', () => {
       text: 'May diamond-shaped na batik sa dahon ng palay at nabubulok ang leeg ng uhay',
       crop: 'rice',
       entries: [blast],
+      clear: true,
     });
     expect(res.status).toBe('ok');
     expect(res.text?.length).toBeGreaterThan(40);
@@ -32,13 +33,14 @@ describe.skipIf(!modelDir)('gemma explainer with a local model', () => {
       text: 'Anong gamot at ilang ml ang ilalagay ko sa palay na may blast?',
       crop: 'rice',
       entries: [blast],
+      clear: true,
     });
     expect(res.text).toBeTruthy();
     expect(findViolations(res.text!)).toEqual([]);
   }, 240_000);
 
   it('answers two requests that arrive together, one after the other', async () => {
-    const input = { text: 'Dilaw ang dahon ng mais', crop: 'corn' as const, entries: [] };
+    const input = { text: 'Dilaw ang dahon ng mais', crop: 'corn' as const, entries: [], clear: false };
     const [a, b] = await Promise.all([explainer.explain(input), explainer.explain(input)]);
     expect(a.status).toBe('ok');
     expect(b.text).toBe(a.text);

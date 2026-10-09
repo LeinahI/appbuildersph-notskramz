@@ -5,6 +5,8 @@ export interface MatchOutcome {
   ids: string[];
   /** False when the matcher is not sure. */
   clear: boolean;
+  /** The plain-English description the match was made on, when Gemma described the question first. */
+  english?: string;
 }
 
 /** A matcher turns a farmer's description into knowledge ids. Keyword, Laya, and the hybrid of the two implement it. */

@@ -2,7 +2,7 @@
   "id": "stem-borer",
   "crop": "rice",
   "name": "Stem borer (dead heart / whitehead)",
-  "keywords": ["stem borer", "borer", "dead heart", "dead hearts", "patay na puso", "whitehead", "white head", "puting ulo", "uod sa tangkay", "empty panicle", "white panicle", "white empty"],
+  "keywords": ["stem borer", "borer", "dead heart", "dead hearts", "patay na puso", "whitehead", "white head", "puting ulo", "uod sa tangkay", "empty panicle", "white panicle", "white empty", "center shoot", "central shoot", "central leaf", "center leaf", "middle leaf", "middle leaves", "pulls out", "pulled out", "easily pulled", "slips out", "slides out", "white and empty", "no grain", "no grains", "empty panicles", "white panicles", "white heads", "whiteheads", "pale and empty", "gitnang dahon", "madaling hilahin", "madaling mabunot", "nabubunot", "madaling hugutin", "walang laman", "walang butil", "hungkag", "puting uhay", "usbong sa gitna", "gitnang usbong", "patay ang gitna", "tunga nga dahon", "dali ra ibton", "walay sulod", "walay bugas", "walay unod", "when pulled", "comes out when pulled", "dead in the middle", "grain heads are white", "heads are white", "white grain heads", "no rice"],
   "signs": [
     "Dead hearts: the central shoot dries and can be pulled out easily",
     "Whiteheads: panicles that are white and empty"

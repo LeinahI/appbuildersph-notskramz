@@ -1,5 +1,6 @@
 import {
   findViolations,
+  notesToExplain,
   type AskRequest,
   type AskResponse,
   type Crop,
@@ -32,13 +33,27 @@ export interface AnswerDeps {
   logger: Logger;
 }
 
-/** Runs matching, then the explanation, and returns what the phone needs. Every step is logged. */
+/**
+ * Runs matching, then the explanation, and returns what the phone needs. Every step is logged.
+ *
+ * The matcher (keyword, Laya, or hybrid) decides which problem it is and whether it is sure. The explainer
+ * (Gemma) only puts that decision into Taglish: a sure match gets the top note only, a match that is not sure
+ * gets the candidates and is told so, and no match skips the explainer, because there is nothing to explain.
+ */
 export async function answerQuestion(req: AskRequest, deps: AnswerDeps): Promise<AskResponse> {
   const { matcher, explainer, knowledge, logger } = deps;
   logger.write({ event: 'question', uid: req.uid, crop: req.crop, text: req.text });
 
   const outcome = await matcher.match(req.text, req.crop);
-  logger.write({ event: 'match', uid: req.uid, matcher: matcher.name, ids: outcome.ids, clear: outcome.clear });
+  logger.write({
+    event: 'match',
+    uid: req.uid,
+    matcher: matcher.name,
+    ids: outcome.ids,
+    clear: outcome.clear,
+    // Kept so the team can check Gemma's English against the farmer's words.
+    ...(outcome.english ? { english: outcome.english } : {}),
+  });
 
   if (outcome.ids.length === 0) {
     logger.write({ event: 'escalation', uid: req.uid, reason: 'no-match' });
@@ -51,21 +66,31 @@ export async function answerQuestion(req: AskRequest, deps: AnswerDeps): Promise
 
   let status: AskResponse['explanationStatus'] = 'unavailable';
   let explanation: string | null = null;
-  try {
-    const result = await explainer.explain({ text: req.text, crop: req.crop, entries });
-    if (result.status === 'ok' && result.text?.trim()) {
-      if (findViolations(result.text).length === 0) {
-        status = 'ok';
-        explanation = result.text.trim();
-      } else {
-        // Guardrail: a brand name or dosage never leaves the hub.
-        status = 'blocked';
+  if (entries.length === 0) {
+    // The phone shows its own "no match, call the agriculturist" line. The model would only repeat it, slower.
+    logger.write({ event: 'explanation', uid: req.uid, status: 'skipped-no-match', chars: 0 });
+  } else {
+    try {
+      const result = await explainer.explain({
+        text: req.text,
+        crop: req.crop,
+        entries: notesToExplain(entries, outcome.clear),
+        clear: outcome.clear,
+      });
+      if (result.status === 'ok' && result.text?.trim()) {
+        if (findViolations(result.text).length === 0) {
+          status = 'ok';
+          explanation = result.text.trim();
+        } else {
+          // Guardrail: a brand name or dosage never leaves the hub.
+          status = 'blocked';
+        }
       }
+    } catch (err) {
+      logger.write({ event: 'error', where: 'explain', message: err instanceof Error ? err.message : String(err) });
     }
-  } catch (err) {
-    logger.write({ event: 'error', where: 'explain', message: err instanceof Error ? err.message : String(err) });
+    logger.write({ event: 'explanation', uid: req.uid, status, chars: explanation?.length ?? 0 });
   }
-  logger.write({ event: 'explanation', uid: req.uid, status, chars: explanation?.length ?? 0 });
 
   return {
     uid: req.uid,

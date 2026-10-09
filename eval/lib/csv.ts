@@ -1,4 +1,6 @@
-export type Lang = 'en' | 'tl' | 'taglish';
+/** en English, tl Tagalog, taglish Tagalog-English mix, ceb Cebuano (Bisaya), including Cebuano-English mix. */
+export type Lang = 'en' | 'tl' | 'taglish' | 'ceb';
+export const LANGS: readonly Lang[] = ['en', 'tl', 'taglish', 'ceb'];
 
 export interface EvalRow {
   text: string;
@@ -49,9 +51,9 @@ export function parseEvalCsv(source: string): EvalRow[] {
   return body.map((cols, i) => {
     const [text, expectedId, lang] = cols.map((c) => c.trim());
     if (!text || !expectedId) throw new Error(`eval CSV row ${i + 2} is missing text or expectedId`);
-    if (lang !== 'en' && lang !== 'tl' && lang !== 'taglish') {
-      throw new Error(`eval CSV row ${i + 2}: lang must be en, tl, or taglish. Got "${lang}".`);
+    if (!LANGS.includes(lang as Lang)) {
+      throw new Error(`eval CSV row ${i + 2}: lang must be ${LANGS.join(', ')}. Got "${lang}".`);
     }
-    return { text, expectedId, lang };
+    return { text, expectedId, lang: lang as Lang };
   });
 }

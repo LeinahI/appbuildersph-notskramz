@@ -11,10 +11,10 @@
             "id": "8309c1e19993da95",
             "type": "leaf",
             "state": {
-              "type": "empty",
+              "type": "graph",
               "state": {},
-              "icon": "lucide-file",
-              "title": "New tab"
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
             }
           }
         ]
@@ -182,5 +182,19 @@
     }
   },
   "active": "8309c1e19993da95",
-  "lastOpenFiles": []
+  "lastOpenFiles": [
+    "2026-10-09-push-all-to-main.md",
+    "2026-10-09-push-all-to-main.md.tmp.36164.0bed49bf55b6",
+    "2026-10-09-backend-recommendation.md",
+    "2026-10-09-multilingual-matching.md",
+    "2026-10-09-readme-local-ai-setup.md",
+    "2026-10-09-readme-local-ai-setup.md.tmp.57220.829f81e0dabb",
+    "2026-10-09-laya-gemma-roles.md",
+    "2026-10-09-laya-webgpu-speed.md",
+    "sed2Qt47J",
+    "2026-10-09-gemma-llamacpp-speed.md",
+    "2026-10-09-gemma-llamacpp-speed.md.tmp.37712.6125f31d5977",
+    "2026-10-09-gemma-english-to-bicolano.md",
+    "2026-10-09-laya-option-text-fix.md"
+  ]
 }

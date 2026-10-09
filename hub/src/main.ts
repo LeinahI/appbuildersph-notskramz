@@ -5,7 +5,7 @@ import { createGemmaLlamaCppExplainer } from './explain/gemma-llamacpp.js';
 import { offExplainer, type Explainer } from './explain/index.js';
 import { fileLogger } from './log.js';
 import { createKeywordMatcher } from './matchers/keyword.js';
-import { createHybridMatcher } from './matchers/hybrid.js';
+import { createHybridMatcher, type Describe } from './matchers/hybrid.js';
 import { createLayaMatcher } from './matchers/laya.js';
 import type { Matcher } from './matchers/index.js';
 import { loadKnowledge } from './knowledge.js';
@@ -16,6 +16,37 @@ async function main(): Promise<void> {
   const config = loadConfig();
   const knowledge = loadKnowledge(new URL('../../knowledge/', import.meta.url));
   const logger = fileLogger(config.logDir);
+
+  // Gemma loads first, so the hybrid matcher can use it to put Tagalog, Cebuano, and reworded questions into English.
+  let explainer: Explainer = offExplainer;
+  let describe: Describe | undefined;
+  if (config.explainer === 'gemma') {
+    try {
+      if (config.gemmaRuntime === 'llamacpp') {
+        const gemma = await createGemmaLlamaCppExplainer({
+          modelPath: config.gemmaGguf!,
+          maxNewTokens: config.gemmaMaxNewTokens,
+          maxWords: config.gemmaMaxWords,
+        });
+        explainer = gemma;
+        describe = gemma.describe;
+      } else {
+        // The ONNX route takes 12 s or more per call, too slow to also describe before matching.
+        explainer = await createGemmaExplainer({
+          modelDir: config.gemmaModelDir!,
+          dtype: config.gemmaDtype,
+          device: config.gemmaDevice,
+          maxNewTokens: config.gemmaMaxNewTokens,
+          maxWords: config.gemmaMaxWords,
+        });
+      }
+    } catch (err) {
+      // The explanation is optional. Keep answering with the matched notes only.
+      const message = err instanceof Error ? err.message : String(err);
+      logger.write({ event: 'error', where: 'gemma-load', message });
+      console.warn(`Gemma failed to load, answering without an AI explanation: ${message}`);
+    }
+  }
 
   // Keyword matching is always loaded. It is the fallback if Laya is off or fails.
   const keyword = createKeywordMatcher(knowledge);
@@ -28,37 +59,15 @@ async function main(): Promise<void> {
         confidenceThreshold: config.layaConfidenceThreshold!,
         device: config.layaDevice,
       });
-      matcher = config.matcher === 'hybrid' ? createHybridMatcher(keyword, laya) : laya;
+      matcher =
+        config.matcher === 'hybrid'
+          ? createHybridMatcher(keyword, laya, { describe, englishKeyword: createKeywordMatcher(knowledge, { minScore: 2 }) })
+          : laya;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.write({ event: 'error', where: 'laya-load', message });
       if (!config.layaFallbackToKeyword) throw err;
       console.warn(`Laya failed to load, using keyword matching: ${message}`);
-    }
-  }
-
-  let explainer: Explainer = offExplainer;
-  if (config.explainer === 'gemma') {
-    try {
-      explainer =
-        config.gemmaRuntime === 'llamacpp'
-          ? await createGemmaLlamaCppExplainer({
-              modelPath: config.gemmaGguf!,
-              maxNewTokens: config.gemmaMaxNewTokens,
-              maxWords: config.gemmaMaxWords,
-            })
-          : await createGemmaExplainer({
-              modelDir: config.gemmaModelDir!,
-              dtype: config.gemmaDtype,
-              device: config.gemmaDevice,
-              maxNewTokens: config.gemmaMaxNewTokens,
-              maxWords: config.gemmaMaxWords,
-            });
-    } catch (err) {
-      // The explanation is optional. Keep answering with the matched notes only.
-      const message = err instanceof Error ? err.message : String(err);
-      logger.write({ event: 'error', where: 'gemma-load', message });
-      console.warn(`Gemma failed to load, answering without an AI explanation: ${message}`);
     }
   }
 

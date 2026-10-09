@@ -49,7 +49,7 @@ export function scoreRun(rows: readonly EvalRow[], predictions: readonly Predict
   if (rows.length !== predictions.length) throw new Error('rows and predictions must be the same length');
   const report: Report = {
     overall: emptyTally(),
-    byLang: { en: emptyTally(), tl: emptyTally(), taglish: emptyTally() },
+    byLang: { en: emptyTally(), tl: emptyTally(), taglish: emptyTally(), ceb: emptyTally() },
   };
   rows.forEach((row, i) => {
     const outcome = outcomeFor(row.expectedId, predictions[i]);

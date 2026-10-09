@@ -1,5 +1,6 @@
 // Scores keyword matching and Laya side by side on eval/descriptions.csv.
-// Run from the hub folder: pnpm eval [-- --file descriptions-paraphrase.csv]
+// Run from the hub folder: pnpm eval [-- --file descriptions-paraphrase.csv] [--describe]
+// --describe also scores hybrid with Gemma putting each unclear question into English first (needs GEMMA_GGUF).
 // Laya's default bundle is about 1.69 GB. The run downloads it only with --allow-download,
 // or uses a local bundle when LAYA_MODEL_DIR is set.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -8,14 +9,16 @@ import { loadConfig } from '../hub/src/config.js';
 import { loadEnvFile } from '../hub/src/env.js';
 import { loadKnowledge } from '../hub/src/knowledge.js';
 import { createKeywordMatcher } from '../hub/src/matchers/keyword.js';
+import { createGemmaLlamaCppExplainer } from '../hub/src/explain/gemma-llamacpp.js';
 import { createHybridMatcher } from '../hub/src/matchers/hybrid.js';
 import { createLayaMatcher } from '../hub/src/matchers/laya.js';
 import type { Matcher } from '../hub/src/matchers/index.js';
-import { parseEvalCsv, type EvalRow, type Lang } from './lib/csv.js';
+import { LANGS, parseEvalCsv, type EvalRow } from './lib/csv.js';
 import { outcomeFor, rate, scoreRun, type Prediction, type Report } from './lib/score.js';
 
 const here = new URL('.', import.meta.url);
 const allowDownload = process.argv.includes('--allow-download');
+const withDescribe = process.argv.includes('--describe');
 // --file <name> scores another labeled CSV in eval/ (default descriptions.csv).
 const fileFlag = process.argv.indexOf('--file');
 const csvName = fileFlag >= 0 ? (process.argv[fileFlag + 1] ?? 'descriptions.csv') : 'descriptions.csv';
@@ -39,12 +42,11 @@ async function predictAll(matcher: Matcher): Promise<Prediction[]> {
 }
 
 function printReport(title: string, report: Report): void {
-  const langs: Lang[] = ['en', 'tl', 'taglish'];
   const line = (label: string, t: Report['overall']) =>
     `${label.padEnd(9)} ${String(t.total).padStart(5)} ${rate(t.correct, t.total).padStart(9)} ${rate(t.wrong, t.total).padStart(9)} ${rate(t.notSure, t.total).padStart(9)}`;
   console.log(`\n${title}`);
   console.log(`${'lang'.padEnd(9)} ${'rows'.padStart(5)} ${'correct'.padStart(9)} ${'wrong'.padStart(9)} ${'not sure'.padStart(9)}`);
-  for (const l of langs) console.log(line(l, report.byLang[l]));
+  for (const l of LANGS) console.log(line(l, report.byLang[l]));
   console.log(line('all', report.overall));
 }
 
@@ -55,7 +57,7 @@ async function main() {
   printReport(`Keyword matching, ${rows.length} labeled descriptions`, keywordReport);
 
   const results: Record<string, unknown> = { rows: rows.length, keyword: keywordReport };
-  const runs: { key: 'laya' | 'hybrid'; report: Report; predictions: Prediction[] }[] = [];
+  const runs: { key: 'laya' | 'hybrid' | 'hybridDescribe'; report: Report; predictions: Prediction[] }[] = [];
 
   const layaAllowed = Boolean(config.layaModelDir) || allowDownload;
   if (!layaAllowed) {
@@ -82,6 +84,27 @@ async function main() {
       results.hybrid = hybridReport;
       printReport(`Hybrid (keyword first, then Laya), confidence threshold ${confidenceThreshold}${note}`, hybridReport);
       runs.push({ key: 'hybrid', report: hybridReport, predictions: hybridPredictions });
+
+      if (withDescribe) {
+        if (!config.gemmaGguf) {
+          console.log('\nHybrid with describe skipped. Set GEMMA_GGUF to the Gemma 4 .gguf file.');
+        } else {
+          const gemma = await createGemmaLlamaCppExplainer({
+            modelPath: config.gemmaGguf,
+            maxNewTokens: config.gemmaMaxNewTokens,
+            maxWords: config.gemmaMaxWords,
+          });
+          const describedPredictions = await predictAll(createHybridMatcher(keywordMatcher, laya, {
+              describe: gemma.describe,
+              englishKeyword: createKeywordMatcher(knowledge, { minScore: 2 }),
+            }));
+          const describedReport = scoreRun(rows, describedPredictions);
+          results.hybridDescribe = describedReport;
+          results.hybridDescribeEnglish = describedPredictions.map((p, i) => ({ text: rows[i]!.text, english: (p as { english?: string }).english ?? null }));
+          printReport(`Hybrid with Gemma describing first, confidence threshold ${confidenceThreshold}${note}`, describedReport);
+          runs.push({ key: 'hybridDescribe', report: describedReport, predictions: describedPredictions });
+        }
+      }
     } catch (err) {
       console.log(`\nLaya failed to load: ${err instanceof Error ? err.message : String(err)}`);
     }

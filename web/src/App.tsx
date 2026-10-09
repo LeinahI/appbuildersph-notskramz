@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   buildMessages,
   matchKeywords,
+  notesToExplain,
   type Crop,
   type KnowledgeEntry,
 } from '@ugatan/shared';
@@ -95,7 +96,8 @@ export default function App() {
     // Phone AI, if the farmer prepared it. Otherwise the question waits for the hub.
     if (phoneAi.ready && id !== undefined) {
       try {
-        const raw = await phoneAi.generate(buildMessages(trimmed, crop, entries));
+        // Keyword matching decided the problem. The phone model only explains it, and is told when the match is not sure.
+        const raw = await phoneAi.generate(buildMessages(trimmed, crop, notesToExplain(entries, clear), { sure: clear }));
         await db.questions.update(id, {
           status: 'answered',
           explanation: raw,
