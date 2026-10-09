@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hub",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@ugatan/hub", "start"],
+      "port": 8787
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@ugatan/web", "dev"],
+      "port": 3000
+    }
+  ]
+}

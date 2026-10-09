@@ -32,6 +32,10 @@ export default defineConfig({
       },
     }),
   ],
+  // Always http://localhost:3000, for `pnpm dev` and `preview`. strictPort stops with an error when 3000 is taken
+  // instead of moving to another port.
+  server: { port: 3000, strictPort: true },
+  preview: { port: 3000, strictPort: true },
   worker: { format: 'es' },
   build: { target: 'es2022' },
 });

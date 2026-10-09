@@ -25,7 +25,7 @@ pnpm install
 pnpm dev
 ```
 
-Open http://localhost:5173. Keyword matching works right away. Offline reloads (no network after the first load) apply to the built site, not to `pnpm dev`, where the service worker is off.
+Open http://localhost:3000. The port is fixed in `web/vite.config.ts` for `pnpm dev` and `preview`; if something else is using 3000, the command stops with an error instead of picking another port. Keyword matching works right away. Offline reloads (no network after the first load) apply to the built site, not to `pnpm dev`, where the service worker is off.
 
 The phone AI is optional. To turn it on, tap **Ihanda ang AI**. That downloads Gemma 4 E2B (`onnx-community/gemma-4-E2B-it-ONNX`, q4f16, text-only) from Hugging Face. It is about 3.1 GB, so the first time it needs a network. The phone tries WebGPU first and falls back to WebAssembly on the CPU, which is slower. The model is held in memory, so a page reload starts at idle and the button shows again.
 

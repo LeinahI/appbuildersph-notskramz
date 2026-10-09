@@ -10,7 +10,7 @@ import { AnswerView } from './components/AnswerView';
 import { QueueList } from './components/QueueList';
 import { SymptomPicker } from './components/SymptomPicker';
 import { VoiceInput } from './components/VoiceInput';
-import { KNOWLEDGE } from './config/knowledge';
+import { KNOWLEDGE, KNOWLEDGE_BY_ID } from './config/knowledge';
 import { L } from './config/labels';
 import { PHONE_MODEL } from './config/models';
 import { DEFAULT_HUB_URL, loadHubUrl, saveHubUrl } from './config/hub';
@@ -135,7 +135,14 @@ export default function App() {
   const explanation = record?.explanation ?? null;
   const explanationStatus = record?.explanationStatus;
   const waitingForHub = !!record && record.status === 'queued' && !phoneAi.ready;
-  const currentEntries = current?.entries ?? [];
+  // Once the hub answers a typed question, show the hub's match. Its explanation is about those notes, and with
+  // Gemma and Laya it reads wordings and languages the phone's keywords miss. A tapped picture keeps the farmer's pick.
+  const hubEntries =
+    record?.hubMatchIds && !record.symptomId
+      ? record.hubMatchIds.map((id) => KNOWLEDGE_BY_ID.get(id)).filter((e): e is KnowledgeEntry => e !== undefined)
+      : null;
+  const currentEntries = hubEntries ?? current?.entries ?? [];
+  const currentClear = hubEntries ? (record?.hubClear ?? false) : (current?.clear ?? false);
   const aiLabel =
     ai.status === 'idle'
       ? L.phoneAiIdle
@@ -187,7 +194,7 @@ export default function App() {
           <h2 className="mt-1 mb-2 text-[1.1rem] font-bold">{L.matchesHeading}</h2>
           <AnswerView
             matches={currentEntries}
-            clear={current.clear}
+            clear={currentClear}
             explanation={explanation}
             explanationStatus={explanationStatus}
             waitingForHub={waitingForHub}

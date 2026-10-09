@@ -18,6 +18,10 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-09-run-pnpm-dev]] - Ran pnpm dev; dev server up at localhost:3000
+
+- [[2026-10-09-web-port-3000]] - web app fixed to http://localhost:3000 (strictPort); all dev servers stopped, but a peer session keeps restarting the old clone on 5173
+- [[2026-10-09-connect-web-to-hub]] - hub on 8787 connected to the web app (5174 old clone, 5175 this repo); the app now shows the hub's match once it answers
 - [[2026-10-09-backend-recommendation]] - research only: keep the Node/TypeScript hub as the backend; add SQLite on the hub if logs need queries; no cloud or BaaS on the answer path
 - [[2026-10-09-push-all-to-main]] - committed and pushed all pending work to main; build and tests not run at the user's request
 - [[2026-10-09-multilingual-matching]] - Tagalog, Taglish, Cebuano (Bisaya), and English questions: new keywords plus Gemma's English before matching; blind-ish holdout2 52.8% to 97.2% right, 0 wrong

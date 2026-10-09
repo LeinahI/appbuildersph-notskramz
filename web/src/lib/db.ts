@@ -18,6 +18,9 @@ export interface QueuedQuestion {
   explanation?: string | null;
   explanationStatus?: 'ok' | 'blocked' | 'unavailable' | 'phone';
   matcher?: 'keyword' | 'laya' | 'hybrid';
+  /** The hub's match, once it answered. The hub's explanation is about these notes, so the app shows them. */
+  hubMatchIds?: string[];
+  hubClear?: boolean;
   answeredAt?: string;
   lastError?: string;
 }

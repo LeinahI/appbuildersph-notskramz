@@ -38,6 +38,8 @@ export async function syncQueue(hubUrl: string): Promise<{ sent: number; failed:
         explanation: data.explanation,
         explanationStatus: data.explanationStatus,
         matcher: data.matcher,
+        hubMatchIds: data.matchIds,
+        hubClear: data.clear,
         answeredAt: new Date().toISOString(),
         lastError: undefined,
       });
