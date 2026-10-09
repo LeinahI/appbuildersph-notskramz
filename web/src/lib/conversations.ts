@@ -59,6 +59,24 @@ export async function ensureActiveConversation(): Promise<ConversationRow> {
   return createLocalConversation('Bagong usapan');
 }
 
+/** Deep-link path for a conversation, or bare `/chat` when no id is known. */
+export function chatHref(id?: string): string {
+  const resolved = id ?? loadActiveConversationId();
+  return resolved ? `/chat/${resolved}` : '/chat';
+}
+
+/** Load by URL id when present; otherwise last-active / latest / create. */
+export async function resolveConversation(id: string | undefined): Promise<ConversationRow> {
+  if (id) {
+    const existing = await db.conversations.get(id);
+    if (existing) {
+      saveActiveConversationId(existing.id);
+      return existing;
+    }
+  }
+  return ensureActiveConversation();
+}
+
 export async function createLocalConversation(title = 'Bagong usapan'): Promise<ConversationRow> {
   const now = new Date().toISOString();
   const row: ConversationRow = {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, type FormEvent, type ReactNode } from 'react';
 import { DEFAULT_UI_LANGUAGE, type Labels } from '../config/labels';
 import { photoSrc } from '../lib/photo';
+import { LogoutConfirmDialog } from './LogoutConfirmDialog';
 import { VoiceInput } from './VoiceInput';
 
 export interface HomePageProps {
@@ -84,17 +85,22 @@ export function HomePage(props: HomePageProps) {
             <img className='size-6' src='/home/new-chat.svg' alt='' />
           </button>
           {props.onLogout && (
-            <button
-              type='button'
-              className='chat-icon-button'
-              aria-label='Log out'
-              title='Log out'
-              onClick={props.onLogout}
-            >
-              <svg className='size-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.7' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'>
-                <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9' />
-              </svg>
-            </button>
+            <LogoutConfirmDialog
+              triggerClassName='chat-icon-button bg-leaf-soft'
+              copy={{
+                label: labels.logoutLabel,
+                title: labels.logoutConfirmTitle,
+                body: labels.logoutConfirmBody,
+                confirm: labels.logoutConfirmYes,
+                cancel: labels.logoutConfirmNo,
+              }}
+              onConfirm={props.onLogout}
+              trigger={
+                <svg className='size-5' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.7' strokeLinecap='round' strokeLinejoin='round' aria-hidden='true'>
+                  <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9' />
+                </svg>
+              }
+            />
           )}
           <button
             type='button'

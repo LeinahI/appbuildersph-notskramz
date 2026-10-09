@@ -1,4 +1,5 @@
 import { Link, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { LogoutConfirmDialog } from '../../components/LogoutConfirmDialog';
 import { loadAdminToken, saveAdminToken } from '../../config/ws';
 
 export function RequireAdmin({ children }: { children: React.ReactNode }) {
@@ -7,6 +8,14 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
   }
   return <>{children}</>;
 }
+
+const ADMIN_LOGOUT_COPY = {
+  label: 'Log out',
+  title: 'Log out?',
+  body: 'You will leave the admin console. Sign in again to manage users and invites.',
+  confirm: 'Log out',
+  cancel: 'Cancel',
+} as const;
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -34,9 +43,7 @@ export default function AdminLayout() {
               Audit
             </Link>
           </nav>
-          <button type="button" className="pill-btn" onClick={logout}>
-            Log out
-          </button>
+          <LogoutConfirmDialog copy={ADMIN_LOGOUT_COPY} onConfirm={logout} />
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-6">

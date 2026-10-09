@@ -16,6 +16,8 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-logout-confirm-modal]] - farmer + admin Log out opens a confirm dialog before signing out
+- [[2026-10-10-chat-conversation-urls]] - farmer chats use `/chat/:conversationId` deep links; bare `/chat` redirects to last active
 - [[2026-10-09-merge-main-into-go-backend]] - merged main into go-backend for PR 1: main's home UI with the sidebar and log-out ported on, lockfile fixed
 - [[2026-10-09-ws-docker-init]] - how to init `ws`: Docker Postgres on 5433, migrate, seed, run-api (plus commit-message draft note)
 - [[2026-10-09-remove-settings-auto-hub]] - removed settings/Ihanda ang AI; hub defaults to 127.0.0.1:8787
