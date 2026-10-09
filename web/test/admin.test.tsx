@@ -91,13 +91,13 @@ describe('admin pages and backend boundaries', () => {
     expect(html).toContain('—');
     expect(html).not.toContain('Hub is online');
   });
-  it('sends an already-signed-in preview login to the SPA /admin shell', () => {
+  it('sends an already-signed-in preview login to the SPA /admin/overview shell', () => {
     const replace = vi.fn();
     vi.stubGlobal('window', { location: { replace, hash: '#login' } });
     const token = vi.spyOn(ws, 'loadAdminToken').mockReturnValue('jwt-token');
     Login();
     for (const effect of hooks.effects) effect();
-    expect(replace).toHaveBeenCalledWith('/admin');
+    expect(replace).toHaveBeenCalledWith('/admin/overview');
     token.mockRestore();
   });
   it('collects admin email and password for ws login', () => {
