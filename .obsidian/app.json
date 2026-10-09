@@ -1,0 +1,21 @@
+{
+  "userIgnoreFilters": [
+    "ugatan/node_modules/",
+    "ugatan/web/node_modules/",
+    "ugatan/hub/node_modules/",
+    "ugatan/shared/node_modules/",
+    "appbuildersph-notskramz/core/node_modules/",
+    "ugatan/web/dist/",
+    "ugatan/hub/dist/",
+    "ugatan/shared/dist/",
+    "appbuildersph-notskramz/core/dist/",
+    "ugatan/web/public/models/",
+    "ugatan/hub/logs/",
+    "ugatan/hub/data/",
+    "ugatan/eval/results/"
+  ],
+  "newLinkFormat": "relative",
+  "useMarkdownLinks": true,
+  "alwaysUpdateLinks": true,
+  "promptDelete": true
+}
