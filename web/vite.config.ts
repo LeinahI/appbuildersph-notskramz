@@ -49,9 +49,9 @@ export default defineConfig(({ mode }) => ({
       // the knowledge base, and the fonts are bundled, the phone model comes from the hub, and the runtime from /ort/.
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Ugatan: Offline na Payo para sa Palay at Mais',
+        name: 'Ugatan: Offline na tagapayo para sa Palay at Mais',
         short_name: 'Ugatan',
-        description: 'Offline na payo para sa palay at mais. Walang account, walang server.',
+        description: 'Offline na tagapayo para sa palay at mais. Walang account, walang server.',
         lang: 'tl',
         start_url: '.',
         scope: '.',
@@ -67,8 +67,8 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,webp,woff2,webmanifest}'],
         navigateFallback: 'index.html',
-        // The admin UI preview is its own page, not the farmer app shell.
-        navigateFallbackDenylist: [/\/admin\.html$/],
+        // Preview SPA only — must not match /admin (staff routes live in index.html).
+        navigateFallbackDenylist: [/\/admin-preview\.html$/],
         // The ONNX runtime (about 41 MB) is not precached: most farmers never prepare the AI. It is kept after the
         // first load from /ort/, so the model can start again with no hub. Transformers.js caches the weights itself.
         runtimeCaching: [
@@ -95,10 +95,10 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'es2022',
     rollupOptions: {
-      // The browser build also ships the admin UI preview page (admin.html); the Android app has no staff pages.
+      // Preview SPA at /admin-preview.html — not /admin.html, which Vite would also serve as /admin and steal the staff routes.
       input: {
         home: fileURLToPath(new URL('./index.html', import.meta.url)),
-        ...(mode === 'native' ? {} : { admin: fileURLToPath(new URL('./admin.html', import.meta.url)) }),
+        ...(mode === 'native' ? {} : { adminPreview: fileURLToPath(new URL('./admin-preview.html', import.meta.url)) }),
       } as Record<string, string>,
     },
   },

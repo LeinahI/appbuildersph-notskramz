@@ -209,3 +209,31 @@ it('opens display preferences from an accessible header icon without sending or 
   expect(html).toContain('method="dialog"');
   expect(html).toContain('Laki ng teksto');
 });
+
+describe('home page header and action bar', () => {
+  it('groups the utilities on the right: network status, display settings, and help', () => {
+    const html = renderToStaticMarkup(createElement(HomePage, props()));
+    expect(html.indexOf('role="status"')).toBeGreaterThan(-1);
+    expect(html).toContain('Online');
+    expect(html.indexOf('aria-label="Teksto at display"')).toBeGreaterThan(html.indexOf('>Online<'));
+    expect(html.indexOf('aria-label="Tulong"')).toBeGreaterThan(html.indexOf('aria-label="Teksto at display"'));
+  });
+
+  it('leaves actions to the open desktop sidebar and keeps its collapsed toggle available', () => {
+    const history = renderToStaticMarkup(createElement(HomePage, { ...props(), sidebarOpen: true, sidebarDesktop: true })).match(/<div class="[^"]*lg:hidden[^"]*"><button[^>]*aria-label="Mga usapan"/);
+    expect(history).not.toBeNull();
+    const welcome = renderToStaticMarkup(createElement(HomePage, props())).match(/<button[^>]*aria-label="Bagong usapan"[^>]*>/)?.[0];
+    expect(welcome).toMatch(/class="[^"]*\bhidden\b/);
+    const chat = renderToStaticMarkup(createElement(HomePage, { ...props(), children: createElement('p', {}, 'Hi') })).match(/<button[^>]*aria-label="Bagong usapan"[^>]*>/)?.[0];
+    expect(chat).not.toMatch(/class="[^"]*\bhidden\b/);
+    expect(chat).not.toContain('lg:hidden');
+    const withSidebar = renderToStaticMarkup(createElement(HomePage, { ...props(), sidebarOpen: true, sidebarDesktop: true, children: createElement('p', {}, 'Hi') })).match(/<button[^>]*aria-label="Bagong usapan"[^>]*>/)?.[0];
+    expect(withSidebar).toContain('lg:hidden');
+  });
+
+  it('shows the camera and voice actions with visible names beside the input', () => {
+    const html = renderToStaticMarkup(createElement(HomePage, props()));
+    expect(html).toMatch(/chat-action-button[^>]*aria-label="Larawan"/);
+    expect(html).toMatch(/chat-action-button[^>]*aria-label="Magsalita"[^>]*>.*<span class="max-\[339px\]:sr-only">Magsalita<\/span>/);
+  });
+});

@@ -77,6 +77,34 @@
         "HUB_VOICE": "off",
         "PHONE_LITERT_FILE": "E:/models/gemma-4-E2B-it-litert-lm/gemma-4-E2B-it.litertlm"
       }
+    },
+    {
+      "name": "hub-8787",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@ugatan/hub",
+        "exec",
+        "tsx",
+        "src/main.ts"
+      ],
+      "port": 8787,
+      "env": {
+        "HUB_PORT": "8787",
+        "HUB_HOST": "0.0.0.0",
+        "HUB_MATCHER": "hybrid",
+        "HUB_EXPLAINER": "gemma",
+        "GEMMA_RUNTIME": "llamacpp",
+        "GEMMA_GGUF": "E:/models/gemma-4-E2B-it-GGUF/hf_ggml-org_gemma-4-E2B-it.Q4_0.gguf",
+        "GEMMA_MODEL_DIR": "E:/models/gemma-4-E2B-it-ONNX",
+        "HUB_VISION": "on",
+        "HUB_VOICE": "on",
+        "LAYA_MODEL_DIR": "E:/models/laya-onnx",
+        "LAYA_DEVICE": "cpu",
+        "LAYA_PASS_MARK": "0.5",
+        "LAYA_CONFIDENCE_THRESHOLD": "0.3",
+        "PHONE_LITERT_FILE": "E:/models/gemma-4-E2B-it-litert-lm/gemma-4-E2B-it.litertlm"
+      }
     }
   ]
 }

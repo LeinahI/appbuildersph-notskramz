@@ -20,14 +20,14 @@ import com.google.ai.edge.litertlm.Message;
 import com.google.ai.edge.litertlm.SamplerConfig;
 import com.google.ai.edge.litertlm.ThinkingConfig;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -35,6 +35,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Gemma 4 E2B on the phone itself, through Google's LiteRT-LM, for phones whose GPU cannot run the model in the web
@@ -79,7 +82,13 @@ public class LocalLlmPlugin extends Plugin {
         call.resolve(result);
     }
 
-    /** Downloads the model from the hub, picking up a broken download where it stopped (HTTP Range). */
+    /** Parallel parts of the download. The hotspot's latency caps one stream at about 1 MB/s; four share the link. */
+    private static final int PARTS = 4;
+
+    /**
+     * Downloads the model from the hub in PARTS byte ranges at once, each picking up where it stopped. Progress is kept
+     * in a small file beside the download, so a dropped Wi-Fi or a closed app resumes instead of starting over.
+     */
     @PluginMethod
     public void download(PluginCall call) {
         String url = call.getString("url");
@@ -94,60 +103,151 @@ public class LocalLlmPlugin extends Plugin {
             return;
         }
         downloads.execute(() -> {
-            HttpURLConnection conn = null;
             try {
                 File part = partFile();
                 File dir = part.getParentFile();
                 if (dir != null && !dir.isDirectory() && !dir.mkdirs()) throw new IOException("Cannot make the model folder.");
-                long have = part.isFile() ? part.length() : 0;
-                conn = (HttpURLConnection) new URL(url).openConnection();
-                conn.setConnectTimeout(15000);
-                conn.setReadTimeout(60000);
-                if (have > 0) conn.setRequestProperty("Range", "bytes=" + have + "-");
-                int code = conn.getResponseCode();
-                long total;
-                if (code == 206) {
-                    String range = conn.getHeaderField("Content-Range");
-                    total = range != null && range.contains("/") ? Long.parseLong(range.substring(range.lastIndexOf('/') + 1).trim()) : -1;
-                } else if (code == 200) {
-                    have = 0; // the hub sent the whole file
-                    total = conn.getContentLengthLong();
-                } else {
-                    throw new IOException("Hub returned " + code + " for the model.");
+                long total = remoteSize(url);
+                File state = new File(part.getPath() + ".json");
+                long[][] ranges = loadRanges(state, part, total);
+                long need = 0;
+                for (long[] r : ranges) need += r[2] - r[1];
+                if (getContext().getFilesDir().getUsableSpace() < need + SPARE_BYTES) throw new IOException("NO_SPACE");
+                try (RandomAccessFile file = new RandomAccessFile(part, "rw")) {
+                    if (file.length() != total) file.setLength(total);
                 }
-                if (total > 0 && getContext().getFilesDir().getUsableSpace() < total - have + SPARE_BYTES) {
-                    throw new IOException("NO_SPACE");
-                }
-                long loaded = have;
-                long lastEvent = 0;
-                try (InputStream in = new BufferedInputStream(conn.getInputStream(), 1 << 16);
-                     OutputStream out = new FileOutputStream(part, have > 0)) {
-                    byte[] buffer = new byte[1 << 16];
-                    int n;
-                    while ((n = in.read(buffer)) != -1) {
-                        out.write(buffer, 0, n);
-                        loaded += n;
-                        long now = System.currentTimeMillis();
-                        if (now - lastEvent > 300) {
-                            lastEvent = now;
-                            progress(loaded, total);
+                AtomicLong loaded = new AtomicLong(total - need);
+                AtomicReference<Exception> failure = new AtomicReference<>();
+                Thread[] workers = new Thread[ranges.length];
+                for (int i = 0; i < ranges.length; i++) {
+                    long[] range = ranges[i];
+                    workers[i] = new Thread(() -> {
+                        try {
+                            fetchRange(url, part, range, loaded);
+                        } catch (Exception e) {
+                            failure.compareAndSet(null, e);
                         }
-                    }
+                    }, "model-download-" + i);
+                    workers[i].start();
                 }
-                if (total > 0 && part.length() != total) {
-                    throw new IOException("The download stopped at " + part.length() + " of " + total + " bytes.");
+                // Report progress and save where each part is, until every part has finished.
+                boolean running = true;
+                while (running) {
+                    running = false;
+                    for (Thread t : workers) {
+                        t.join(500);
+                        if (t.isAlive()) running = true;
+                    }
+                    progress(loaded.get(), total);
+                    saveRanges(state, total, ranges);
+                }
+                if (failure.get() != null) throw failure.get();
+                for (long[] r : ranges) {
+                    if (r[1] < r[2]) throw new IOException("The download stopped before the end. Try again on the hub's Wi-Fi.");
                 }
                 if (!part.renameTo(modelFile())) throw new IOException("Cannot keep the model file.");
-                progress(modelFile().length(), modelFile().length());
+                //noinspection ResultOfMethodCallIgnored
+                state.delete();
+                progress(total, total);
                 JSObject done = new JSObject();
                 done.put("bytes", modelFile().length());
                 call.resolve(done);
             } catch (Exception e) {
                 call.reject(e.getMessage() != null ? e.getMessage() : e.toString());
-            } finally {
-                if (conn != null) conn.disconnect();
             }
         });
+    }
+
+    /** The model's size, from a one-byte range request. */
+    private static long remoteSize(String url) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        try {
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(30000);
+            conn.setRequestProperty("Range", "bytes=0-0");
+            int code = conn.getResponseCode();
+            if (code == 206) {
+                String range = conn.getHeaderField("Content-Range");
+                if (range != null && range.contains("/")) return Long.parseLong(range.substring(range.lastIndexOf('/') + 1).trim());
+            }
+            if (code == 200 && conn.getContentLengthLong() > 0) return conn.getContentLengthLong();
+            throw new IOException("Hub returned " + code + " for the model.");
+        } finally {
+            conn.disconnect();
+        }
+    }
+
+    /**
+     * The parts still to fetch, as [index, next byte, end exclusive]. Resumes from the saved state when it matches the
+     * file's size; an older single-stream download counts as a finished first part.
+     */
+    private static long[][] loadRanges(File state, File part, long total) {
+        try {
+            if (state.isFile() && part.isFile()) {
+                JSONObject saved = new JSONObject(new String(java.nio.file.Files.readAllBytes(state.toPath()), StandardCharsets.UTF_8));
+                if (saved.getLong("total") == total) {
+                    JSONArray next = saved.getJSONArray("next");
+                    JSONArray end = saved.getJSONArray("end");
+                    long[][] ranges = new long[next.length()][];
+                    for (int i = 0; i < next.length(); i++) ranges[i] = new long[] {i, next.getLong(i), end.getLong(i)};
+                    return ranges;
+                }
+            }
+        } catch (Exception ignored) {
+            // A damaged state file: start the ranges again below.
+        }
+        long start = part.isFile() && !state.isFile() ? Math.min(part.length(), total) : 0;
+        long size = total - start;
+        long[][] ranges = new long[PARTS][];
+        for (int i = 0; i < PARTS; i++) {
+            long from = start + size * i / PARTS;
+            long to = i == PARTS - 1 ? total : start + size * (i + 1) / PARTS;
+            ranges[i] = new long[] {i, from, to};
+        }
+        return ranges;
+    }
+
+    private static void saveRanges(File state, long total, long[][] ranges) {
+        try {
+            JSONObject json = new JSONObject();
+            json.put("total", total);
+            JSONArray next = new JSONArray();
+            JSONArray end = new JSONArray();
+            for (long[] r : ranges) {
+                next.put(r[1]);
+                end.put(r[2]);
+            }
+            json.put("next", next);
+            json.put("end", end);
+            java.nio.file.Files.write(state.toPath(), json.toString().getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ignored) {
+            // Progress is saved again in half a second.
+        }
+    }
+
+    /** Fetches one part: from its next byte to its end, written in place. Moves range[1] forward as bytes arrive. */
+    private static void fetchRange(String url, File part, long[] range, AtomicLong loaded) throws IOException {
+        if (range[1] >= range[2]) return;
+        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        try {
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(60000);
+            conn.setRequestProperty("Range", "bytes=" + range[1] + "-" + (range[2] - 1));
+            if (conn.getResponseCode() != 206) throw new IOException("Hub returned " + conn.getResponseCode() + " for part of the model.");
+            try (InputStream in = new BufferedInputStream(conn.getInputStream(), 1 << 16);
+                 RandomAccessFile out = new RandomAccessFile(part, "rw")) {
+                out.seek(range[1]);
+                byte[] buffer = new byte[1 << 16];
+                int n;
+                while (range[1] < range[2] && (n = in.read(buffer, 0, (int) Math.min(buffer.length, range[2] - range[1]))) != -1) {
+                    out.write(buffer, 0, n);
+                    range[1] += n;
+                    loaded.addAndGet(n);
+                }
+            }
+        } finally {
+            conn.disconnect();
+        }
     }
 
     private void progress(long loaded, long total) {

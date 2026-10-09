@@ -98,14 +98,23 @@ export async function startRecorder(onLimit: () => void, onPause: () => void = (
       onLimit();
     }
   }, MAX_AUDIO_SECONDS * 1000 - 300);
-  recorder.start();
+  // Timeslice so chunks accumulate during recording; a bare start()+stop() often yields an empty blob.
+  recorder.start(250);
 
   return {
     async stop() {
-      if (recorder.state === 'recording') recorder.stop();
+      if (recorder.state === 'recording') {
+        try {
+          recorder.requestData();
+        } catch {
+          /* some browsers throw if idle */
+        }
+        recorder.stop();
+      }
       await stopped;
       release();
-      const speech = trimToSpeech(await toMono16k(new Blob(chunks, { type: recorder.mimeType })), AUDIO_SAMPLE_RATE);
+      if (chunks.length === 0) return null;
+      const speech = trimToSpeech(await toMono16k(new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })), AUDIO_SAMPLE_RATE);
       return speech ? pcm16Base64(speech) : null;
     },
     cancel() {

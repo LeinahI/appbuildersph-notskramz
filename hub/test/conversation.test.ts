@@ -119,7 +119,7 @@ describe('follow-up questions', () => {
     const { matcher } = scriptedMatcher(() => ({ ids: ['rice-blast', 'bph'], clear: false }));
     const { explainer, explains } = recordingExplainer();
     const deps = { matcher, explainer, knowledge, logger: quiet, conversations: new ConversationStore() };
-    for (const [i, text] of ['may batik sa dahon', 'may batik pa rin', 'may batik pa rin ang dahon'].entries()) {
+    for (const [i, text] of ['may batik', 'may batik pa rin', 'may batik pa rin talaga'].entries()) {
       await answerQuestion({ uid: `f${i}`, crop: 'rice', text, sessionId: 'f' }, deps);
     }
     expect(explains[0]!.bestGuess).toBe(false);
@@ -143,7 +143,7 @@ describe('follow-up questions', () => {
     const { matcher } = scriptedMatcher((call) => (call === 2 ? { ids: ['rice-blast'], clear: true } : { ids: ['rice-blast', 'bph'], clear: false }));
     const { explainer, explains } = recordingExplainer();
     const deps = { matcher, explainer, knowledge, logger: quiet, conversations: new ConversationStore() };
-    for (const [i, text] of ['may batik', 'may batik pa', 'may batik na may spindle', 'may ibang batik na kulay kayumanggi sa dulo ng dahon'].entries()) {
+    for (const [i, text] of ['may batik', 'may batik pa', 'may batik na may spindle', 'may ibang batik na kulay kayumanggi'].entries()) {
       await answerQuestion({ uid: `s${i}`, crop: 'rice', text, sessionId: 's' }, deps);
     }
     expect(explains[3]!.bestGuess).toBe(false);
@@ -156,6 +156,49 @@ describe('follow-up questions', () => {
     const res = await answerQuestion({ uid: 'q1', crop: 'rice', text: 'may batik' }, { matcher, explainer, knowledge, logger: quiet });
     // A sure match always names the problem, even when the model left the name out.
     expect(res.explanation).toBe('Malamang Rice blast po ito. Ano ang kulay?');
+  });
+});
+
+describe('steps the farmer asked for', () => {
+  it('answers "ano po ang gagawin ko?" with the open problem\'s first steps, not one more question', async () => {
+    const { matcher, seen } = scriptedMatcher(() => ({ ids: ['rice-bug'], clear: false }));
+    const { explainer, explains, chats } = recordingExplainer();
+    const deps = { matcher, explainer, knowledge, logger: quiet, conversations: new ConversationStore() };
+    await answerQuestion({ uid: 'h1', crop: 'any', text: 'may mga insekto sa uhay', sessionId: 'h' }, deps);
+    const res = await answerQuestion({ uid: 'h2', crop: 'any', text: 'ano po pwedeng gawin ko', sessionId: 'h' }, deps);
+    // Matched on the open notes only: the help ask names no sign.
+    expect(seen[1]!.text).toBe('may mga insekto sa uhay');
+    expect(explains[1]!.help).toBe(true);
+    expect(explains[1]!.history?.[0]?.question).toBe('may mga insekto sa uhay');
+    expect(chats).toHaveLength(0);
+    expect(res.matchIds).toEqual(['rice-bug']);
+  });
+
+  it('gives the field-check steps when the farmer asks for help and nothing matched yet', async () => {
+    const { matcher } = scriptedMatcher(() => noMatch);
+    const { explainer, chats } = recordingExplainer();
+    const deps = { matcher, explainer, knowledge, logger: quiet, conversations: new ConversationStore() };
+    await answerQuestion({ uid: 'g1', crop: 'any', text: 'may kakaiba sa palay', sessionId: 'g' }, deps);
+    await answerQuestion({ uid: 'g2', crop: 'any', text: 'pa help naman po', sessionId: 'g' }, deps);
+    expect(chats.at(-1)!.guide?.id).toBe('scouting');
+  });
+
+  it('answers a growing question from its guide, without matching', async () => {
+    const { matcher, seen } = scriptedMatcher(() => noMatch);
+    const { explainer, chats } = recordingExplainer();
+    const res = await answerQuestion({ uid: 'c1', crop: 'any', text: 'kailan po mag-abono ng palay?' }, { matcher, explainer, knowledge, logger: quiet });
+    expect(seen).toHaveLength(0);
+    expect(chats[0]!.guide?.id).toBe('fertilizer');
+    expect(res.explanationStatus).toBe('ok');
+  });
+
+  it('shows the guide steps in Bisaya when no model answers', async () => {
+    const { matcher } = scriptedMatcher(() => noMatch);
+    const res = await answerQuestion(
+      { uid: 'c2', crop: 'any', text: 'unsaon pagtanom og humay?' },
+      { matcher, explainer: { name: 'off', explain: async () => ({ status: 'unavailable', text: null }) }, knowledge, logger: quiet },
+    );
+    expect(res.explanation).toMatch(/^Mga lakang sa pagtanom og humay:/);
   });
 });
 

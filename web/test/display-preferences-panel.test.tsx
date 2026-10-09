@@ -32,7 +32,8 @@ describe('shared display controls', () => {
     expect(html).not.toContain('<form');
     expect(html).not.toContain('Save changes');
     expect(html).not.toContain('display-description');
-    expect(html).not.toContain('display-preview');
+    expect(html).toContain('display-preview');
+    expect(html).toContain(language === 'en' ? 'Preview' : 'Halimbawa');
   });
   it('keeps the warning when preferences cannot be saved', () => {
     vi.mocked(window.localStorage.setItem).mockImplementation(() => { throw new Error('Storage blocked'); });
@@ -48,7 +49,7 @@ describe('shared display controls', () => {
     expect(getDisplaySnapshot().preferences.textSize).toBe('extra-large');
     const updated = DisplayPreferencesPanel({ language: 'en', id: 'test' });
     expect(find(updated, (element) => element.props.value === 'extra-large').props.checked).toBe(true);
-    find(updated, (element) => element.type === 'button').props.onClick();
+    find(updated, (element) => element.type === 'button' && element.props.className === 'display-reset').props.onClick();
     expect(getDisplaySnapshot().preferences.textSize).toBe('standard');
     expect(success).toHaveBeenCalledWith(expect.objectContaining({ title: 'Display settings reset' }));
   });

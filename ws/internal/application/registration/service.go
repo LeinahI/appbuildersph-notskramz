@@ -9,6 +9,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/yourorg/ws/internal/domain/admin"
 	"github.com/yourorg/ws/internal/domain/audit"
 	"github.com/yourorg/ws/internal/domain/invite"
 	"github.com/yourorg/ws/internal/domain/user"
@@ -17,14 +18,16 @@ import (
 )
 
 type Service struct {
-	users   user.Repository
-	invites invite.Repository
-	audits  audit.Repository
-	tokens  *pkgauth.Tokenizer
+	admins       admin.Repository
+	users        user.Repository
+	invites      invite.Repository
+	audits       audit.Repository
+	tokens       *pkgauth.Tokenizer
 	claimBaseURL string
 }
 
 func NewService(
+	admins admin.Repository,
 	users user.Repository,
 	invites invite.Repository,
 	audits audit.Repository,
@@ -32,7 +35,7 @@ func NewService(
 	claimBaseURL string,
 ) *Service {
 	return &Service{
-		users: users, invites: invites, audits: audits, tokens: tokens,
+		admins: admins, users: users, invites: invites, audits: audits, tokens: tokens,
 		claimBaseURL: strings.TrimRight(claimBaseURL, "/"),
 	}
 }
@@ -44,40 +47,43 @@ type LoginInput struct {
 
 type LoginResult struct {
 	Token string
-	User  *user.User
+	Admin *admin.Admin
 }
 
 func (s *Service) Login(ctx context.Context, in LoginInput) (*LoginResult, error) {
-	u, err := s.users.FindByEmail(ctx, in.Email)
+	a, err := s.admins.FindByEmail(ctx, in.Email)
 	if err != nil {
-		if errors.Is(err, user.ErrNotFound) {
-			return nil, user.ErrInvalidCredentials
+		if errors.Is(err, admin.ErrNotFound) {
+			return nil, admin.ErrInvalidCredentials
 		}
 		return nil, err
 	}
-	if u.Role() != user.RoleAdmin || u.Status() != user.StatusActive {
-		return nil, user.ErrUnauthorized
+	if !a.CanLogin() {
+		return nil, admin.ErrUnauthorized
 	}
-	if bcrypt.CompareHashAndPassword([]byte(u.PasswordHash()), []byte(in.Password)) != nil {
-		return nil, user.ErrInvalidCredentials
+	if bcrypt.CompareHashAndPassword([]byte(a.PasswordHash()), []byte(in.Password)) != nil {
+		return nil, admin.ErrInvalidCredentials
 	}
-	tok, err := s.tokens.Issue(u.ID(), string(u.Role()))
+	tok, err := s.tokens.Issue(a.ID(), "admin")
 	if err != nil {
 		return nil, err
 	}
-	_ = s.append(ctx, audit.EventAdminLogin, u.ID(), u.ID(), nil)
-	return &LoginResult{Token: tok, User: u}, nil
+	_ = s.append(ctx, audit.EventAdminLogin, a.ID(), a.ID(), nil)
+	return &LoginResult{Token: tok, Admin: a}, nil
 }
 
-func (s *Service) Me(ctx context.Context, userID string) (*user.User, error) {
-	u, err := s.users.FindByID(ctx, userID)
+func (s *Service) Me(ctx context.Context, adminID string) (*admin.Admin, error) {
+	a, err := s.admins.FindByID(ctx, adminID)
 	if err != nil {
+		if errors.Is(err, admin.ErrNotFound) {
+			return nil, admin.ErrUnauthorized
+		}
 		return nil, err
 	}
-	if u.Role() != user.RoleAdmin {
-		return nil, user.ErrUnauthorized
+	if !a.CanLogin() {
+		return nil, admin.ErrUnauthorized
 	}
-	return u, nil
+	return a, nil
 }
 
 type RegisterInput struct {

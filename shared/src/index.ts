@@ -24,6 +24,7 @@ export {
   CHAT_UNMATCHED,
   DESCRIBE_SYSTEM_PROMPT,
   MATCH_BEST_GUESS,
+  MATCH_HELP,
   MATCH_NOT_SURE,
   MATCH_SURE,
   NO_SIGNS,
@@ -38,7 +39,9 @@ export {
   buildMessages,
   buildPhotoMessages,
   transcriptText,
+  askLine,
   chatDiagnosis,
+  chatGuide,
   chatSystemPrompt,
   notesToExplain,
   photoOutcome,
@@ -65,12 +68,16 @@ export { CARD_LANGUAGES, assertValidEntries, localizeEntry, validateEntry } from
 export {
   MAX_FOLLOW_UPS,
   SESSION_TEXT_CHARS,
+  careGuideFor,
   carriesNotice,
   dropEchoQuestions,
+  dropRepeatedQuestions,
+  fitPlantPart,
   fixedReply,
   isAboutLastAnswer,
   isQuestionWithoutSign,
   isFinalAnswer,
+  isHelpAsk,
   isOffTopic,
   isSmallTalk,
   isUrgent,
@@ -81,6 +88,7 @@ export {
   routeFor,
   sessionNotes,
   sessionText,
+  signChoices,
   smallTalkReply,
   tidyReply,
   withProblemName,
@@ -95,4 +103,6 @@ export {
   type ComposeInput,
   type ComposedAnswer,
 } from './answer.js';
+export { chatLanguage, looksCebuano, looksEnglish, replyLanguage, replyLanguageLine, type ReplyLanguage } from './language.js';
+export { RICE_GUIDES, SCOUTING_GUIDE, guideFor, guideNote, guideReply, type CareGuide } from './guides.js';
 export { PHOTO_FORM, photoFormText, photoIsSure, photoSignsOf, readPhotoForm, type PhotoFormReading } from './photo-form.js';

@@ -1,6 +1,10 @@
 import { db, newId, type ConversationRow, type QueuedQuestion } from './db';
 
-// Chats live only in this phone's database (IndexedDB). Nothing is sent to a server.
+/**
+ * Farmer chats are device-local only (Dexie/IndexedDB in this module's scope).
+ * Small UI keys (active conversation id) use localStorage; full threads never leave the phone.
+ * No farmer account or ws conversation sync.
+ */
 
 const ACTIVE_KEY = 'ugatan.activeConversationId';
 

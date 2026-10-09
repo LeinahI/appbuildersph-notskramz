@@ -3,6 +3,7 @@ import {
   CHAT_FINAL,
   CHAT_UNMATCHED,
   DESCRIBE_SYSTEM_PROMPT,
+  MATCH_HELP,
   MATCH_NOT_SURE,
   MATCH_SURE,
   NO_SIGNS,
@@ -11,11 +12,15 @@ import {
   PHOTO_SYSTEM_PROMPT,
   TRANSCRIBE_PROMPT,
   SYSTEM_PROMPT,
+  askLine,
   buildChatMessages,
   buildDescribeMessages,
   buildMessages,
   buildPhotoMessages,
+  chatGuide,
+  looksEnglish,
   chatSystemPrompt,
+  guideFor,
   notesToExplain,
   photoOutcome,
   transcriptText,
@@ -183,13 +188,28 @@ describe('buildChatMessages', () => {
     expect(messages.map((m) => m.role)).toEqual(['system', 'user', 'assistant', 'user', 'assistant', 'user', 'assistant', 'user', 'assistant', 'user']);
     expect(messages[1]!.content).toBe('q2');
     expect(messages[8]!.content.length).toBeLessThan(410);
-    expect(messages[9]!.content).toBe('kausapin mo ako');
+    expect(messages[9]!.content).toContain('The farmer now says: kausapin mo ako');
+    expect(messages[9]!.content).toMatch(/^Reply language: Tagalog/);
+  });
+
+  it('tells the reply which language to use, from the last longer message when this one is short', () => {
+    const last = (text: string, history: { question: string; reply: string }[] = []) => buildChatMessages(text, history).at(-1)!.content;
+    expect(last('unsaon pagtanom og humay?')).toContain('Reply language: Cebuano (Bisaya)');
+    expect(last('how do i plant rice in the dry season?')).toContain('Reply language: English');
+    expect(last('paano po magtanim ng palay?')).toContain('Reply language: Tagalog');
+    // "Oo" says nothing about the language; the farmer's last longer message does.
+    expect(last('oo', [{ question: 'naay ulod sa dahon sa akong humay', reply: 'x' }])).toContain('Reply language: Cebuano (Bisaya)');
+    expect(buildMessages('naay ulod sa dahon sa akong humay', 'rice', [])[1]!.content).toContain('Reply language: Cebuano (Bisaya)');
   });
 
   it('tells the reply the crop the chat names, and that notes are context only', () => {
     const messages = buildChatMessages('naay mga butang sa dahon sa humay', [], undefined, { crop: 'rice', notes: ['may kuhol sa palayan'] });
     const user = messages[messages.length - 1]!.content;
-    expect(user).toContain("The farmer's crop is rice (palay)");
+    expect(user).toContain("The farmer's crop is rice (palay, humay)");
+    expect(user).toContain('never mais or corn');
+    // A guide is about palay, even in a chat that named corn before.
+    const guide = guideFor('paano magtanim ng palay?')!;
+    expect(buildChatMessages('paano magtanim?', [], undefined, { crop: 'corn', guide }).at(-1)!.content).toContain("The farmer's crop is rice");
     expect(user).toContain('What the farmer said earlier about the crop:');
     expect(chatSystemPrompt()).toContain('They are only context');
     expect(chatSystemPrompt()).toContain('Never repeat the farmer');
@@ -250,8 +270,94 @@ describe('the question after an unsure photo', () => {
 
   it('tells the model which sign to ask about, only when the match is not sure', () => {
     const unsure = buildMessages('ano ang mali', 'corn', [faw], { sure: false, askAbout: 'Ragged holes in leaves' })[1]!.content;
-    expect(unsure).toContain('Your one question asks whether the farmer sees this sign, in simple words: Ragged holes in leaves.');
+    expect(unsure).toContain("Your one question asks whether the farmer sees this sign, in simple words in the farmer's language: Ragged holes in leaves.");
     const sure = buildMessages('ano ang mali', 'corn', [faw], { sure: true, askAbout: 'Ragged holes in leaves' })[1]!.content;
     expect(sure).not.toContain('Your one question');
+  });
+});
+
+describe('a natural reply that follows the chat', () => {
+  const bug = {
+    id: 'rice-bug', crop: 'rice' as const, name: 'Rice bug', keywords: [], reviewedBy: '', reviewedOn: '', callExpertIf: '',
+    signs: ['Slender brown bugs on the grain heads'], actions: ['Remove weeds around the field'],
+  };
+  const blast = { ...bug, id: 'rice-blast', name: 'Rice blast', signs: ['Neck of the grain head turns black'] };
+
+  it('offers the possible problems as choices in its one question', () => {
+    const user = buildMessages('uhay po', 'rice', [bug, blast], { sure: false, askChoices: [bug.signs[0]!, blast.signs[0]!] })[1]!.content;
+    expect(user).toContain(MATCH_NOT_SURE);
+    expect(user).toContain('pick which of these they see');
+    expect(user).toContain('Slender brown bugs on the grain heads / Neck of the grain head turns black');
+    expect(askLine(null, ['one sign'])).toContain("whether the farmer sees this sign, in simple words in the farmer's language: one sign");
+  });
+
+  it('gives first steps when the farmer asks what to do before the match is sure', () => {
+    const user = buildMessages('uhay po', 'rice', [bug, blast], { sure: false, help: true })[1]!.content;
+    expect(user).toContain(MATCH_HELP);
+    expect(user).not.toContain(MATCH_NOT_SURE);
+    expect(SYSTEM_PROMPT).toContain('If the match is marked help');
+    // A sure match is never a help reply.
+    expect(buildMessages('uhay po', 'rice', [bug], { sure: true, help: true })[1]!.content).toContain(MATCH_SURE);
+  });
+
+  it('sees the last turns, so it never asks the same thing twice', () => {
+    const history = [{ question: 'uhay po', reply: 'Ano po ang kulay ng mga batik sa gilid ng dahon?' }];
+    const user = buildMessages('may kagat po e', 'rice', [bug], { sure: false, history })[1]!.content;
+    expect(user).toContain('Do not ask again anything you already asked here');
+    expect(user).toContain('You: Ano po ang kulay ng mga batik sa gilid ng dahon?');
+    expect(user.indexOf('Earlier in this chat')).toBeLessThan(user.indexOf("Farmer's description"));
+    expect(buildMessages('may kagat', 'rice', [bug])[1]!.content).not.toContain('Earlier in this chat');
+  });
+
+  it('answers a growing question from its guide', () => {
+    const guide = guideFor('paano magtanim ng palay?')!;
+    const user = buildChatMessages('paano magtanim ng palay?', [], undefined, { guide }).at(-1)!.content;
+    expect(user).toContain(chatGuide(guide));
+    expect(user).toContain('Guide: How to grow rice, from seed to harvest');
+    expect(user).toContain('short numbered steps');
+    // The guide replaces the "no match" line: there was no sign to match.
+    expect(buildChatMessages('x', [], undefined, { guide, unmatched: true }).at(-1)!.content).not.toContain(CHAT_UNMATCHED);
+  });
+});
+
+describe('the reply language', () => {
+  it('tells English from Tagalog, Taglish, and Cebuano', () => {
+    for (const text of ['how do i control weeds in my rice field?', 'when should i plant rice?', 'what should i do']) expect(looksEnglish(text)).toBe(true);
+    for (const text of ['paano po magtanim ng palay?', 'how to control ang damo sa palay', 'unsaon pagtanom og humay', 'ok', 'uhay po']) {
+      expect(looksEnglish(text)).toBe(false);
+    }
+    // The app's own English photo note does not make a Tagalog message English.
+    expect(looksEnglish("ano po ito [The farmer's photo shows, in the app's English: holes in the leaves]")).toBe(false);
+  });
+
+  it("gives a Tagalog speaker the note's reviewed Tagalog steps, and an English speaker English only", () => {
+    const bug = {
+      id: 'rice-bug', crop: 'rice' as const, name: 'Rice bug', keywords: [], reviewedBy: '', reviewedOn: '', callExpertIf: '',
+      signs: ['Slender brown bugs on the grain heads'], actions: ['Remove weeds around the field'],
+      translations: { tl: { signs: ['Payat na kayumangging surot sa uhay'], actions: ['Alisin ang damo sa paligid ng palayan'], callExpertIf: '' } },
+    };
+    expect(buildMessages('may surot sa uhay', 'rice', [bug], { sure: true })[1]!.content).toContain('Tagalog steps: Alisin ang damo sa paligid ng palayan');
+    expect(buildMessages('there are bugs on the grain heads of my rice', 'rice', [bug], { sure: true })[1]!.content).not.toContain('Tagalog steps');
+    // A "not sure" reply gives no steps, so it needs none.
+    expect(buildMessages('may surot', 'rice', [bug], { sure: false })[1]!.content).not.toContain('Tagalog steps');
+    const guide = guideFor('how do i control weeds in my rice field?')!;
+    expect(chatGuide(guide, 'en')).not.toMatch(/(Tagalog|Cebuano) steps:/);
+    expect(chatGuide(guide)).toContain('Tagalog steps:');
+    expect(chatGuide(guide, 'ceb')).toContain('Cebuano steps: Andama ug patag-a og maayo ang yuta');
+  });
+
+  it("gives a Bisaya speaker the note's reviewed Cebuano steps", () => {
+    const bug = {
+      id: 'rice-bug', crop: 'rice' as const, name: 'Rice bug', keywords: [], reviewedBy: '', reviewedOn: '', callExpertIf: '',
+      signs: ['Slender brown bugs on the grain heads'], actions: ['Remove weeds around the field'],
+      translations: {
+        tl: { signs: ['x'], actions: ['Alisin ang damo sa paligid ng palayan'], callExpertIf: '' },
+        ceb: { signs: ['x'], actions: ['Kuhaa ang sagbot palibot sa basakan'], callExpertIf: '' },
+      },
+    };
+    const user = buildMessages('naay insekto sa uhay sa akong humay', 'rice', [bug], { sure: true })[1]!.content;
+    expect(user).toContain('Cebuano steps: Kuhaa ang sagbot palibot sa basakan');
+    expect(user).not.toContain('Tagalog steps');
+    expect(SYSTEM_PROMPT).toContain('Cebuano (Bisaya)');
   });
 });

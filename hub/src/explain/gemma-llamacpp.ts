@@ -16,7 +16,9 @@ export interface GemmaLlamaCppExplainerOptions {
 /** Cap on the plain-English description. Two short sentences fit well inside it. */
 const DESCRIBE_MAX_TOKENS = 80;
 /** Cap on a chat reply. The prompt asks for under 60 words. */
-const CHAT_MAX_TOKENS = 120;
+const CHAT_MAX_TOKENS = 160;
+/** Cap on a reply from a growing guide: a short opening and up to eight numbered steps, in Tagalog. */
+const GUIDE_MAX_TOKENS = 420;
 
 /**
  * Taglish explanation from a local Gemma 4 GGUF model through llama.cpp, on the GPU when there is one
@@ -31,8 +33,9 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
   const llama = await getLlama({ gpu: 'auto' });
   // auto puts as many layers on the GPU as fit and runs the rest on the CPU, so a smaller card still works.
   const model = await llama.loadModel({ modelPath: opts.modelPath, gpuLayers: 'auto' });
-  // The prompt plus a short answer fits well inside 2048 tokens. One sequence per job, so each keeps its own cached system prompt.
-  const context = await model.createContext({ contextSize: 2048, sequences: 3 });
+  // The prompt, the last few turns, and a stepped answer fit inside 4096 tokens. One sequence per job, so each keeps
+  // its own cached system prompt.
+  const context = await model.createContext({ contextSize: 4096, sequences: 3 });
 
   // The system prompt is the same for every question. Keeping one session on one sequence lets llama.cpp
   // reuse its cached prefix, so each question only reads the farmer's part of the prompt.
@@ -59,9 +62,21 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
   // One model on one GPU: explaining, describing, and chatting share the queue.
   const enqueue = oneAtATime();
 
-  async function generate({ text, crop, entries, clear, bestGuess, photo, askAbout }: ExplainInput, maxTokens = opts.maxNewTokens): Promise<string> {
-    // The matcher's verdict goes in the user message, so the cached system prompt stays the same.
-    const [, user] = buildMessages(text, crop, entries, { maxWords: opts.maxWords, sure: clear, bestGuess, photo, askAbout });
+  async function generate(
+    { text, crop, entries, clear, bestGuess, photo, askAbout, askChoices, help, history }: ExplainInput,
+    maxTokens = opts.maxNewTokens,
+  ): Promise<string> {
+    // The matcher's verdict and the earlier turns go in the user message, so the cached system prompt stays the same.
+    const [, user] = buildMessages(text, crop, entries, {
+      maxWords: opts.maxWords,
+      sure: clear,
+      bestGuess,
+      photo,
+      askAbout,
+      ...(askChoices ? { askChoices } : {}),
+      ...(help ? { help } : {}),
+      ...(history ? { history } : {}),
+    });
     // Each question stands alone. Only the system prompt carries over.
     session.resetChatHistory();
     const result = await session.promptWithMeta(user!.content, {
@@ -93,7 +108,8 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
     for (const t of turns) items.push(t.role === 'user' ? { type: 'user', text: t.content } : { type: 'model', response: [t.content] });
     chatSession.setChatHistory(items);
     const result = await chatSession.promptWithMeta(question, {
-      maxTokens: CHAT_MAX_TOKENS,
+      // Steps from a guide, or from the named problem's notes, need room for a numbered list.
+      maxTokens: options.guide || options.diagnosis ? GUIDE_MAX_TOKENS : CHAT_MAX_TOKENS,
       temperature: 0,
       budgets: { thoughtTokens: 0 },
     });

@@ -3,25 +3,34 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import {
   NOT_SURE_TEXT,
+  SCOUTING_GUIDE,
   buildChatMessages,
   buildDescribeMessages,
   buildMessages,
   buildPhotoMessages,
+  careGuideFor,
   cropOfChat,
   describeOutcome,
+  detectCrop,
+  dropRepeatedQuestions,
   findViolations,
+  fitPlantPart,
   fixedReply,
   guardPromptLeak,
+  guideReply,
   isFinalAnswer,
+  isHelpAsk,
   isInjectionAttempt,
   matchKeywords,
   nextFollowUps,
   notesToExplain,
   photoIsSure,
   photoSignsOf,
+  replyLanguage,
   routeFor,
   sessionNotes,
   sessionText,
+  signChoices,
   smallTalkReply,
   tidyReply,
   ungroundedProblems,
@@ -55,10 +64,12 @@ import {
   resolveConversation,
   saveActiveConversationId,
 } from './lib/conversations';
+import { preferHubAsk, resolveAiRoute } from './lib/ai-route';
 import { matchOnPhone } from './lib/hybrid';
 import { prepareModels } from './lib/prepare';
 import { phoneLaya, type LayaState } from './lib/laya';
 import { phoneAi, phoneAiFit, type PhoneAiState } from './lib/llm';
+import { NATIVE_AI } from './lib/native-llm';
 import { photoSrc, shrinkPhoto } from './lib/photo';
 import { hubCapabilities, hubReachable, syncQueue } from './lib/sync';
 import { symptomTile } from './symptoms';
@@ -211,6 +222,7 @@ export default function App() {
   const [, setHubOnline] = useState<boolean | null>(null);
   const [notice, setNotice] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [photoRequest, setPhotoRequest] = useState(0);
   // A photo chosen for the next question, as a base64 JPEG already shrunk for the hub.
   const [photo, setPhoto] = useState<string | null>(null);
   const [highlightUid, setHighlightUid] = useState('');
@@ -491,18 +503,23 @@ export default function App() {
     }
     await refresh(active.id);
 
-    // With the phone AI prepared, everything runs on the phone: the photo, the matching (keyword, Gemma's English,
-    // and Laya), and the reply. Nothing waits for the hub. Without it, the question waits for the hub.
-    if (phoneAi.ready && id !== undefined) {
+    // Hub premises: ONNX on the browser / hub Q4_0+ONNX multimodal. Away: LiteRT on the phone when native.
+    const online = Boolean(hubUrl && (await hubReachable(hubUrl)));
+    const route = resolveAiRoute({ hubOnline: online, native: NATIVE_AI });
+    const useHub = preferHubAsk(route, Boolean(image), phoneAi.ready);
+
+    if (!useHub && phoneAi.ready && id !== undefined) {
       if (stillHere()) setBusyId(id);
       try {
-        await answerOnPhone(id, { conversationId: active.id, text: trimmed, plan, picked, image, turns, final });
+        // The problem the app last named in this chat, so "ano ang gagawin ko?" is answered from its notes.
+        const named = lastClear >= 0 ? matchOf(messages[lastClear]!).entries[0] : undefined;
+        await answerOnPhone(id, { conversationId: active.id, text: trimmed, plan, picked, image, turns, final, followUps, named });
       } catch (err) {
         if (stillHere()) setNotice(err instanceof Error ? err.message : String(err));
       } finally {
         setBusyId(current => current === id ? null : current);
       }
-    } else if (hubUrl && (await hubReachable(hubUrl))) {
+    } else if (useHub && hubUrl) {
       if (id !== undefined && stillHere()) setBusyId(id);
       try {
         await syncNow(version, active.id);
@@ -523,9 +540,21 @@ export default function App() {
    */
   async function answerOnPhone(
     id: number,
-    q: { conversationId: string; text: string; plan: Plan; picked?: KnowledgeEntry; image?: string; turns: ChatTurn[]; final: boolean },
+    q: {
+      conversationId: string;
+      text: string;
+      plan: Plan;
+      picked?: KnowledgeEntry;
+      image?: string;
+      turns: ChatTurn[];
+      final: boolean;
+      followUps: number;
+      named?: KnowledgeEntry;
+    },
   ) {
-    const { text, plan, picked, image, turns, final } = q;
+    const { text, plan, picked, image, turns, final, followUps } = q;
+    // The named problem is about one crop. A message that names the other crop is not about it.
+    const named = q.named && (detectCrop(text) ?? q.named.crop) === q.named.crop ? q.named : undefined;
     const injection = isInjectionAttempt(text);
     // A tapped picture already is the pick, and a message that tries to change the rules is never matched, so
     // neither has its photo read.
@@ -553,23 +582,36 @@ export default function App() {
         : photoShowedNothing && !hasSign(asked)
           ? 'chat'
           : plan.route;
+    // A how-to about growing palay is answered from its guide. "Ano po ang gagawin ko?" while a problem is still
+    // open gets the likely problem's first steps, matched on the open notes, instead of one more question.
+    let guide = route === 'chat' && !injection && !picked && photo?.status !== 'ok' ? careGuideFor(text, hasSign(text)) : null;
+    const help =
+      !guide && !injection && !picked && !named && photo?.status !== 'ok' && plan.notes.length > 0 && !hasSign(text) && isHelpAsk(text) && fixedReply(text) === null;
+    if (help) route = 'match';
+    const matchText = help ? sessionText(plan.notes) : asked;
 
     let entries = plan.entries;
     let clear = plan.clear;
     let matchedOn = plan.matchedOn;
     if (route === 'match' && !picked) {
-      const outcome = await matchOnPhone(asked, plan.crop, {
+      const outcome = await matchOnPhone(matchText, plan.crop, {
         knowledge: KNOWLEDGE,
         describe: describeOnPhone,
         ...(phoneLaya.ready ? { laya: (t: string, c: Crop | 'any') => phoneLaya.match(t, c, KNOWLEDGE) } : {}),
       });
       if (outcome.noSigns) route = 'chat';
-      entries = entriesFor(outcome.ids);
       clear = outcome.clear;
+      // A match that is not sure keeps only the problems that show where the farmer saw it.
+      entries = clear ? entriesFor(outcome.ids) : fitPlantPart(entriesFor(outcome.ids), matchText);
       matchedOn = outcome.matchedOn;
       // A photo alone is sure only with two picked signs for the problem, as on the hub.
       const photoOnly = photo?.status === 'ok' && !hasSign(plan.description);
       if (photoOnly && clear && photo?.picks && !photoIsSure(outcome.ids[0]!, photo.picks, KNOWLEDGE)) clear = false;
+      // Asked for help with nothing matched yet: the field-check steps.
+      if (help && entries.length === 0) {
+        route = 'chat';
+        guide = SCOUTING_GUIDE;
+      }
       await db.questions.update(id, {
         route,
         matchIds: entries.map((e) => e.id),
@@ -584,15 +626,28 @@ export default function App() {
     if (route === 'match' && entries.length > 0) {
       // The matcher decided the problem. The phone model only explains it, and is told when the match is not sure.
       const given = notesToExplain(entries, clear || bestGuess);
-      const generated = await phoneAi.generate(buildMessages(asked, CROP, given, { sure: clear, bestGuess }));
+      const unsure = !clear && !bestGuess;
+      const generated = await phoneAi.generate(
+        buildMessages(matchText, CROP, given, {
+          sure: clear,
+          bestGuess,
+          history: turns,
+          ...(unsure && photo?.status !== 'ok' && !help ? { askChoices: signChoices(entries, matchText, followUps) } : {}),
+          ...(unsure && help ? { help } : {}),
+        }),
+        { maxNewTokens: 320 },
+      );
+      // A question the app already asked in this chat is dropped, so the farmer is never asked the same thing twice.
+      const earlierReplies = turns.map((t) => t.reply);
+      const lang = replyLanguage(text);
       // The output rail: a reply that names a problem it was not given notes for is dropped, and the curated notes show instead.
       const grounded = generated !== null && ungroundedProblems(generated, KNOWLEDGE, given, text).length > 0 ? null : generated;
       const tidied =
         grounded === null
           ? null
           : clear || bestGuess
-            ? withProblemName(tidyReply(grounded, text), entries[0]!.name, clear)
-            : tidyReply(grounded, text);
+            ? withProblemName(tidyReply(dropRepeatedQuestions(grounded, earlierReplies), text), entries[0]!.name, clear, lang)
+            : tidyReply(dropRepeatedQuestions(grounded, earlierReplies), text);
       // Prompt leaks (persona / system text) become INJECTION_REPLY.
       const raw = tidied === null ? null : guardPromptLeak(tidied);
       await db.questions.update(id, {
@@ -611,11 +666,26 @@ export default function App() {
     const generated =
       fixed ??
       (await phoneAi.generate(
-        buildChatMessages(said, turns, undefined, { notes: plan.notes, unmatched, final: unmatched && final, crop: plan.crop }),
+        buildChatMessages(said, turns, undefined, {
+          notes: plan.notes,
+          unmatched,
+          final: unmatched && final,
+          crop: plan.crop,
+          ...(named ? { diagnosis: named } : {}),
+          ...(guide ? { guide } : {}),
+        }),
+        // Steps from a guide or from the named problem's notes need room for a numbered list.
+        { maxNewTokens: guide || named ? 420 : 200 },
       ));
-    // A chat reply has no notes to explain, so it may name no problem at all. Prompt leaks become INJECTION_REPLY.
-    const grounded = generated !== null && ungroundedProblems(generated, KNOWLEDGE, [], text).length > 0 ? null : generated;
-    const raw = grounded === null ? null : guardPromptLeak(fixed ? grounded : tidyReply(grounded, text));
+    // A chat reply may name only the problem the app already named; a guide's own words are not the model's guess.
+    const grounded =
+      generated !== null &&
+      ungroundedProblems(generated, KNOWLEDGE, named ? [named] : [], guide ? `${text} ${guide.steps.join(' ')}` : text).length > 0
+        ? null
+        : generated;
+    const tidied = grounded === null || fixed ? grounded : tidyReply(dropRepeatedQuestions(grounded, turns.map((t) => t.reply)), text, guide ? { urgent: false } : {});
+    // With the model's words blocked, a guide question still gets the guide's own steps.
+    const raw = tidied === null ? (guide ? guideReply(guide, replyLanguage(text)) : null) : guardPromptLeak(tidied);
     await db.questions.update(id, {
       status: 'answered',
       explanation: raw,
@@ -713,6 +783,9 @@ export default function App() {
                   thinking={busyId !== null && busyId === r.id}
                   fallback={r.route === 'chat' ? smallTalkReply(r.text) : undefined}
                   highlightNeedle={highlight}
+                  // Only the newest answer offers follow-ups, and not while a reply is being written.
+                  onFollowUp={vi.index === messages.length - 1 && busyId === null ? (question) => void ask(question) : undefined}
+                  onRequestPhoto={() => setPhotoRequest((n) => n + 1)}
                 />
               </div>
             </div>
@@ -763,8 +836,9 @@ export default function App() {
           photo={photo}
           mainRef={mainRef}
           suggestions={empty ? <SymptomPicker labels={L} onPick={onSymptom} /> : undefined}
-          tray={routeLoadFailed ? <button type='button' className='pill-btn min-h-12' onClick={() => setRouteLoadKey(key => key + 1)}>{L.chatRetryLabel}</button> : !empty && pickerOpen ? <SymptomPicker labels={L} onPick={onSymptom} /> : undefined}
+          tray={routeLoadFailed ? <button type='button' className='pill-btn min-h-12' onClick={() => setRouteLoadKey(key => key + 1)}>{L.chatRetryLabel}</button> : !empty && pickerOpen ? <SymptomPicker labels={L} onPick={onSymptom} compact /> : undefined}
           symptomsOpen={pickerOpen}
+          photoRequest={photoRequest}
           onSymptoms={empty ? undefined : () => setPickerOpen((open) => !open)}
           onTextChange={setText}
           onSubmit={submit}

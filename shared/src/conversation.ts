@@ -1,6 +1,9 @@
 import { detectCrop } from './crop.js';
-import { normalize } from './keyword.js';
+import { guideFor, guideReply, type CareGuide } from './guides.js';
+import { keywordHits, normalize } from './keyword.js';
+import { looksCebuano, replyLanguage, type ReplyLanguage } from './language.js';
 import { INJECTION_REPLY, isInjectionAttempt } from './rails.js';
+import type { KnowledgeEntry } from './types.js';
 
 /** Where a question goes: to the matcher (a symptom), or to the chat (small talk or off-topic, nothing to match). */
 export type Route = 'match' | 'chat';
@@ -19,16 +22,24 @@ export const SESSION_TEXT_CHARS = 1000;
 
 /** The question a reply falls back to when the model's question only repeats the farmer's words. */
 const DEFAULT_QUESTION = 'Ano po ang nakikita ninyo sa dahon, tangkay, o uhay?';
+const DEFAULT_QUESTION_CEB = 'Unsa ang inyong nakita sa dahon, punoan, o uhay?';
 /** Said first when the farmer describes a whole field or many plants going bad. */
 const URGENT_LINE = 'Tawagan po agad ang lokal na agriculturist.';
+const URGENT_LINE_CEB = 'Tawagi dayon ang lokal nga agriculturist.';
+
+/** Picks the Tagalog or the Cebuano (Bisaya) line, by the farmer's own words. */
+function inLanguage(text: string): (tl: string, ceb: string) => string {
+  const ceb = looksCebuano(text);
+  return (tl, cebuano) => (ceb ? cebuano : tl);
+}
 
 const GREETING = /\b(hello|helo|hi|hey|hallo|kumusta|kamusta|musta|magandang (umaga|hapon|gabi|tanghali|araw)|good (morning|afternoon|evening|day))\b/;
-const HELP = /\b(tulungan|tulong|matulungan|makatulong|help)\b/;
+const HELP = /\b(tulungan|tulong|matulungan|makatulong|help|tabang|tabangi|tabangan)\b/;
 /** "May tanong ako", "pwede magtanong": the farmer wants to ask something, and has not yet. */
 const ASK = /\b(may (tanong|itatanong|kailangan|sasabihin)|magtanong|itatanong|pwede magtanong)\b/;
-const THANKS = /\b(salamat|salamuch|thank|thanks|thx|tnx|ty)\b/;
+const THANKS = /\b(salamat|salamuch|thank|thanks|thx|tnx|ty|daghang salamat)\b/;
 const FAREWELL =
-  /\b(paalam|bye|goodbye|babay|ingat|see you|later|good night|hanggang sa muli|una na ako|alis na ako|aalis na ako|tapos na ako)\b/;
+  /\b(paalam|bye|goodbye|babay|ingat|amping|see you|later|good night|hanggang sa muli|una na ako|alis na ako|aalis na ako|tapos na ako|mauna na ko|lakaw na ko)\b/;
 /** "ok", "sige", "oo": the farmer heard the last reply. Nothing new to answer. */
 const ACK = /^(ok|okay|k|oo|opo|sige|sige po|sige na|sige na po|ayos|noted|gets|copy)$/;
 /** Questions about the assistant itself: who it is, what it does. */
@@ -76,6 +87,14 @@ const EAT = /\b(kainin|kakainin|makakain|ligtas kainin|safe to eat|edible)\b/;
 /** Medicine and health asks. The app is not a doctor, so it never answers them with a medicine or a dose. */
 const HEALTH =
   /\b(buntis|allergy|paracetamol|biogesic|iinumin|inumin|ubo|inuubo|sipon|lagnat|nilalagnat|masakit ang|sakit ng (ulo|tiyan|likod)|sugat|kagat ng lamok|doktor|ospital|nahihilo)\b/;
+/** A person who is sick: "may sakit po ang anak ko", "nilalagnat ako". Not a crop: "may sakit ang palay" is a crop problem. */
+function isSickPerson(padded: string): boolean {
+  const sick = / (may sakit|nagkasakit|nilalagnat|inuubo|masama ang pakiramdam|masakiton|nagsakit|gihilantan|giubo) /.test(padded);
+  const person = / (anak|asawa|nanay|tatay|lola|lolo|kapatid|apo|misis|mister|baby|sanggol|pamilya|ako|akong anak) /.test(padded);
+  const crop = / (palay|mais|humay|tanim|tanom|dahon|uhay|pananim|basakan|palayan) /.test(padded);
+  return sick && person && !crop;
+}
+
 /** Asks for a pesticide, its brand, or how much of it to use. Only the agriculturist answers these. */
 const PESTICIDE_ASK =
   /\b(pesticide|pesticides|pestisidyo|insecticide|fungicide|herbicide|pamatay|spray|ispray|karate|furadan|brand|dosage|dosis|ml|kutsara|litro|tangke|gamot|tambal|lason|kemikal)\b/;
@@ -87,52 +106,107 @@ const PESTICIDE_ASK =
  */
 export function fixedReply(text: string): string | null {
   const t = ` ${normalize(text)} `;
+  const say = inLanguage(text);
   // The input rail comes first: a message that tries to change the helper's rules never reaches the model.
   if (isInjectionAttempt(text)) return INJECTION_REPLY;
   if (EMERGENCY.test(t) && / (aso|pusa|kalabaw|baka|kambing|baboy|manok|hayop|alaga) /.test(t)) {
-    return 'Emergency po ito. Dalhin po agad ang hayop sa pinakamalapit na beterinaryo o sa Municipal Agriculture Office. Kung lason o pesticide ang nakain, dalhin ang lalagyan o label nito.';
+    return say(
+      'Emergency po ito. Dalhin po agad ang hayop sa pinakamalapit na beterinaryo o sa Municipal Agriculture Office. Kung lason o pesticide ang nakain, dalhin ang lalagyan o label nito.',
+      'Emergency kini. Dad-a dayon ang hayop sa labing duol nga beterinaryo o sa Municipal Agriculture Office. Kung hilo o pesticide ang nakaon, dad-a ang sudlanan o label niini.',
+    );
   }
   if (EMERGENCY.test(t)) {
-    return 'Emergency po ito. Pumunta po agad sa pinakamalapit na health center o ospital, o tumawag sa 911. Kung pesticide ang dahilan, hugasan ang balat o mata ng malinis na tubig nang ilang minuto at dalhin ang label ng pesticide sa doktor.';
+    return say(
+      'Emergency po ito. Pumunta po agad sa pinakamalapit na health center o ospital, o tumawag sa 911. Kung pesticide ang dahilan, hugasan ang balat o mata ng malinis na tubig nang ilang minuto at dalhin ang label ng pesticide sa doktor.',
+      'Emergency kini. Adto dayon sa labing duol nga health center o ospital, o tawag sa 911. Kung pesticide ang hinungdan, hugasi ang panit o mata og limpyo nga tubig sulod sa pipila ka minuto ug dad-a ang label sa pesticide ngadto sa doktor.',
+    );
   }
   if (/ (saan|nasaan|where) /.test(t) && / (ospital|hospital|health center|klinika|clinic) /.test(t)) {
-    return 'Hindi ko po alam kung saan ang pinakamalapit na ospital. Magtanong po sa barangay o sa health center, at tumawag sa 911 kung emergency.';
+    return say(
+      'Hindi ko po alam kung saan ang pinakamalapit na ospital. Magtanong po sa barangay o sa health center, at tumawag sa 911 kung emergency.',
+      'Wala ko kahibalo kung asa ang labing duol nga ospital. Pangutana sa barangay o sa health center, ug tawag sa 911 kung emergency.',
+    );
   }
-  if (HEALTH.test(t)) {
-    return 'Hindi po ako doktor, kaya hindi ako makakapagbigay ng gamot o dosis. Magpakonsulta po sa doktor o sa health center. Nandito lang po ako para sa problema ng palay at mais.';
+  // A sick person comes before the pesticide check, so "ano ang gamot sa anak ko?" never gets the pesticide line.
+  if (HEALTH.test(t) || isSickPerson(t)) {
+    return say(
+      'Hindi po ako doktor, kaya hindi ako makakapagbigay ng gamot o dosis. Magpakonsulta po sa doktor o sa health center. Nandito lang po ako para sa problema ng palay at mais.',
+      'Dili ko doktor, busa dili ko makahatag og tambal o dosis. Pakonsulta sa doktor o sa health center. Ania ra ko para sa problema sa humay ug mais.',
+    );
   }
   if (PESTICIDE_ASK.test(t)) {
-    return 'Hindi po ako nagbibigay ng pangalan o dosis ng pesticide. Ang lokal na agriculturist po ang makakapagsabi kung ano ang ligtas at tama para sa bukid ninyo. Kung may nakikita po kayong sira sa palay o mais, ilarawan po ninyo at aalamin ko ang posibleng problema.';
+    return say(
+      'Hindi po ako nagbibigay ng pangalan o dosis ng pesticide. Ang lokal na agriculturist po ang makakapagsabi kung ano ang ligtas at tama para sa bukid ninyo. Kung may nakikita po kayong sira sa palay o mais, ilarawan po ninyo at aalamin ko ang posibleng problema.',
+      'Dili ko mohatag og ngalan o dosis sa pesticide. Ang lokal nga agriculturist ang makasulti kung unsa ang luwas ug sakto para sa inyong uma. Kung naa moy nakita nga daot sa humay o mais, isulti kini ug tan-awon nako ang posible nga problema.',
+    );
   }
   // Thanks and goodbyes get a warm line and no question, so the chat can end.
   if (!text.includes('?') && !SYMPTOM_WORD.test(t)) {
-    if (FAREWELL.test(t)) return 'Ingat po kayo! Balikan po ninyo ako kung may makita pa kayong problema sa palay o mais.';
-    if (THANKS.test(t)) return 'Walang anuman po. Balikan po ninyo ako kung may makita pa kayong problema sa palay o mais.';
+    if (FAREWELL.test(t)) {
+      return say(
+        'Ingat po kayo! Balikan po ninyo ako kung may makita pa kayong problema sa palay o mais.',
+        'Amping mo! Balik lang kung naa pay makita nga problema sa humay o mais.',
+      );
+    }
+    if (THANKS.test(t)) {
+      return say(
+        'Walang anuman po. Balikan po ninyo ako kung may makita pa kayong problema sa palay o mais.',
+        'Walay sapayan. Balik lang kung naa pay makita nga problema sa humay o mais.',
+      );
+    }
   }
-  if (ACK.test(t.trim())) return 'Sige po. Sabihin lang po ninyo kung may iba pa kayong nakikita sa palay o mais.';
-  if (isGibberish(t)) return 'Hindi ko po naintindihan. Ano po ang nakikita ninyo sa dahon, tangkay, o uhay ng palay o mais?';
+  if (ACK.test(t.trim())) {
+    return say('Sige po. Sabihin lang po ninyo kung may iba pa kayong nakikita sa palay o mais.', 'Sige. Isulti lang kung naa pay laing makita sa humay o mais.');
+  }
+  if (isGibberish(t)) {
+    return say(
+      'Hindi ko po naintindihan. Ano po ang nakikita ninyo sa dahon, tangkay, o uhay ng palay o mais?',
+      'Wala ko kasabot. Unsa ang inyong nakita sa dahon, punoan, o uhay sa humay o mais?',
+    );
+  }
   if (OFFICE.test(t)) {
-    return 'Hindi ko po ito masasagot nang tama. Para sa reklamo, lupa, pautang, insurance, ayuda, o RSBSA, magtanong po sa Municipal Agriculture Office (MAO), sa inyong kooperatiba, o sa barangay. Nandito po ako para sa problema ng palay at mais.';
+    return say(
+      'Hindi ko po ito masasagot nang tama. Para sa reklamo, lupa, pautang, insurance, ayuda, o RSBSA, magtanong po sa Municipal Agriculture Office (MAO), sa inyong kooperatiba, o sa barangay. Nandito po ako para sa problema ng palay at mais.',
+      'Dili nako matubag kini og tarong. Para sa reklamo, yuta, utang, insurance, ayuda, o RSBSA, pangutana sa Municipal Agriculture Office (MAO), sa inyong kooperatiba, o sa barangay. Ania ko para sa problema sa humay ug mais.',
+    );
   }
+  // A growing question with a guide (planting, water, fertilizer timing, harvest...) is answered from that guide.
+  if (careGuideFor(text, false)) return null;
   if (CROP_CARE.test(t)) {
-    return 'Ang alam ko po ay mga peste at sakit ng palay at mais, kaya hindi ko po masasagot nang tama ang tungkol sa pagtatanim, pag-aani, abono, o patubig. Magtanong po sa lokal na agriculturist o sa Municipal Agriculture Office.';
+    // A growing question with no guide: corn, or which crop to plant. The answer depends on the place and season.
+    return say(
+      'Para sa tanong na ito tungkol sa pagtatanim, pag-aani, abono, o patubig, mas mabuting magtanong po sa lokal na agriculturist o sa Municipal Agriculture Office, dahil nakadepende ito sa inyong lugar at panahon. Para sa palay, maitatanong po ninyo sa akin kung paano magtanim, mag-abono, magpatubig, o mag-ani.',
+      'Para niini nga pangutana bahin sa pagtanom, pag-ani, abono, o patubig, mas maayo nga mangutana sa lokal nga agriculturist o sa Municipal Agriculture Office, kay nagdepende kini sa inyong lugar ug panahon. Para sa humay, mahimo nimong pangutan-on nako kung unsaon pagtanom, pag-abono, pagpatubig, o pag-ani.',
+    );
   }
   const crop = OTHER_CROP.exec(t)?.[1];
   if (crop) {
-    return `Palay at mais lang po ang alam kong problema, kaya hindi ko po masasagot ang tungkol sa ${crop}. Para sa ${crop}, kumonsulta po sa lokal na agriculturist.`;
+    return say(
+      `Palay at mais lang po ang alam kong problema, kaya hindi ko po masasagot ang tungkol sa ${crop}. Para sa ${crop}, kumonsulta po sa lokal na agriculturist.`,
+      `Humay ug mais lang ang akong nahibal-an nga problema, busa dili nako matubag ang bahin sa ${crop}. Para sa ${crop}, pakonsulta sa lokal nga agriculturist.`,
+    );
   }
   if (OTHER_CROP_GENERAL.test(t)) {
-    return 'Palay at mais lang po ang alam kong problema, kaya hindi ko po masasagot ang tungkol sa ibang pananim. Para sa ibang pananim, kumonsulta po sa lokal na agriculturist.';
+    return say(
+      'Palay at mais lang po ang alam kong problema, kaya hindi ko po masasagot ang tungkol sa ibang pananim. Para sa ibang pananim, kumonsulta po sa lokal na agriculturist.',
+      'Humay ug mais lang ang akong nahibal-an nga problema, busa dili nako matubag ang bahin sa ubang tanom. Para sa ubang tanom, pakonsulta sa lokal nga agriculturist.',
+    );
   }
   if (EAT.test(t)) {
-    return 'Hindi ko po masasabi kung ligtas itong kainin. Itanong po muna sa lokal na agriculturist, lalo na kung nag-spray kayo kamakailan.';
+    return say(
+      'Hindi ko po masasabi kung ligtas itong kainin. Itanong po muna sa lokal na agriculturist, lalo na kung nag-spray kayo kamakailan.',
+      'Dili nako masulti kung luwas kini kan-on. Pangutana una sa lokal nga agriculturist, ilabina kung bag-o lang mo nag-spray.',
+    );
   }
   if (IDENTITY.test(t)) {
-    return 'Ako po si Ugatan, katulong ninyo sa problema ng palay at mais. Ilarawan po ninyo ang nakikita ninyo sa dahon, tangkay, o uhay, at sasabihin ko ang posibleng problema at ang mga hakbang.';
+    return say(
+      'Ako po si Ugatan, katulong ninyo sa palay at mais: sa mga peste at sakit, at sa pagtatanim, pag-aabono, patubig, at pag-aani ng palay. Ilarawan po ninyo ang nakikita ninyo sa dahon, tangkay, o uhay, o itanong kung paano gawin ang isang bagay, at ibibigay ko ang mga hakbang.',
+      'Ako si Ugatan, inyong katabang sa humay ug mais: sa mga peste ug sakit, ug sa pagtanom, pag-abono, patubig, ug pag-ani sa humay. Isulti kung unsa ang inyong nakita sa dahon, punoan, o uhay, o pangutana kung unsaon pagbuhat sa usa ka butang, ug ihatag nako ang mga lakang.',
+    );
   }
   // "May tanong ako": after topic guardrails, so "magtanong … maliban sa palay" is not mistaken for a soft ask.
   if (ASK.test(t) && !SYMPTOM_WORD.test(t) && !OFF_TOPIC.test(t)) {
-    return 'Opo, ano po ang itatanong ninyo tungkol sa palay o mais?';
+    return say('Opo, ano po ang itatanong ninyo tungkol sa palay o mais?', 'Oo, unsa ang inyong pangutana bahin sa humay o mais?');
   }
   return null;
 }
@@ -165,7 +239,8 @@ export function isOffTopic(text: string): boolean {
   return (
     OFF_TOPIC.test(t) ||
     OTHER_CROP_GENERAL.test(t) ||
-    [PESTICIDE_ASK, HEALTH, EMERGENCY, OFFICE, CROP_CARE, EAT].some((re) => re.test(t))
+    [PESTICIDE_ASK, HEALTH, EMERGENCY, OFFICE, CROP_CARE, EAT].some((re) => re.test(t)) ||
+    isSickPerson(t)
   );
 }
 
@@ -182,6 +257,8 @@ export function routeFor(text: string, hasSign: boolean): Route {
   if (OTHER_CROP_GENERAL.test(t)) return 'chat';
   // "Anong gamot sa kuhol?" names a pest, but it asks for a pesticide: it gets the fixed pesticide line, not a match.
   if (PESTICIDE_ASK.test(t) && isQuestion(text)) return 'chat';
+  // "Paano magtanim ng palay?", "kailan mag-abono?": a how-to question, answered from a guide, not matched.
+  if (careGuideFor(text, hasSign)) return 'chat';
   if (hasSign) return 'match';
   // A plant part or a symptom word is a problem, even when the message also says "tulong" or "salamat".
   if (SYMPTOM_WORD.test(t)) return 'match';
@@ -194,16 +271,32 @@ export function routeFor(text: string, hasSign: boolean): Route {
  */
 export function smallTalkReply(text: string): string {
   const t = ` ${normalize(text)} `;
-  if (t.trim() === '') return 'Hindi ko po naintindihan. Ano po ang nakikita ninyo sa palay o mais?';
+  const say = inLanguage(text);
+  const notUnderstood = say('Hindi ko po naintindihan. Ano po ang nakikita ninyo sa palay o mais?', 'Wala ko kasabot. Unsa ang inyong nakita sa humay o mais?');
+  if (t.trim() === '') return notUnderstood;
   const fixed = fixedReply(text);
   if (fixed) return fixed;
-  if (THANKS.test(t) || FAREWELL.test(t)) return 'Walang anuman po. Balikan po ninyo ako kung may makita pa kayo sa palay o mais.';
-  if (COMPLAINT.test(t)) return 'Pasensya na po. Sabihin po ninyo kung ano ang nakikita ninyo sa palay o mais para matulungan ko kayo.';
-  if (HELP.test(t)) return 'Opo, ano po ang problema sa palay o mais ninyo?';
-  if (ASK.test(t)) return 'Opo, ano po ang itatanong ninyo tungkol sa palay o mais?';
-  if (INTERJECTION.test(t.trim())) return 'Hindi ko po naintindihan. Ano po ang nakikita ninyo sa palay o mais?';
-  if (isOffTopic(text)) return 'Palay at mais lang po ang alam kong problema. Kumonsulta po sa lokal na agriculturist para sa iba. Ano po ang nakikita ninyo sa palay o mais?';
-  return 'Magandang araw po! Ano po ang nakikita ninyo sa palay o mais?';
+  const guide = careGuideFor(text, false);
+  if (guide) return guideReply(guide, replyLanguage(text));
+  if (THANKS.test(t) || FAREWELL.test(t)) {
+    return say('Walang anuman po. Balikan po ninyo ako kung may makita pa kayo sa palay o mais.', 'Walay sapayan. Balik lang kung naa pay makita sa humay o mais.');
+  }
+  if (COMPLAINT.test(t)) {
+    return say(
+      'Pasensya na po. Sabihin po ninyo kung ano ang nakikita ninyo sa palay o mais para matulungan ko kayo.',
+      'Pasayloa ko. Isulti kung unsa ang inyong nakita sa humay o mais aron matabangan ko kamo.',
+    );
+  }
+  if (HELP.test(t)) return say('Opo, ano po ang problema sa palay o mais ninyo?', 'Oo, unsa ang problema sa inyong humay o mais?');
+  if (ASK.test(t)) return say('Opo, ano po ang itatanong ninyo tungkol sa palay o mais?', 'Oo, unsa ang inyong pangutana bahin sa humay o mais?');
+  if (INTERJECTION.test(t.trim())) return notUnderstood;
+  if (isOffTopic(text)) {
+    return say(
+      'Palay at mais lang po ang alam kong problema. Kumonsulta po sa lokal na agriculturist para sa iba. Ano po ang nakikita ninyo sa palay o mais?',
+      'Humay ug mais lang ang akong nahibal-an nga problema. Pakonsulta sa lokal nga agriculturist para sa uban. Unsa ang inyong nakita sa humay o mais?',
+    );
+  }
+  return say('Magandang araw po! Ano po ang nakikita ninyo sa palay o mais?', 'Maayong adlaw! Unsa ang inyong nakita sa humay o mais?');
 }
 
 /**
@@ -245,6 +338,85 @@ export function isQuestionWithoutSign(text: string, hasSign: boolean): boolean {
 /** Ends in "?" or opens with a question word. */
 function isQuestion(text: string): boolean {
   return text.trim().endsWith('?') || QUESTION_OPENER.test(` ${normalize(text)} `);
+}
+
+/**
+ * The rice-growing guide a message asks about, or null. A message with a knowledge-base keyword is a problem to
+ * match, not a how-to. A report with a symptom word ("pagkatapos magtanim, nalalanta") is a problem too, unless it
+ * is a question ("pwede na bang anihin, dilaw na ang butil?"). Another crop never gets a rice guide.
+ */
+export function careGuideFor(text: string, hasSign: boolean): CareGuide | null {
+  if (hasSign || isInjectionAttempt(text)) return null;
+  const t = ` ${normalize(text)} `;
+  if ((OTHER_CROP.test(t) || OTHER_CROP_GENERAL.test(t)) && !detectCrop(text)) return null;
+  if (SYMPTOM_WORD.test(t) && !isQuestion(text)) return null;
+  return guideFor(text);
+}
+
+/** "Ano po ang pwedeng gawin ko?", "pa help naman", "paano ito mawawala?": the farmer wants steps, not another question. */
+const HELP_ASK =
+  /\b(ano (?:po )?(?:ba )?(?:ang |kaya ang |ba ang )?(?:pwede|puwede|pwedeng|puwedeng|dapat|gagawin|gawin|kailangan|kailangang|magagawa|solusyon|lunas|remedyo)|anong (?:pwede|puwede|pwedeng|puwedeng|dapat|gagawin|gawin|solusyon|lunas|remedyo|magagawa)|paano (?:po )?(?:ko |namin |natin )?(?:po )?(?:ito |iyan |yan |yun )?(?:aayusin|ayusin|maaayos|masolusyunan|mawawala|mawala|maiiwasan|maiwasan|labanan|lalabanan|kontrolin|kokontrolin|sugpuin|puksain|gagamutin|gamutin|tanggalin|aalisin|maililigtas|iligtas)|pa ?help|patulong|tulungan|tulong|help|what (?:should|can|do) i do|what to do|how (?:do i |can i |to )(?:fix|stop|control|treat|solve|get rid|save)|unsa(?:y| ang| akong| man ang)? (?:angay (?:nakong |nako )?)?(?:buhaton|himuon)|unsaon (?:pagpugong|pagsumpo|pagtangtang|pagwagtang|pagpatay|pag ayo|pagsulbad)|tabangi|tabangan|patabang)\b/;
+
+/** True when the farmer asks what to do or asks for help. With a problem still open, the reply gives steps. */
+export function isHelpAsk(text: string): boolean {
+  return HELP_ASK.test(` ${normalize(text)} `);
+}
+
+/** A farmer's plant part, and the words a sign in the notes uses for it. */
+const PARTS: readonly (readonly [RegExp, RegExp])[] = [
+  [/ (uhay|butil|lugas|leeg|liog|panicle|grain|grains|bunga) /, /\b(panicle|grain|grains|neck|head|heads|ear|ears)\b/i],
+  [/ (dahon|leaf|leaves) /, /\b(leaf|leaves)\b/i],
+  [/ (tangkay|puno|punoan|tukog|stem|stalk|suwi|tiller|usbong) /, /\b(stem|stems|stalk|tiller|tillers|base|dead heart|dead hearts)\b/i],
+  [/ (ugat|root|roots) /, /\broots?\b/i],
+  [/ (punla|semilya|seedling|seedlings) /, /\bseedlings?\b/i],
+];
+
+/** The sign patterns for the plant parts the farmer named, in their own words. Empty when they named none. */
+function partsNamed(farmerText: string): RegExp[] {
+  const t = ` ${normalize(farmerText)} `;
+  return PARTS.filter(([farmer]) => farmer.test(t)).map(([, sign]) => sign);
+}
+
+/**
+ * Possible problems that fit where the farmer saw the trouble. "Uhay po" rules out a leaf-only disease, and "dilaw
+ * ang dahon" a pest that only shows on the grain, so a "not sure" question or a first-steps reply is about a problem
+ * that can be there. When none fits, or the farmer named no part, the list is kept as the matcher gave it.
+ */
+export function fitPlantPart<T extends { signs: readonly string[]; insect?: unknown }>(entries: readonly T[], farmerText: string): T[] {
+  // "Wala pong insekto": an insect is not the answer, even when it is the only candidate left.
+  const kept = NO_INSECT.test(` ${normalize(farmerText)} `) ? entries.filter((e) => !e.insect) : [...entries];
+  const parts = partsNamed(farmerText);
+  if (parts.length === 0) return kept;
+  const fits = kept.filter((e) => e.signs.some((sign) => parts.some((p) => p.test(sign))));
+  return fits.length > 0 ? fits : kept;
+}
+
+/** The farmer says there are no insects or worms. */
+const NO_INSECT =
+  / (wala|walang|walay|wala pong|wala po|no|without|there are no) (po |pong |ng |nga |any )?(insekto|kulisap|uod|ulod|higad|insect|insects|bug|bugs|worm|worms) /;
+
+/**
+ * The signs a "not sure" question offers the farmer as choices: one per possible problem (at most three), on the
+ * plant part the farmer named when the notes have one, and not one the farmer already said. `round` is how many
+ * questions were already asked about this problem, so the next question asks about a different sign.
+ */
+export function signChoices(entries: readonly KnowledgeEntry[], farmerText: string, round = 0): string[] {
+  const parts = partsNamed(farmerText);
+  const choices: string[] = [];
+  for (const entry of entries.slice(0, 3)) {
+    const said = new Set(keywordHits(entry, farmerText));
+    const fresh = entry.signs.filter((sign) => {
+      const hits = keywordHits(entry, sign);
+      return hits.length === 0 || hits.some((k) => !said.has(k));
+    });
+    const pool = fresh.length ? fresh : entry.signs;
+    const onPart = parts.length ? pool.filter((sign) => parts.some((p) => p.test(sign))) : [];
+    // Asking again moves to the next sign on the same plant part, never to a part the farmer did not name.
+    const ordered = onPart.length ? onPart : pool;
+    const sign = ordered[round % ordered.length];
+    if (sign && !choices.includes(sign)) choices.push(sign);
+  }
+  return choices;
 }
 
 /**
@@ -354,10 +526,44 @@ export function dropEchoQuestions(text: string, farmerText: string): string {
     .replace(/\n{3,}/g, '\n\n')
     .trim();
   if (!dropped) return text;
-  return kept.includes('?') ? kept : `${kept} ${DEFAULT_QUESTION}`.trim();
+  return kept.includes('?') ? kept : `${kept} ${looksCebuano(farmerText) ? DEFAULT_QUESTION_CEB : DEFAULT_QUESTION}`.trim();
 }
 
-const URGENT = /\b(lahat|buong|kalahati|karamihan|half|kumakalat|mabilis|namamatay|nalalanta|bumabagsak|emergency|wala nang natira)\b/;
+/** True when two questions ask the same thing: most of their content words are the same. */
+function sameQuestion(a: string[], b: string[]): boolean {
+  if (a.length === 0 || b.length === 0) return false;
+  const shared = a.filter((w) => b.some((x) => sameWord(w, x))).length;
+  return shared / Math.max(a.length, b.length) >= 0.75;
+}
+
+/**
+ * Drops a question the app already asked earlier in this chat ("Ano po ang kulay ng mga batik?" twice). Asking
+ * again what the farmer could not or did not answer only goes in circles. A reply that is nothing but the repeated
+ * question is kept as it is, so the farmer still gets an answer.
+ */
+export function dropRepeatedQuestions(text: string, earlierReplies: readonly string[]): string {
+  const asked = earlierReplies.flatMap((reply) => sentencesOf(reply).flat().filter((s) => s.includes('?'))).map(contentWords);
+  if (asked.length === 0) return text;
+  let dropped = false;
+  const kept = sentencesOf(text)
+    .map((sentences) =>
+      sentences
+        .filter((sentence) => {
+          if (!sentence.includes('?') || !asked.some((a) => sameQuestion(contentWords(sentence), a))) return true;
+          dropped = true;
+          return false;
+        })
+        .join('')
+        .trim(),
+    )
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return dropped && kept ? kept : text;
+}
+
+const URGENT =
+  /\b(lahat|buong|kalahati|karamihan|half|kumakalat|mabilis|namamatay|nalalanta|bumabagsak|emergency|wala nang natira|tanan|tibuok|katunga|nangamatay|mokaylap|nagkaylap|paspas)\b/;
 
 /** The farmer describes a whole field or many plants going bad. Such a reply says to call the agriculturist now. */
 export function isUrgent(text: string): boolean {
@@ -366,24 +572,24 @@ export function isUrgent(text: string): boolean {
   return URGENT.test(t) && !THANKS.test(t) && !FAREWELL.test(t);
 }
 
-const APOLOGY_OPENER = /^(pasensya na po|pasensya na|pasensiya na po|paumanhin po|paumanhin|sorry po|sorry)[.!,]?\s+/i;
-const APOLOGY_WORD = /\b(pasensya|pasensiya|paumanhin|sorry)\b/i;
+const APOLOGY_OPENER = /^(pasensya na po|pasensya na|pasensiya na po|paumanhin po|paumanhin|pasayloa ko|pasayloa|sorry po|sorry)[.!,]?\s+/i;
+const APOLOGY_WORD = /\b(pasensya|pasensiya|paumanhin|pasayloa|sorry)\b/i;
 
 /**
  * Tidies a model reply before the farmer sees it. An apology opener is removed unless the farmer complained, and a
  * complaint always gets one. Questions that repeat the farmer are dropped, and at most one question is kept. A
  * reply to a field going bad starts with "call the agriculturist now".
  */
-export function tidyReply(raw: string, farmerText: string): string {
+export function tidyReply(raw: string, farmerText: string, { urgent = isUrgent(farmerText) }: { urgent?: boolean } = {}): string {
   let reply = limitQuestions(dropEchoQuestions(raw.trim(), farmerText));
   if (!reply) return smallTalkReply(farmerText);
   if (COMPLAINT.test(` ${normalize(farmerText)} `)) {
     // The sorry goes in front of the reply, so a complaint that also names a symptom keeps its explanation.
-    if (!APOLOGY_WORD.test(reply)) reply = `Pasensya na po. ${reply}`;
+    if (!APOLOGY_WORD.test(reply)) reply = `${looksCebuano(farmerText) ? 'Pasayloa ko.' : 'Pasensya na po.'} ${reply}`;
   } else {
     reply = reply.replace(APOLOGY_OPENER, '').trim() || reply;
   }
-  if (isUrgent(farmerText) && !/agriculturist/i.test(reply)) reply = `${URGENT_LINE} ${reply}`;
+  if (urgent && !/agriculturist/i.test(reply)) reply = `${looksCebuano(farmerText) ? URGENT_LINE_CEB : URGENT_LINE} ${reply}`;
   return reply;
 }
 
@@ -397,14 +603,16 @@ function shortName(name: string): string {
  * sometimes writes only "neck rot" or "May kuhol", and the farmer should hear the problem's name in the reply.
  * `sure` is false for a best guess, which is said as likely, not certain.
  */
-export function withProblemName(reply: string, name: string, sure: boolean): string {
+export function withProblemName(reply: string, name: string, sure: boolean, lang: ReplyLanguage = 'tl'): string {
   const short = shortName(name);
   if (normalize(reply).includes(normalize(short))) return reply;
+  if (lang === 'ceb') return `${sure ? 'Lagmit' : 'Posible nga'} ${short} kini. ${reply}`;
+  if (lang === 'en') return `This is ${sure ? 'likely' : 'possibly'} ${short}. ${reply}`;
   return `${sure ? 'Malamang' : 'Posibleng'} ${short} po ito. ${reply}`;
 }
 
 const TREATMENT =
-  /\b(spray|pestisidyo|pesticide|pesticides|insecticide|fungicide|herbicide|pamatay|gamot|gamutin|tratuhin|treatment|kontrolin|control|lason|kemikal)\b/;
+  /\b(spray|pestisidyo|pesticide|pesticides|insecticide|fungicide|herbicide|pamatay|gamot|gamutin|tratuhin|treatment|kontrolin|control|lason|kemikal|tambal|hilo)\b/;
 
 /** True when text gives treatment, control, or spraying advice. Such replies carry the pesticide notice. */
 export function mentionsTreatment(text: string): boolean {

@@ -54,9 +54,40 @@ describe('Tagalog help dialog', () => {
     const { html } = renderHelp();
     expect(html).toContain('binabasa ito ng AI sa device');
     expect(html).not.toContain('Hindi pa magagamit ang larawan');
-    expect(html).toContain('Ang hub ang nagsusulat nito sa Wi-Fi ng hub, walang internet');
+    expect(html).toContain('isinusulat ito ng browser');
+    expect(html).toContain('ang hub ang nagsusulat');
     expect(html).toContain('hindi tiyak na diagnosis');
     expect(html).toContain(DISCLAIMER);
+  });
+});
+
+describe('help sheet layout', () => {
+  it('is a bottom sheet with a drag handle and names the three steps, the three features and the advisory', () => {
+    const { html } = renderHelp();
+    expect(html).toContain('class="chat-sheet"');
+    expect(html).toContain('chat-sheet-grip');
+    for (const title of ['Ilarawan o kuhanan', 'Ipadala', 'Suriin ang gabay', 'Mikropono', 'Kamera', 'Lokal na hub']) {
+      expect(html).toContain(title);
+    }
+    expect(html).toContain('Offline / Lokal na Wi-Fi');
+    expect(html).toContain('role="note"');
+  });
+
+  it('keeps the AI setup in its own collapsible module with the storage need', () => {
+    const { html } = renderHelp();
+    expect(html).toMatch(/<details[^>]*>\s*<summary/);
+    expect(html).toContain('~5 GB libre');
+    expect(html).toContain('Hindi pa handa');
+  });
+
+  it('shows a download bar with the real percent while loading, and none otherwise', () => {
+    const loading = renderToStaticMarkup(createElement(HelpDialog, {
+      ai: { status: 'loading', device: '', progress: 'Gemma', bytes: { loaded: 1.7e9, total: 3.4e9 }, error: '' },
+      onPrepareAi: vi.fn(),
+    }));
+    expect(loading).toContain('role="progressbar"');
+    expect(loading).toContain('aria-valuenow="50"');
+    expect(renderHelp('idle').html).not.toContain('role="progressbar"');
   });
 });
 

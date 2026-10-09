@@ -8,7 +8,7 @@ Read [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md) for the plan and [docs/DISCL
 
 | Folder | What it is |
 | --- | --- |
-| `web/` | React + Vite + TypeScript PWA, also built as an Android APK. Farmers never sign in: chat (+ sidebar) at `/chat` or `/chat/:conversationId`, first-run setup at `/setup` in the APK. Staff login at `/admin/login` and admin at `/admin` (browser build only). |
+| `web/` | React + Vite + TypeScript PWA, also built as an Android APK. Browser `/` is the marketing landing (CTA → `/chat`). Farmers never sign in: chat (+ sidebar) at `/chat` or `/chat/:conversationId`, first-run setup at `/setup` in the APK (native skips the landing). Staff login at `/admin/login` and admin at `/admin` (browser build only). |
 | `hub/` | Node.js TypeScript service for crop Q&A on the LAN. Answers `POST /ask`. |
 | `ws/` | Go DDD API on Postgres 16. Admin auth, farmer registration, QR invites, audit. The farmer app no longer calls it. PII encrypted at rest. |
 | `shared/` | Matcher, knowledge validation, pesticide guardrail, and answer composition, used by web and hub. |
@@ -26,7 +26,7 @@ pnpm install
 pnpm dev
 ```
 
-Open http://localhost:3000. The port is fixed in `web/vite.config.ts` for `pnpm dev` and `preview`; if something else is using 3000, the command stops with an error instead of picking another port. Keyword matching works right away. Offline reloads (no network after the first load) apply to the built site, not to `pnpm dev`, where the service worker is off.
+Open http://localhost:3000. In the browser, `/` is the Ugatan landing page; **Open chat** goes to `/chat`. The Android APK does not show the landing: it still opens `/setup` until setup is done, then `/chat`. The port is fixed in `web/vite.config.ts` for `pnpm dev` and `preview`; if something else is using 3000, the command stops with an error instead of picking another port. Keyword matching works right away. Offline reloads (no network after the first load) apply to the built site, not to `pnpm dev`, where the service worker is off.
 
 The app is local only: nothing it does at runtime reaches the internet. The app, the knowledge base (with Tagalog and Cebuano card text), and the fonts are bundled. Farmers never sign in: the chat opens at once, and chats and setup live only in the phone's own storage (IndexedDB and localStorage). Nothing is sent to `ws`.
 
@@ -61,7 +61,17 @@ This is a debug build, signed with the local debug key. A build for wider sharin
 
 To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`). `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. A previously saved address on that phone still overrides it. The home page has no hub settings or manual sync controls.
 
-Only the staff portal talks to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`) and open http://localhost:3000/admin/login. Farmers open http://localhost:3000/ and land in the chat with no sign-in. Saved chats are at `/chat/:conversationId`; bare `/chat` is always an empty draft, not the last active chat. Chats and their sidebar history stay on that device. Old `/login` and `/claim` links open the chat.
+Only the staff portal talks to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`). The admin UI is the FrontEnd hub shell at `/admin` (Overview, Users, QR access, Activity — same layout as `/admin-preview.html`). `/admin` opens `/admin/overview`. Sign-in is `/admin/login` (`POST /api/v1/auth/login` with an **admins** table email/password); after login the JWT is stored and the shell opens at `/admin/overview`. List/metrics data still shows the UI-empty state until those screens are wired to `ws`. Farmer rows stay in `users` for registration/QR only — they cannot sign in to admin. Seed with `make migrate-up` then `make seed` in `ws/` (`admin@ugatan.com` / see `ws/configs/seeder.yaml`), then `make run-api`. Farmers open http://localhost:3000/chat for the chat with no sign-in (browser `/` is the landing); chats stay in IndexedDB on that device (no `ws` sync). Chat is at `/chat/:conversationId` (bare `/chat` is a draft until the first message). Old `/login` and `/claim` links open `/` (landing in the browser).
+
+### Which Gemma runs where
+
+| Where | Text chat | Photo / voice |
+|--------|-----------|----------------|
+| Phone **away** from hub (Android LiteRT) | `gemma-4-E2B-it.litertlm` (`PHONE_LITERT_FILE` on hub) | On-device LiteRT when the model supports it |
+| Phone **on hub** Wi-Fi (browser) | ONNX from hub `/models/...` (`GEMMA_MODEL_DIR`) | Hub `HUB_VISION` / `HUB_VOICE` (same ONNX folder) |
+| Hub explain path | GGUF Q4_0 (`GEMMA_GGUF`, llama.cpp) | ONNX only — Q4_0 has no vision/audio projector |
+
+The app picks this from `hubReachable` (`web/src/lib/ai-route.ts`): on hub premises prefer hub/ONNX multimodal; away prefer LiteRT on native.
 
 The left header button opens conversations. Desktop screens (1024 px+) have a collapsible panel; tablet/phone screens have a closed-by-default modal drawer. Chat actions offer rename, pin/unpin, and confirmed deletion with inline retry feedback and no success toast. Deleting while searching stays on search.
 
@@ -91,15 +101,15 @@ PII columns are AES-GCM ciphertext. ID images never leave the admin browser. Far
 
 ## Admin interfaces
 
-The staff sign-in page is `/admin/login`; it authenticates against `ws` and opens the real staff console at `/admin`. There is no forgot-password control. The older `/admin.html` entry and its `#login` view redirect to this same sign-in page.
+The staff sign-in page is `/admin/login`; it authenticates against `ws` and opens the staff console at `/admin/overview` (Users, QR access, Activity). There is no forgot-password control. `/admin-preview.html` mounts the same shell with hash routes for isolated frontend QA; its default and `#login` views redirect to the same `/admin/login` page. The preview entry must not be named `admin.html`, because Vite would intercept `/admin`.
 
-The separate sidebar dashboard remains at `/admin.html#overview` for layout QA; it is not authenticated access and is not connected to the staff API. Development-status banners have been removed. Unavailable record and invitation controls remain disabled with action-specific guidance rather than simulating success. It contains no sample users or saved personal records.
+The isolated dashboard preview is `/admin-preview.html#overview`; it is not authenticated access. Development-status banners remain removed in both entries. List, metric, registration-save and invitation controls are not yet connected to the staff API; unavailable actions remain disabled with specific guidance. No sample users or personal records are stored by the shell.
 
-Manual registration in the sidebar dashboard supports consent, draft validation, review, editing, and explicit discard. There is no minimum-age eligibility rule. Drafts live in memory and are lost on reload; the browser is asked to warn before leaving an unfinished draft. Record and QR previews do not create accounts or grant access. Use the authenticated `/admin` console for actual registration and access management.
+Manual registration in the sidebar dashboard supports consent, draft validation, review, editing, and explicit discard. There is no minimum-age eligibility rule. Drafts live in memory and are lost on reload; the browser is asked to warn before leaving an unfinished draft. Record and QR previews do not create accounts or grant access. Staff sign-in is connected to `ws`; the sidebar dashboard still needs its record and invitation actions wired to that API.
 
 ## Text and display preferences
 
-Open the sliders icon beside history on the farmer page (**Teksto at display**), or **Display preferences** from the admin sidebar/mobile menu. Login and the registration drawer have no preference controls; both still inherit saved preferences. Choose Standard/Large/Extra large text (100/125/150%), Regular/Stronger weight, and Automatic/High contrast. Changes apply immediately to both entries; Automatic follows the device contrast preference. Reset restores the defaults.
+Open the sliders icon in the farmer page header (**Teksto at display**), or **Display preferences** from the admin sidebar/mobile menu. Login and the registration drawer have no preference controls; both still inherit saved preferences. Choose Standard/Large/Extra large text (100/125/150%), Regular/Stronger weight, and Automatic/High contrast. Changes apply immediately to both entries; Automatic follows the device contrast preference. Reset restores the defaults.
 
 Preferences are saved only in this browser on this origin and shared with its other Ugatan tabs. On a shared computer, the next operator inherits them. If storage is blocked, the controls still work for the current page and explain that saving is unavailable. Changing appearance does not alter AI language, reload a chat, save a registration, or store personal information. Browser zoom and forced-color accessibility modes remain available.
 
@@ -165,6 +175,8 @@ Laya has a 192-token budget per question. Each option text is capped at 48 token
 
 ## Gemma on the hub
 
+Hub text explain uses **GGUF Q4_0**; hub photo and voice use the **ONNX** folder (`GEMMA_MODEL_DIR`). The phone matrix above is separate: LiteRT away, ONNX when the hub is reachable. See `hub/.env.example`.
+
 The hub can write the Taglish explanation with a local Gemma 4 E2B model. It is off until you set `HUB_EXPLAINER=gemma`. The default route runs a GGUF file through llama.cpp (`node-llama-cpp` 3.22.1). On the dev laptop (RTX 4060, Vulkan), five test questions took 1.1 to 2.3 s each with matching included, though one run took 18.5 s (measured 2026-10-09, see `docs/agent-notes/`). Download the model once (`ggml-org/gemma-4-E2B-it-GGUF`, Q4_0, about 2.8 GB, Apache-2.0). Run this after `pnpm install`, so `npx` finds the installed `node-llama-cpp`:
 
 ```
@@ -183,7 +195,7 @@ node-llama-cpp chooses the GPU backend and puts as many layers on it as fit. No 
 
 The older ONNX route works on a hub without a usable GPU, but takes 12 s to a minute per answer on the CPU. Set `GEMMA_RUNTIME=onnx` and `GEMMA_MODEL_DIR=E:/models/gemma-4-E2B-it-ONNX`. The hub does not download this folder, so put the files of `onnx-community/gemma-4-E2B-it-ONNX` in it yourself. Optional for it: `GEMMA_DTYPE` (default `q4f16`) and `GEMMA_DEVICE` (default `cpu`). DirectML on the GPU gave empty output.
 
-Both routes: `GEMMA_MAX_WORDS` (default 70) is written into the prompt as the word limit. Nothing enforces it. The phone asks for 150; the hub asks for less because every token costs time. `GEMMA_MAX_NEW_TOKENS` (default 128) caps the answer. An answer that hits the cap and does not end in `.`, `!`, or `?` is trimmed. If it has several lines, the last line is dropped when the rest keeps more than a third of the text. Otherwise the text is cut at its last sentence end followed by a space, if that keeps more than a third. If neither cut works, the full text is kept. Requests run one at a time. If the model fails to load, or returns nothing, the hub answers with the matched notes only. The pesticide guardrail checks the Gemma text too. Check the model with `GEMMA_GGUF` (or `GEMMA_MODEL_DIR`) set and `pnpm --filter @ugatan/hub test`; without them the Gemma tests are skipped.
+Both routes: `GEMMA_MAX_WORDS` (default 130) is written into the prompt as the word limit. Nothing enforces it. The phone asks for 150. `GEMMA_MAX_NEW_TOKENS` (default 320) caps the answer, enough for a best guess or a "what do I do" reply with numbered steps. An answer that hits the cap and does not end in `.`, `!`, or `?` is trimmed. If it has several lines, the last line is dropped when the rest keeps more than a third of the text. Otherwise the text is cut at its last sentence end followed by a space, if that keeps more than a third. If neither cut works, the full text is kept. Requests run one at a time. If the model fails to load, or returns nothing, the hub answers with the matched notes only. The pesticide guardrail checks the Gemma text too. Check the model with `GEMMA_GGUF` (or `GEMMA_MODEL_DIR`) set and `pnpm --filter @ugatan/hub test`; without them the Gemma tests are skipped.
 
 ## Photos
 
@@ -203,18 +215,19 @@ Photo reading follows the same split as the rest of the hub. The vision model on
 
 ## Voice
 
-A farmer can speak the question instead of typing it (the mic button next to the text box). With `HUB_VOICE=on`, the phone records up to 30 seconds and the hub writes it down with the local Gemma 4 E2B audio model. No internet is needed. The words go into the text box and the farmer checks them before sending, so a mishearing never becomes an answer by itself. It uses the same ONNX folder and the same loaded model as photo reading (`GEMMA_MODEL_DIR`, `onnx-community/gemma-4-E2B-it-ONNX`, which includes `audio_encoder*.onnx`), one job at a time on the CPU. The llama.cpp route cannot do this: its GGUF has no audio projector file.
+A farmer can speak the question instead of typing it (the mic button next to the text box). On browser/PWA the mic uses the Web Speech API (usually needs internet in Chrome) with a full-screen listening overlay. On the Android app, with `HUB_VOICE=on`, the phone records up to 30 seconds and the hub writes it down with the local Gemma 4 E2B audio model over hub Wi-Fi — no internet. The words go into the text box and the farmer checks them before sending, so a mishearing never becomes an answer by itself. Hub transcription uses the same ONNX folder and the same loaded model as photo reading (`GEMMA_MODEL_DIR`, `onnx-community/gemma-4-E2B-it-ONNX`, which includes `audio_encoder*.onnx`), one job at a time on the CPU. The llama.cpp route cannot do this: its GGUF has no audio projector file.
 
 ```
 HUB_VOICE=on
 GEMMA_MODEL_DIR=E:/models/gemma-4-E2B-it-ONNX
 ```
 
-- **Phone.** The mic button records with the browser's `MediaRecorder`, converts the audio to 16 kHz mono (`web/src/lib/recorder.ts`), and sends it to `POST /transcribe` as `{ "audio": "<base64 16-bit PCM>" }`. It stops by itself 1.6 s after the farmer stops talking, or at 30 seconds, and a tap on the mic stops it sooner. Before sending, the phone cuts the silence from the start and end, raises a quiet voice (at most 8 times), and says "no speech" itself when it hears only room noise (`web/src/lib/speech.ts`), so the hub reads seconds of speech and not a long silence. The response is `{ "status": "ok" | "empty" | "unreadable" | "unavailable", "text": "..." }`. The prompt asks for the words as spoken, in the language spoken, with no translation (`TRANSCRIBE_PROMPT` in `shared/src/prompt.ts`).
-- **No internet fallback.** The browser's own speech service is never used, because it sends the audio to the internet. If the hub is not reachable or has voice off, the button says to join the hub's Wi-Fi or type the question. It asks the hub again on each tap.
-- **Privacy.** The recording is not stored. The hub log keeps only the length of the recording and of the text, not the words. The words reach the log only if the farmer sends them as a question.
-- **Speed.** A 6 s recording took about 26 s to write down on the dev laptop's CPU when it was idle (measured 2026-10-09). A test with 3 s of silence before the sentence and 20 s of silence after it took 37 s before the phone cut silence, and 18 s after. The phone waits up to 120 s, and the first recording after a start may wait for the model to load.
-- **Browsers allow the microphone only on `localhost` and on https.** A phone that opens the app over plain `http://<laptop-ip>` gets no microphone and the button falls back to browser speech or hides. This is the same problem as "Hub network" in Pending decisions.
+- **Browser / PWA.** The mic button uses the Web Speech API (`web/src/lib/browser-speech.ts`) as the main path: a Google-style overlay asks for the microphone, then the browser writes speech into the composer. In Chrome that usually needs the internet. The farmer still checks the text before sending.
+- **Android app (Capacitor) and hub Wi-Fi.** When hub voice is on, the app records with `MediaRecorder`, converts to 16 kHz mono (`web/src/lib/recorder.ts`), and sends it to `POST /transcribe` as `{ "audio": "<base64 16-bit PCM>" }`. It stops by itself 1.6 s after the farmer stops talking, or at 30 seconds, and a tap on the mic stops it sooner. Before sending, the phone cuts the silence from the start and end, raises a quiet voice (at most 8 times), and says "no speech" itself when it hears only room noise (`web/src/lib/speech.ts`). The response is `{ "status": "ok" | "empty" | "unreadable" | "unavailable", "text": "..." }`. The prompt asks for the words as spoken, in the language spoken, with no translation (`TRANSCRIBE_PROMPT` in `shared/src/prompt.ts`). Browsers without SpeechRecognition also use this hub path when voice is on.
+- **When voice cannot run.** If the browser has no SpeechRecognition and the hub is unreachable or has voice off, the button says to allow the microphone or type the question. On Capacitor, hub voice is required; the app asks the hub again on each tap.
+- **Privacy.** Hub recordings are not stored. The hub log keeps only the length of the recording and of the text, not the words. The words reach the log only if the farmer sends them as a question. Browser speech may leave the device (Chrome's speech service).
+- **Speed.** A 6 s recording took about 26 s to write down on the hub laptop's CPU when it was idle (measured 2026-10-09). A test with 3 s of silence before the sentence and 20 s of silence after it took 37 s before the phone cut silence, and 18 s after. The phone waits up to 120 s, and the first recording after a start may wait for the model to load. Browser SpeechRecognition is usually much faster when the network is up.
+- **Browsers allow the microphone only on `localhost` and on https.** A phone that opens the app over plain `http://<laptop-ip>` may get no microphone. This is the same problem as "Hub network" in Pending decisions.
 
 ### How well it writes Tagalog and Cebuano
 
@@ -295,10 +308,11 @@ From the repository root:
 | `pnpm test` | Builds, then runs all tests. |
 | `pnpm eval:voice` | Scores the hub's speech writing on recordings with the correct text: word and character error rate per language. Needs clips (see "Voice") and `GEMMA_MODEL_DIR`. Add `-- --dtype quantized` to compare weights. |
 | `pnpm eval` | Scores keyword matching on `eval/descriptions.csv`. Also scores Laya and hybrid when `LAYA_MODEL_DIR` is set (nothing is downloaded). Pass `-- --file <name>` to score another CSV in `eval/`. Add `--describe` to also score hybrid with Gemma's English first (needs `GEMMA_GGUF`). The `lang` column is `en`, `tl`, `taglish`, or `ceb` (Cebuano/Bisaya). |
+| `pnpm --filter @ugatan/hub benchmark:landing` | Measures real hub AI wall-clock timings (keyword match, Gemma explain, optional photo/voice) and writes `web/public/benchmarks.json` for the landing page. Labels the machine from `node-llama-cpp inspect gpu` (Vulkan/CUDA device when available). Needs models on disk (`GEMMA_GGUF` for llama.cpp, or `GEMMA_MODEL_DIR` for ONNX). Exits non-zero and does not overwrite with fake numbers when models are missing. CI must not require GPU models. Commit the JSON when the team wants shared numbers on `/`. |
 
 `make install`, `make build`, and `make test` call the same pnpm commands. They need GNU make on the PATH, which Windows does not include by default.
 
-Package-level scripts are `dev`, `build`, `preview`, and `test` in `web/`, and `dev`, `build`, `start`, `eval`, and `test` in `hub/`.
+Package-level scripts are `dev`, `build`, `preview`, and `test` in `web/`, and `dev`, `build`, `start`, `eval`, `benchmark:landing`, and `test` in `hub/`.
 
 Hub tests load `hub/.env`; shared and web tests do not. A machine-specific `hub/.env` therefore changes the hub test run, where the real-model tests run when their model paths are set.
 
@@ -355,7 +369,7 @@ These need a person to decide. The code does not guess them.
 - **Phone AI retry.** After a load error the **Ihanda ang AI** button comes back, but tapping it does nothing until the page is reloaded. The worker is kept after an error (`web/src/lib/llm.ts`).
 - **Phone AI and sync.** A question the phone AI answers is marked answered only when generation finishes. A sync that runs during generation (for example, an online event) can still send it to the hub, and a failed generation stays queued for the next sync. The app has no status that keeps it out of the sync yet.
 - **Laya errors.** A failure after startup is not retried on the CPU. In `laya` mode `/ask` returns an error. In `hybrid` mode the hub returns keyword's candidates marked not sure, or no match, and logs nothing.
-- **Browser voice input needs a network.** Typing works offline. With `HUB_VOICE` off, or when the hub cannot be reached, the mic button uses the Web Speech API, which in Chrome sends speech to a browser service (`web/src/components/VoiceInput.tsx`). With the hub's voice on and reachable, the mic works offline.
+- **Browser voice input needs a network.** Typing works offline. On browser/PWA the mic uses the Web Speech API (`web/src/lib/browser-speech.ts`), which in Chrome sends speech to a browser service. On the Android app, with the hub's voice on and reachable, the mic works offline over hub Wi-Fi.
 - **Offline phone AI is not yet tested.** The model weights and the ONNX runtime files are cached after the first online load, but a network-off reload has not been run on the demo laptop. See [docs/DEMO.md](docs/DEMO.md).
 - **Startup time.** With Gemma on, the hub takes about 40 to 50 s to start listening on the dev laptop (measured 2026-10-09, see `docs/agent-notes/`). Laya's load time adds to that when `laya` or `hybrid` is set, and it has not been measured.
 

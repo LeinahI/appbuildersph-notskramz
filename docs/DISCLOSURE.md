@@ -66,7 +66,7 @@ The answer path needs no cloud AI API. The app and hub make these network calls:
 
 - **Hugging Face.** The phone model (about 3.1 GB, once per device). The hub's Laya bundle (about 1.69 GB, once, when `LAYA_MODEL_DIR` is unset). The Gemma GGUF is downloaded by hand with `node-llama-cpp pull`.
 - **jsDelivr CDN.** The ONNX runtime files for the phone model are loaded from `cdn.jsdelivr.net/npm/onnxruntime-web@<pinned version>`. The service worker keeps them after the first online load (`web/vite.config.ts`).
-- **Browser speech recognition (voice input).** The app uses the Web Speech API with `fil-PH` (`web/src/components/VoiceInput.tsx`). In Chrome, recognition uses a speech service over the network. The app's own hint says so (`web/src/config/labels.ts`). This is browser behavior and was not captured on the network in this pass. Voice input is not offline and is not part of the demo.
+- **Browser speech recognition (voice input).** On browser/PWA the app uses the Web Speech API (`web/src/lib/browser-speech.ts`, `fil-PH` / `en-PH`). In Chrome, recognition uses a speech service over the network. The app's own hint says so (`web/src/config/labels.ts`). On the Android app with hub voice on, speech stays on the hub Wi-Fi (`POST /transcribe`). Browser speech behavior was not captured on the network in this pass.
 - **The village hub.** Plain HTTP on the local network (`POST /ask`, `GET /health`). No internet is needed.
 
 ## Data
