@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { loadConfig } from './config.js';
 import { offExplainer, type Explainer } from './explain/index.js';
 import { fileLogger } from './log.js';
@@ -7,7 +8,17 @@ import type { Matcher } from './matchers/index.js';
 import { loadKnowledge } from './knowledge.js';
 import { createHubServer } from './server.js';
 
+/** Reads hub/.env into process.env when the file exists. Variables already set in the shell win. */
+function loadEnvFile(): void {
+  try {
+    process.loadEnvFile(fileURLToPath(new URL('../.env', import.meta.url)));
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
+  }
+}
+
 async function main(): Promise<void> {
+  loadEnvFile();
   const config = loadConfig();
   const knowledge = loadKnowledge(new URL('../../knowledge/', import.meta.url));
   const logger = fileLogger(config.logDir);

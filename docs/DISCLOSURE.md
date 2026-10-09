@@ -9,6 +9,7 @@ This page lists the models, libraries, and tools behind Ugatan. Versions are the
 | `onnx-community/gemma-4-E2B-it-ONNX` | Web app, phone AI (default) | Apache-2.0 (per model card). Gemma 4 terms: https://ai.google.dev/gemma/docs/gemma_4_license | https://huggingface.co/onnx-community/gemma-4-E2B-it-ONNX |
 | `onnx-community/gemma-4-E4B-it-ONNX` | Hub explanation, planned. Not wired yet. | Apache-2.0 (per model card) | https://huggingface.co/onnx-community/gemma-4-E4B-it-ONNX |
 | `receptron/laya-onnx` (Laya English checkpoint, from Convai Innovations) | Hub matching, optional. Not enabled. | Weights: Apache-2.0 (per model card). Package code: MIT. | https://huggingface.co/receptron/laya-onnx |
+| `convaiinnovations/laya` (Laya checkpoints, exported to ONNX on the hub machine) | Hub matching, optional. Not enabled. Used through `LAYA_MODEL_DIR`. | Weights: Apache-2.0 (per model card). Export script: MIT (`receptron/laya`, `export/export_onnx.py`). | https://huggingface.co/convaiinnovations/laya |
 
 The web app loads the E2B model with `Gemma4ForCausalLM` (text-only). It does not use the model card's `Gemma4ForConditionalGeneration` loader, by team decision. The text-only load skips the vision and audio graphs.
 
@@ -31,6 +32,7 @@ Model weights are not committed to this repository. `.gitignore` excludes `*.onn
 | TypeScript | 5.6.3 | all packages | Apache-2.0 |
 | Dexie | 4.4.6 | web (IndexedDB queue) | Apache-2.0 |
 | vite-plugin-pwa | 0.21.2 | web (manifest and service worker) | MIT |
+| Tailwind CSS and `@tailwindcss/vite` | 4.3.3 | web (styling, build plugin) | MIT |
 | Vitest | 2.1.9 | tests | MIT |
 | tsx | 4.23.15 | hub and eval scripts | MIT |
 | @types/node | 20.19.43 | hub, shared | MIT |

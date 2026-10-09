@@ -44,11 +44,26 @@ pnpm --filter @ugatan/hub build
 pnpm --filter @ugatan/hub start
 ```
 
-The hub reads its settings from environment variables. It does not read a `.env` file. Set the values listed in `hub/.env.example` in your shell before you start it. For example, in PowerShell: `$env:HUB_PORT = "8787"`.
+The hub reads its settings from environment variables, and loads `hub/.env` first if that file exists (copy `hub/.env.example`; it is gitignored). Variables already set in your shell win over the file. For example, in PowerShell: `$env:HUB_PORT = "8787"`.
 
 Check it with `curl http://<laptop-ip>:8787/health`. Pilot logs go to `hub/logs/` (one JSON file per day, kept off git).
 
 With no settings, the hub runs keyword matching with no AI explanation. Laya and the Gemma explanation are not switched on yet. See "Pending decisions" below.
+
+## Laya bundle
+
+Laya runs on the hub only with `HUB_MATCHER=laya`, a pass mark, and a confidence threshold. The hub loads an ONNX bundle (`laya.onnx`, `laya.onnx.data`, `laya_config.json`, `tokenizer/`). The Hugging Face checkpoint `convaiinnovations/laya` is PyTorch, so it must be exported first. Build the bundle on the hub machine:
+
+1. Download `convaiinnovations/laya` (Apache-2.0) into a local folder, for example `E:\models\laya`.
+2. Export it with `export/export_onnx.py` from [receptron/laya](https://github.com/receptron/laya) (MIT). Use Python 3.12 with `torch`, `transformers` 5.x, `safetensors`, `onnx`, `onnxscript`, and `onnxruntime`. On Windows, set `PYTHONUTF8=1` first.
+
+   ```bash
+   python export_onnx.py E:/models/laya E:/models/laya-onnx
+   ```
+
+3. Point the hub at the bundle with `LAYA_MODEL_DIR`. Nothing is downloaded when it is set. In PowerShell: `$env:LAYA_MODEL_DIR = "E:/models/laya-onnx"`.
+
+Check the bundle by running the hub tests with `LAYA_MODEL_DIR` set. In PowerShell: `$env:LAYA_MODEL_DIR = "E:/models/laya-onnx"; pnpm --filter @ugatan/hub test`. Without `LAYA_MODEL_DIR` the Laya tests are skipped. Score the bundle with `pnpm eval`.
 
 ## Device tiers
 
@@ -97,7 +112,7 @@ These need a person to decide. The code does not guess them.
 
 - **Gemma loader (web): decided.** The app uses the text-only `Gemma4ForCausalLM` loader, about 3.1 GB at q4f16. The card's `Gemma4ForConditionalGeneration` also downloads the vision and audio files (about 3.4 GB). This departs from the spec's "card loader" rule, and the team approved it. Image and audio input are later phases. See `web/src/workers/llm.worker.ts`.
 - **Gemma E4B on the hub.** No Node.js route has been run. The static analysis predicts q4f16 fails on the CPU. `HUB_EXPLAINER=gemma-e4b` stops the hub with a message until a route is chosen.
-- **Laya pass mark and confidence threshold.** `LAYA_PASS_MARK` and `LAYA_CONFIDENCE_THRESHOLD` are required before the hub will use Laya. Laya has no abstain option, so the confidence threshold is the only "not sure" gate.
+- **Laya pass mark and confidence threshold.** `LAYA_PASS_MARK` and `LAYA_CONFIDENCE_THRESHOLD` are required before the hub will use Laya. Laya has no abstain option, so the confidence threshold is the only "not sure" gate. Result on the labeled set (24 problem descriptions, 2026-10-09): keyword matching got 23 of 24 right. The English base checkpoint with the default criteria got 11 of 24. The best Laya setting tried, the fine-tuned `typed-decisions` checkpoint with each option text set to the first sign only, got 17 of 24. Laya does not meet the adoption rule on this set, so keyword stays the default. That setting was chosen on the same rows it is scored on, so the Laya numbers are optimistic too.
 - **Laya in Tagalog.** The default bundle is English-only (about 1.69 GB). The multilingual bundle is not published in the package's repository, so its path is unverified.
 - **Hub network.** A web app served over https cannot call a plain-http hub on the LAN (browsers block it as mixed content). Options: serve the app from the hub, or give the hub a trusted https address.
 - **Node version.** Node 20 reached end of life on 2026-04-30. Plan on Node 22 or 24.
