@@ -82,8 +82,6 @@
       "name": "hub-8787",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
-        "--dir",
-        "E:/Workspace/brylimlangmalakas/ugatan-phone-speed",
         "--filter",
         "@ugatan/hub",
         "exec",

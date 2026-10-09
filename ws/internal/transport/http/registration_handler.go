@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/yourorg/ws/internal/application/registration"
+	"github.com/yourorg/ws/internal/domain/admin"
 	"github.com/yourorg/ws/internal/domain/invite"
 	"github.com/yourorg/ws/internal/domain/user"
 	"github.com/yourorg/ws/internal/transport/http/middleware"
@@ -37,7 +38,7 @@ func (h *RegistrationHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	response.JSON(w, http.StatusOK, map[string]any{
 		"token": res.Token,
-		"user":  toUserDTO(res.User),
+		"user":  toAdminDTO(res.Admin),
 	})
 }
 
@@ -47,12 +48,12 @@ func (h *RegistrationHandler) Me(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	u, err := h.svc.Me(r.Context(), c.Sub)
+	a, err := h.svc.Me(r.Context(), c.Sub)
 	if err != nil {
 		writeRegError(w, err)
 		return
 	}
-	response.JSON(w, http.StatusOK, toUserDTO(u))
+	response.JSON(w, http.StatusOK, toAdminDTO(a))
 }
 
 func (h *RegistrationHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -216,6 +217,13 @@ func (h *RegistrationHandler) ListAudit(w http.ResponseWriter, r *http.Request) 
 	response.JSON(w, http.StatusOK, out)
 }
 
+func toAdminDTO(a *admin.Admin) map[string]any {
+	return map[string]any{
+		"id": a.ID(), "role": "admin", "status": a.Status(), "email": a.Email(),
+		"fullName": a.FullName(), "createdAt": a.CreatedAt().Format(time.RFC3339),
+	}
+}
+
 func toUserDTO(u *user.User) map[string]any {
 	addr := u.Address()
 	dto := map[string]any{
@@ -247,9 +255,10 @@ func toInviteDTO(res *registration.InviteResult) map[string]any {
 
 func writeRegError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, user.ErrNotFound), errors.Is(err, invite.ErrNotFound):
+	case errors.Is(err, user.ErrNotFound), errors.Is(err, invite.ErrNotFound), errors.Is(err, admin.ErrNotFound):
 		response.Error(w, http.StatusNotFound, err.Error())
-	case errors.Is(err, user.ErrUnauthorized), errors.Is(err, user.ErrInvalidCredentials):
+	case errors.Is(err, user.ErrUnauthorized), errors.Is(err, user.ErrInvalidCredentials),
+		errors.Is(err, admin.ErrUnauthorized), errors.Is(err, admin.ErrInvalidCredentials):
 		response.Error(w, http.StatusUnauthorized, err.Error())
 	case errors.Is(err, user.ErrDuplicateUser):
 		response.Error(w, http.StatusConflict, err.Error())

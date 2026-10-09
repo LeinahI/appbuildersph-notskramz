@@ -220,7 +220,7 @@ export const HelpDialog = forwardRef<HTMLDialogElement, HelpDialogProps>(functio
         <section aria-labelledby='ugatan-help-features' className='grid gap-2.5'>
           <h3 id='ugatan-help-features' className='m-0 text-xs font-semibold uppercase tracking-wide text-mist'>Mikropono, kamera at hub</h3>
           <FeatureCard icon={<MicIcon />} title='Mikropono'>
-            Gawing teksto ang iyong sinabi. Ang hub ang nagsusulat nito sa Wi-Fi ng hub, walang internet; kung wala ka sa Wi-Fi ng hub, i-type ang tanong.
+            Gawing teksto ang iyong sinabi. Sa browser, isinusulat ito ng browser (kailangan ng internet); sa Android app sa Wi-Fi ng hub, ang hub ang nagsusulat nang walang internet. Tingnan ang nakasulat bago ipadala, o i-type ang tanong.
           </FeatureCard>
           <FeatureCard icon={<CameraIcon />} title='Kamera'>
             Magdagdag ng litrato ng pananim; binabasa ito ng AI sa device kapag handa na, o ng hub kung nasa Wi-Fi ka nito.

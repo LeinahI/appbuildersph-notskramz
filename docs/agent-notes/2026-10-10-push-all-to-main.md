@@ -15,7 +15,7 @@ Commit every pending change in the working tree and push it to `origin/main`.
 - Commit authored by jncdrx only, no Claude trailer.
 
 ## Verification
-See the final report for the merge and push result.
+Merged origin/main (PR #6) with conflicts in Home.md, hub/.env.example, HelpDialog.tsx, VoiceInput.tsx and index.css, kept both sides. `pnpm build` passed, web tests 343 passed. Hub `gemma.test.ts` hung with worker timeouts because it loads the real local Gemma model from hub/.env, so hub tests were not fully green.
 
 ## Follow-ups
 None

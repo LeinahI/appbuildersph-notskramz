@@ -63,10 +63,12 @@ import {
   resolveConversation,
   saveActiveConversationId,
 } from './lib/conversations';
+import { preferHubAsk, resolveAiRoute } from './lib/ai-route';
 import { matchOnPhone } from './lib/hybrid';
 import { prepareModels } from './lib/prepare';
 import { phoneLaya, type LayaState } from './lib/laya';
 import { phoneAi, phoneAiFit, type PhoneAiState } from './lib/llm';
+import { NATIVE_AI } from './lib/native-llm';
 import { photoSrc, shrinkPhoto } from './lib/photo';
 import { hubCapabilities, hubReachable, syncQueue } from './lib/sync';
 import { symptomTile } from './symptoms';
@@ -450,9 +452,12 @@ export default function App() {
     }
     await refresh(active.id);
 
-    // With the phone AI prepared, everything runs on the phone: the photo, the matching (keyword, Gemma's English,
-    // and Laya), and the reply. Nothing waits for the hub. Without it, the question waits for the hub.
-    if (phoneAi.ready && id !== undefined) {
+    // Hub premises: ONNX on the browser / hub Q4_0+ONNX multimodal. Away: LiteRT on the phone when native.
+    const online = Boolean(hubUrl && (await hubReachable(hubUrl)));
+    const route = resolveAiRoute({ hubOnline: online, native: NATIVE_AI });
+    const useHub = preferHubAsk(route, Boolean(image), phoneAi.ready);
+
+    if (!useHub && phoneAi.ready && id !== undefined) {
       setBusyId(id);
       try {
         // The problem the app last named in this chat, so "ano ang gagawin ko?" is answered from its notes.
@@ -463,7 +468,7 @@ export default function App() {
       } finally {
         setBusyId(null);
       }
-    } else if (hubUrl && (await hubReachable(hubUrl))) {
+    } else if (useHub && hubUrl) {
       if (id !== undefined) setBusyId(id);
       try {
         await syncNow();

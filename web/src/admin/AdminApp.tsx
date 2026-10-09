@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { A } from './copy';
 import { DisplayPreferencesPanel } from '../components/DisplayPreferencesPanel';
 import { DisplayPreferencesIcon } from '../components/DisplayPreferencesIcon';
+import { loadAdminToken, saveAdminToken } from '../config/ws';
+import { login, WsApiError } from '../lib/ws-api';
 import { AdminDialog, AdminIcon, type IconName } from './AdminDialog';
 import { RegistrationDialog } from './RegistrationDialog';
 
@@ -85,20 +87,70 @@ function Overview({ onRegister }: { onRegister: () => void }) {
 }
 
 export function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (loadAdminToken()) window.location.replace('/admin');
+  }, []);
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    setError('');
+    const trimmed = email.trim();
+    if (!trimmed.includes('@')) {
+      setError(A.emailRequired);
+      return;
+    }
+    if (!password) {
+      setError(A.passwordRequired);
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await login(trimmed, password);
+      saveAdminToken(res.token, true);
+      window.location.assign('/admin');
+    } catch (err) {
+      setError(
+        err instanceof WsApiError && err.status === 401 ? A.loginFailed : A.loginOffline,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return <main className='admin-login'>
     <section className='admin-login-card' aria-labelledby='admin-login-heading'>
       <Logo />
       <p className='admin-eyebrow'>{A.workspace}</p>
       <h1 id='admin-login-heading'>{A.login}</h1>
       <p className='admin-description'>{A.loginDescription}</p>
-      <form onSubmit={(event) => event.preventDefault()}>
-        <label className='admin-field' htmlFor='admin-username'>{A.username}
-          <input id='admin-username' autoComplete='off' disabled aria-describedby='admin-login-unavailable' />
+      <form onSubmit={onSubmit}>
+        <label className='admin-field' htmlFor='admin-email'>{A.email}
+          <input
+            id='admin-email'
+            type='email'
+            inputMode='email'
+            autoComplete='username'
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={busy}
+          />
         </label>
         <label className='admin-field mt-4' htmlFor='admin-password'>{A.password}</label>
         <div className='admin-password'>
-          <input id='admin-password' type={showPassword ? 'text' : 'password'} autoComplete='off' disabled aria-describedby='admin-login-unavailable' />
+          <input
+            id='admin-password'
+            type={showPassword ? 'text' : 'password'}
+            autoComplete='current-password'
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={busy}
+          />
           <button type='button' aria-label={showPassword ? A.hidePassword : A.showPassword}
             title={showPassword ? A.hidePassword : A.showPassword} aria-controls='admin-password'
             aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>
@@ -110,10 +162,10 @@ export function Login() {
             </svg>
           </button>
         </div>
-        <p id='admin-login-unavailable' className='admin-callout'>{A.loginUnavailable}</p>
-        <button type='submit' className='btn w-full' disabled aria-describedby='admin-login-unavailable'>{A.signIn}</button>
+        {error ? <p role='alert' className='admin-callout'>{error}</p> : null}
+        <button type='submit' className='btn w-full' disabled={busy}>{busy ? 'Signing in…' : A.signIn}</button>
       </form>
-      <a className='admin-text-button' href='/'>{A.backHome}</a>
+      <a className='admin-text-button' href='/chat'>{A.backHome}</a>
     </section>
   </main>;
 }

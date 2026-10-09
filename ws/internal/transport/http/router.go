@@ -27,10 +27,11 @@ func NewRouter(cfg *config.Config, db *sql.DB) (http.Handler, error) {
 
 	mux := http.NewServeMux()
 
+	adminRepo := postgres.NewAdminRepository(db)
 	userRepo := postgres.NewUserRepository(db, box)
 	inviteRepo := postgres.NewInviteRepository(db)
 	auditRepo := postgres.NewAuditRepository(db)
-	regSvc := registration.NewService(userRepo, inviteRepo, auditRepo, tokens, cfg.ClaimBaseURL)
+	regSvc := registration.NewService(adminRepo, userRepo, inviteRepo, auditRepo, tokens, cfg.ClaimBaseURL)
 	reg := NewRegistrationHandler(regSvc)
 	adminOnly := middleware.AdminAuth(tokens)
 	farmerOnly := middleware.UserAuth(tokens)
