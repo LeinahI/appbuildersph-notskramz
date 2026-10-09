@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { loadAdminToken, loadClaimLink, saveAdminToken } from '../config/ws';
+import { chatHref } from '../lib/conversations';
 import { login, WsApiError } from '../lib/ws-api';
 
 type Tab = 'farmer' | 'admin';
@@ -74,7 +75,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   className="pill-btn w-full bg-accent text-white hover:bg-accent-hover"
-                  onClick={() => navigate('/chat')}
+                  onClick={() => navigate(chatHref())}
                 >
                   Magpatuloy sa chat
                 </button>

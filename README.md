@@ -8,7 +8,7 @@ Read [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md) for the plan and [docs/DISCL
 
 | Folder | What it is |
 | --- | --- |
-| `web/` | React + Vite + TypeScript PWA. Login at `/`, farmer chat (+ sidebar) at `/chat`, admin at `/admin`, QR claim at `/claim`. |
+| `web/` | React + Vite + TypeScript PWA. Login at `/`, farmer chat (+ sidebar) at `/chat` or `/chat/:conversationId`, admin at `/admin`, QR claim at `/claim`. |
 | `hub/` | Node.js TypeScript service for crop Q&A on the LAN. Answers `POST /ask`. |
 | `ws/` | Go DDD API on Postgres 16. Admin auth, farmer registration, QR invites, audit, conversation sync. PII encrypted at rest. |
 | `shared/` | Matcher, knowledge validation, pesticide guardrail, and answer composition, used by web and hub. |
@@ -32,7 +32,7 @@ The phone AI is optional. To turn it on, open **Tulong** (the ? button) and tap 
 
 To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`), or type the hub address under **Mga setting** (the gear button). `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. An address typed in the app is saved on that phone and overrides it.
 
-Auth and chat history talk to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`). Open http://localhost:3000/ — admin signs in with email/password; farmers continue after QR claim. Chat is at `/chat` (claim JWT required) with a Gemini-style sidebar synced to Postgres.
+Auth and chat history talk to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.1:8080`). Open http://localhost:3000/ — admin signs in with email/password; farmers continue after QR claim. Chat is at `/chat/:conversationId` (claim JWT required; bare `/chat` redirects to the last active or a new chat) with a Gemini-style sidebar synced to Postgres.
 
 Build and preview the static site. The repo does not yet set up how phones load this built site over Wi-Fi (see Pending decisions, hub network):
 

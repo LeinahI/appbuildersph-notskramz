@@ -39,6 +39,7 @@ import {
   pullRemoteConversations,
   questionsForConversation,
   renameConversation,
+  resolveConversation,
   saveActiveConversationId,
   saveConversationThread,
 } from './lib/conversations';
@@ -46,7 +47,7 @@ import { phoneAi, type PhoneAiState } from './lib/llm';
 import { photoSrc, shrinkPhoto } from './lib/photo';
 import { hubReachable, syncQueue } from './lib/sync';
 import { symptomTile } from './symptoms';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const ConversationSidebar = lazy(() => import('./components/ConversationSidebar'));
 
@@ -145,6 +146,7 @@ const SIDEBAR_KEY = 'ugatan.sidebarOpen';
 
 export default function App() {
   const navigate = useNavigate();
+  const { conversationId: routeId } = useParams<{ conversationId?: string }>();
   const [text, setText] = useState('');
   const [history, setHistory] = useState<QueuedQuestion[]>([]);
   const [unsaved, setUnsaved] = useState<QueuedQuestion[]>([]);
@@ -187,13 +189,28 @@ export default function App() {
   }, [conversationId]);
 
   useEffect(() => {
-    void (async () => {
-      await pullRemoteConversations();
-      const c = await ensureActiveConversation();
-      setConversation(c);
-      setListKey((k) => k + 1);
-    })();
+    void pullRemoteConversations().then(() => setListKey((k) => k + 1));
   }, []);
+
+  // URL is source of truth: load :conversationId, or redirect to a valid chat.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const c = await resolveConversation(routeId);
+      if (cancelled) return;
+      setConversation(c);
+      setUnsaved([]);
+      setText('');
+      setPickerOpen(false);
+      setNotice('');
+      if (c.id !== routeId) {
+        navigate(`/chat/${c.id}`, { replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [routeId, navigate]);
 
   useEffect(() => {
     void refresh();
@@ -241,6 +258,9 @@ export default function App() {
     setText('');
     setPickerOpen(false);
     setNotice('');
+    if (c.id !== routeId) {
+      navigate(`/chat/${c.id}`);
+    }
   }
 
   async function newChat() {

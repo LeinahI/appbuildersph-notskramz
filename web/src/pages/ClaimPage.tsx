@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { loadClaimLink, loadDeviceId, saveClaimLink } from '../config/ws';
+import { chatHref } from '../lib/conversations';
 import { claimInvite, WsApiError } from '../lib/ws-api';
 
 export default function ClaimPage() {
@@ -10,6 +11,7 @@ export default function ClaimPage() {
   const [status, setStatus] = useState<'idle' | 'working' | 'ok' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const existing = loadClaimLink();
+  const chatTo = chatHref();
 
   useEffect(() => {
     if (!token) {
@@ -25,14 +27,14 @@ export default function ClaimPage() {
         saveClaimLink({ userId: res.userId, token: res.token });
         setStatus('ok');
         setMessage('Device linked. Opening chat…');
-        navigate('/chat', { replace: true });
+        navigate(chatHref(), { replace: true });
       })
       .catch((err) => {
         if (cancelled) return;
         const msg = err instanceof WsApiError ? err.message : 'Claim failed';
         // Used invite: if this browser already linked, open chat instead of a dead end.
         if (existing?.token && /consumed|expired|revoked|already claimed/i.test(msg)) {
-          navigate('/chat', { replace: true });
+          navigate(chatHref(), { replace: true });
           return;
         }
         setStatus('error');
@@ -59,7 +61,7 @@ export default function ClaimPage() {
         {existing && status !== 'working' ? (
           <p className="text-xs text-muted">Previous link on this device: user {existing.userId.slice(0, 8)}…</p>
         ) : null}
-        <Link to={existing ? '/chat' : '/'} className="pill-btn inline-block no-underline">
+        <Link to={existing ? chatTo : '/'} className="pill-btn inline-block no-underline">
           {existing ? 'Open chat' : 'Back to login'}
         </Link>
       </div>

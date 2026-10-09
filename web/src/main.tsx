@@ -19,7 +19,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route
-          path="/chat"
+          path="/chat/:conversationId?"
           element={
             <RequireFarmer>
               <App />
