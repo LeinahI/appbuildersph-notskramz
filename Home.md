@@ -16,6 +16,11 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-chat-search-virtual]] - `/search` Dexie keyword search + scroll-to-match; TanStack Query/Virtual on results and chat thread
+- [[2026-10-10-new-chat-highlight]] - New chat `bg-soft` only on draft; not when a UUID conversation is open
+- [[2026-10-10-draft-chat-stays-empty]] - bare `/chat` no longer auto-selects last-active; New chat stays draft
+- [[2026-10-10-defer-conversation-create]] - New chat / + stays on draft `/chat`; conversation created on first message only
+- [[2026-10-10-delete-conversation-confirm-modal]] - sidebar Delete uses shared chat-history confirm dialog instead of window.confirm
 - [[2026-10-10-resolve-main-merge-conflicts]] - resolved 4 conflicts merging main into implementing-guardrails; kept rails + answerOnPhone
 - [[2026-10-10-prompt-leak-two-layer-rails]] - TL/EN extract blocked at input; model persona leaks hard-replaced with INJECTION_REPLY
 - [[2026-10-10-prompt-injection-defense-map]] - mapped injection/leak rails: Tagalog "ulitin/instruksyon/blockquote" miss input rail; no output prompt-leak strip; Laya is matcher-only

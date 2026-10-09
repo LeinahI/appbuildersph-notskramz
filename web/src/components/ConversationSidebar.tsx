@@ -1,43 +1,51 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { Labels } from '../config/labels';
 import type { ConversationRow } from '../lib/db';
 import {
-  createLocalConversation,
   deleteConversation,
   listLocalConversations,
   renameConversation,
   setPinned,
 } from '../lib/conversations';
+import { ConfirmDialog } from './ConfirmDialog';
 
 type Props = {
   open: boolean;
   activeId: string;
+  labels: Labels;
   onToggle: () => void;
   onSelect: (c: ConversationRow) => void;
-  onCreated: (c: ConversationRow) => void;
+  onNewChat: () => void;
+  onSearch: () => void;
   onDeleted: (id: string) => void;
   refreshKey: number;
+  /** True when the farmer is on `/search`. */
+  searchActive?: boolean;
 };
 
 export default function ConversationSidebar({
   open,
   activeId,
+  labels,
   onToggle,
   onSelect,
-  onCreated,
+  onNewChat,
+  onSearch,
   onDeleted,
   refreshKey,
+  searchActive = false,
 }: Props) {
   const [items, setItems] = useState<ConversationRow[]>([]);
-  const [q, setQ] = useState('');
   const [menuId, setMenuId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const deleteDialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    void listLocalConversations(q).then(setItems);
-  }, [q, refreshKey, open]);
+    void listLocalConversations().then(setItems);
+  }, [refreshKey, open]);
 
-  async function onNew() {
-    const c = await createLocalConversation('Bagong usapan');
-    onCreated(c);
+  function onNew() {
+    onNewChat();
     setMenuId(null);
   }
 
@@ -46,22 +54,29 @@ export default function ConversationSidebar({
     const next = window.prompt('Bagong pangalan', current?.title ?? '');
     if (next == null) return;
     await renameConversation(id, next);
-    setItems(await listLocalConversations(q));
+    setItems(await listLocalConversations());
     setMenuId(null);
   }
 
   async function onPin(id: string, pinned: boolean) {
     await setPinned(id, pinned);
-    setItems(await listLocalConversations(q));
+    setItems(await listLocalConversations());
     setMenuId(null);
   }
 
-  async function onDelete(id: string) {
-    if (!window.confirm('Burahin ang usapan?')) return;
+  function requestDelete(id: string) {
+    setPendingDeleteId(id);
+    setMenuId(null);
+    deleteDialog.current?.showModal();
+  }
+
+  async function confirmDelete() {
+    const id = pendingDeleteId;
+    setPendingDeleteId(null);
+    if (!id) return;
     await deleteConversation(id);
     onDeleted(id);
-    setItems(await listLocalConversations(q));
-    setMenuId(null);
+    setItems(await listLocalConversations());
   }
 
   return (
@@ -86,31 +101,35 @@ export default function ConversationSidebar({
           <button
             type="button"
             onClick={() => void onNew()}
-            className="flex w-full items-center gap-2 rounded-full bg-soft px-3.5 py-2.5 text-sm font-medium text-ink hover:bg-line/40"
+            aria-current={!activeId && !searchActive ? 'page' : undefined}
+            className={`flex w-full items-center gap-2 rounded-full px-3.5 py-2.5 text-sm font-medium text-ink hover:bg-line/40 ${
+              !activeId && !searchActive ? 'bg-soft' : ''
+            }`}
           >
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
               <path d="M12 20h9" />
               <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
             </svg>
-            New chat
+            {labels.newChatLabel}
           </button>
-          <label className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-2 text-sm text-muted">
+          <button
+            type="button"
+            onClick={onSearch}
+            aria-current={searchActive ? 'page' : undefined}
+            className={`flex w-full items-center gap-2 rounded-full px-3.5 py-2.5 text-sm font-medium text-ink hover:bg-line/40 ${
+              searchActive ? 'bg-soft' : ''
+            }`}
+          >
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
               <circle cx="11" cy="11" r="7" />
               <path d="m20 20-3-3" />
             </svg>
-            <input
-              className="w-full border-0 bg-transparent text-ink outline-none placeholder:text-muted"
-              placeholder="Search chats"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              aria-label="Search chats"
-            />
-          </label>
+            {labels.searchChatsLabel}
+          </button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
-          <p className="px-2 py-1 text-xs font-medium uppercase tracking-wide text-muted">Recent</p>
+          <p className="px-2 py-1 text-xs font-medium uppercase tracking-wide text-muted">{labels.searchRecentHeading}</p>
           <ul className="m-0 list-none p-0">
             {items.map((c) => (
               <li key={c.id} className="relative">
@@ -118,7 +137,7 @@ export default function ConversationSidebar({
                   type="button"
                   onClick={() => onSelect(c)}
                   className={`flex w-full items-center gap-1 rounded-lg px-2 py-2 text-left text-sm hover:bg-soft ${
-                    c.id === activeId ? 'bg-soft' : ''
+                    !searchActive && c.id === activeId ? 'bg-soft' : ''
                   }`}
                 >
                   <span className="min-w-0 flex-1 truncate">{c.title}</span>
@@ -164,7 +183,7 @@ export default function ConversationSidebar({
                     <button
                       type="button"
                       className="block w-full px-3 py-1.5 text-left text-accent hover:bg-soft"
-                      onClick={() => void onDelete(c.id)}
+                      onClick={() => requestDelete(c.id)}
                     >
                       Delete
                     </button>
@@ -172,7 +191,7 @@ export default function ConversationSidebar({
                 ) : null}
               </li>
             ))}
-            {items.length === 0 ? <li className="px-2 py-4 text-center text-sm text-muted">Walang usapan pa.</li> : null}
+            {items.length === 0 ? <li className="px-2 py-4 text-center text-sm text-muted">{labels.searchNoChats}</li> : null}
           </ul>
         </div>
       </aside>
@@ -191,6 +210,17 @@ export default function ConversationSidebar({
           </svg>
         </button>
       ) : null}
+
+      <ConfirmDialog
+        ref={deleteDialog}
+        copy={{
+          title: labels.deleteConversationConfirmTitle,
+          body: labels.deleteConversationConfirmBody,
+          confirm: labels.deleteConversationConfirmYes,
+          cancel: labels.deleteConversationConfirmNo,
+        }}
+        onConfirm={() => void confirmDelete()}
+      />
     </>
   );
 }
