@@ -16,6 +16,18 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-push-all-to-main]] - committed and pushed all pending work to main
+- [[2026-10-10-natural-ai-replies]] - palay guides in Tagalog/Bisaya/English, steps on "ano gagawin ko", no repeated questions, plant-part filter, Claude-like style, `pnpm eval:chat` with 20 made-up chats
+- [[2026-10-10-hub-serves-litert-model]] - hub now reads PHONE_LITERT_FILE from hub/.env (and .env.example) so it serves the on-phone Gemma .litertlm; served file checked on the hub, phone download untested
+
+- [[2026-10-10-diagnosis-card-declutter]] - diagnosis card has no emoji or nested boxes, a TL | EN switch instead of the English accordion, one quiet pesticide line and calmer follow-up chips
+- [[2026-10-10-diagnosis-card-redesign]] - a sure match is one card (picture, signs, numbered steps, amber alert, single pesticide notice) with follow-up chips and a composer without the `+`; tiered steps and real photos still open; 321 web tests pass
+- [[2026-10-10-help-sheet-redesign]] - "Paano gamitin" is now a bottom sheet with step and feature cards, a collapsible Offline AI module with a real progress bar, and an amber advisory footer; 313 web tests pass
+- [[2026-10-10-mic-diagnosis]] - chat mic works with a reachable hub; on a phone off the hub Wi-Fi it only says to connect, no code changed yet
+- [[2026-10-10-home-visual-symptom-grid]] - home screen now has Palay/Mais tabs, plant-part chips, a picture card grid for 20 problems, labelled camera/voice buttons and a de-duplicated header
+- [[2026-10-10-conversation-sheet-redesign]] - "Mga usapan" is now a bottom sheet with empty-state quick starts, day groups, search and a quiet privacy footer; swipe actions not built
+- [[2026-10-10-conversation-dialog-ui]] - restyled the "Mga usapan" dialog: card items with status pills, 2-line clamp, pill new-chat button, tinted privacy note
+- [[2026-10-10-display-dialog-ui]] - segmented controls, sticky reset and stacked options for the display dialog
 - [[2026-10-10-merge-frontend-into-main]] - merged origin/FrontEnd (Figma home UI, admin pages, display preferences, Sileo toasts) into main, keeping no-login /setup, /chat, /search, guardrails
 - [[2026-10-10-toast-auto-dismiss-implementation]] - applied 3-second success and 5-second information toasts with sticky errors; build and 135 frontend tests pass, browser timing QA remains open
 - [[2026-10-10-toast-auto-dismiss-review]] - reviewed existing timers and hover behavior; proposed 3-second confirmations and 5-second information notices, pending approval

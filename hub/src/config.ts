@@ -127,8 +127,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
   if (explainer === 'gemma' && gemmaRuntime === 'onnx' && gemmaModelDir === null) {
     throw new Error('HUB_EXPLAINER=gemma with GEMMA_RUNTIME=onnx needs GEMMA_MODEL_DIR, the folder of the Gemma 4 ONNX model.');
   }
-  const gemmaMaxNewTokens = positiveInteger('GEMMA_MAX_NEW_TOKENS', env.GEMMA_MAX_NEW_TOKENS, 128);
-  const gemmaMaxWords = positiveInteger('GEMMA_MAX_WORDS', env.GEMMA_MAX_WORDS, 70);
+  const gemmaMaxNewTokens = positiveInteger('GEMMA_MAX_NEW_TOKENS', env.GEMMA_MAX_NEW_TOKENS, 320);
+  const gemmaMaxWords = positiveInteger('GEMMA_MAX_WORDS', env.GEMMA_MAX_WORDS, 130);
 
   const visionRaw = env.HUB_VISION ?? 'off';
   if (visionRaw !== 'on' && visionRaw !== 'off') {

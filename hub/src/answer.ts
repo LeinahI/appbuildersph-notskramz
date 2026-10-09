@@ -3,13 +3,19 @@ import {
   MAX_IMAGE_CHARS,
   NOT_SURE_TEXT,
   NO_MATCH_TEXT,
+  SCOUTING_GUIDE,
+  careGuideFor,
   cropOfChat,
   detectCrop,
+  dropRepeatedQuestions,
   findViolations,
+  fitPlantPart,
   fixedReply,
+  guideReply,
   isAboutLastAnswer,
   isQuestionWithoutSign,
   isFinalAnswer,
+  isHelpAsk,
   INJECTION_REPLY,
   isInjectionAttempt,
   leaksInstructions,
@@ -21,14 +27,17 @@ import {
   notesToExplain,
   photoIsSure,
   photoSignsOf,
+  replyLanguage,
   routeFor,
   sessionText,
+  signChoices,
   smallTalkReply,
   tidyReply,
   ungroundedProblems,
   withProblemName,
   type AskRequest,
   type AskResponse,
+  type CareGuide,
   type ChatTurn,
   type Crop,
   type KnowledgeEntry,
@@ -187,6 +196,8 @@ function withPhoto(text: string, photo: PhotoRead): string {
  *    sure asks one question. After two questions with no clear match, the reply gives the best answer and says
  *    what is uncertain.
  * 4. With no match there is nothing to explain, so Gemma replies to the whole chat and asks what the farmer sees.
+ * 5. A how-to about growing palay ("paano magtanim?", "kailan mag-abono?") is answered from a curated guide. "Ano ang
+ *    gagawin ko?" while a problem is still open gives the likely problem's first steps instead of another question.
  *
  * Requests for one chat run one at a time, and a request id that was already answered gets the same answer again.
  */
@@ -252,12 +263,20 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
   if (route === 'match' && !picked && photo?.status !== 'ok' && aboutAnswer) {
     route = 'chat';
   }
-  logger.write({ event: 'question', uid: req.uid, crop, text: req.text, route });
+  // A how-to about growing palay is answered from its guide, never matched and never guessed.
+  let guide: CareGuide | null =
+    route === 'chat' && !injection && !picked && photo?.status !== 'ok' ? careGuideFor(asked, signed(asked)) : null;
+  // "Ano po ang gagawin ko?", "pa help po" while a problem is open and not yet named: the farmer wants steps, not one
+  // more question. The open notes are matched again and the reply gives the likely problem's first steps.
+  const help =
+    route === 'chat' && !guide && !injection && !lastNamed && before.notes.length > 0 && isHelpAsk(asked) && fixedReply(asked) === null;
+  if (help) route = 'match';
+  logger.write({ event: 'question', uid: req.uid, crop, text: req.text, route, ...(guide ? { guide: guide.id } : {}), ...(help ? { help } : {}) });
 
   // Small talk never reaches the matcher. A symptom is matched on the open problem's notes and the new message.
-  // A message that names the other crop starts a new problem.
+  // A message that names the other crop starts a new problem. A help request adds no sign, so only the notes count.
   const notes = notesForMatch(before.notes, asked);
-  const description = sessionText([...notes, asked]);
+  const description = help ? sessionText(notes) : sessionText([...notes, asked]);
   let outcome: MatchOutcome = { ids: [], clear: false };
   if (picked && !injection) {
     outcome = { ids: [picked.id], clear: true };
@@ -280,6 +299,12 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
     });
   }
 
+  // Asked for help with nothing matched yet: the reply gives the field-check steps and asks what they see.
+  if (help && outcome.ids.length === 0) {
+    route = 'chat';
+    guide = SCOUTING_GUIDE;
+  }
+
   if (route === 'match') {
     if (outcome.ids.length === 0) {
       // "No signs" is a greeting or a complaint, not a crop problem the hub failed on.
@@ -289,7 +314,11 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
     }
   }
 
-  const entries = outcome.ids.map((id) => byId.get(id)).filter((e): e is KnowledgeEntry => e !== undefined);
+  const found = outcome.ids.map((id) => byId.get(id)).filter((e): e is KnowledgeEntry => e !== undefined);
+  // A match that is not sure keeps only the problems that show where the farmer saw it ("uhay po" is not a leaf
+  // disease), so its question and its first steps are about a problem that can be there.
+  const entries = outcome.clear ? found : fitPlantPart(found, description);
+  if (entries.length !== found.length) outcome = { ...outcome, ids: entries.map((e) => e.id) };
   const matched = route === 'match' && entries.length > 0;
   const clear = matched && outcome.clear;
   // Two questions in a row with no clear match: the reply gives its best answer and asks nothing more.
@@ -299,6 +328,8 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
   const unmatched = route === 'match' && !matched && !outcome.noSigns;
   // A pesticide or dose ask, a health ask, another crop, or "who are you": a fixed reply, never the model's.
   const fixed = route === 'chat' ? fixedReply(asked) : null;
+  // The turns the farmer saw. The phone's history is preferred; the hub's own turns cover a chat it lost.
+  const history = req.history ?? before.turns;
   // The notes name the problem's crop, so a question that named none is still explained for the right crop.
   const explainCrop = crop === 'any' && entries.length && entries.every((e) => e.crop === entries[0]!.crop) ? entries[0]!.crop : crop;
 
@@ -315,10 +346,16 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
         ...(photo?.status === 'ok' ? { photo: photo.signs } : {}),
         // A photo that left the match unsure: ask about a sign of the top problem that the photo did not show.
         ...(photo?.status === 'ok' && !clear && !bestGuess ? { askAbout: signToAsk(entries[0]!, photo.signs ?? '') } : {}),
+        // Words alone that left it unsure: offer one sign of each possible problem, on the plant part the farmer
+        // named, and a different sign each time the app asks again.
+        // A help reply asks its own confirming question after the steps, so it gets no choices to copy.
+        ...(photo?.status !== 'ok' && !clear && !bestGuess && !help ? { askChoices: signChoices(entries, description, before.followUps) } : {}),
         crop: explainCrop,
         entries: notesToExplain(entries, clear || bestGuess),
         clear,
         bestGuess,
+        ...(help && !clear && !bestGuess ? { help: true } : {}),
+        history,
       });
   } else {
     const chatWith = explainer.chat?.bind(explainer);
@@ -327,12 +364,13 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
       ? () =>
           chatWith({
             text: said,
-            history: req.history ?? before.turns,
+            history,
             notes,
             unmatched,
             final: unmatched && final,
             crop,
             ...(lastNamed ? { diagnosis: lastNamed } : {}),
+            ...(guide ? { guide } : {}),
           })
       : null;
   }
@@ -341,6 +379,11 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
     status = 'ok';
     explanation = fixed;
     logger.write({ event: 'explanation', uid: req.uid, status: 'chat-fixed', chars: fixed.length });
+  } else if (!run && guide) {
+    // No model to reply: the guide's own Tagalog steps.
+    status = 'ok';
+    explanation = guideReply(guide, replyLanguage(asked));
+    logger.write({ event: 'explanation', uid: req.uid, status: 'chat-guide', chars: explanation.length });
   } else if (!run) {
     // No model to reply. The phone shows its own line for small talk or "no match, call the agriculturist".
     logger.write({ event: 'explanation', uid: req.uid, status: 'skipped-no-match', chars: 0 });
@@ -350,12 +393,15 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
       if (result.status === 'ok' && result.text?.trim()) {
         // The model may ask more than one question, repeat the farmer, or open with an apology the farmer did not earn.
         // A sure match or a best guess always says the problem's name.
-        const tidied = tidyReply(result.text, asked);
-        const reply = clear || bestGuess ? withProblemName(tidied, entries[0]!.name, clear) : tidied;
+        // A question the app already asked in this chat is dropped, so the farmer is never asked the same thing twice.
+        // A how-to ("lahat ng butil dilaw na") is not an emergency, so a guide answer never opens with "call now".
+        const tidied = tidyReply(dropRepeatedQuestions(result.text, history.map((t) => t.reply)), asked, guide ? { urgent: false } : {});
+        const reply = clear || bestGuess ? withProblemName(tidied, entries[0]!.name, clear, replyLanguage(asked)) : tidied;
         // The output rail: the reply may name only the problems it was given notes for (the one just explained, or
         // the one the app already named in this chat). Anything else is a model guess and never leaves the hub.
         const given = matched ? notesToExplain(entries, clear || bestGuess) : lastNamed ? [lastNamed] : [];
-        const ungrounded = ungroundedProblems(reply, knowledge, given, asked);
+        // A guide's own words (such as "planthopper" in the fertilizer steps) are not the model's guess.
+        const ungrounded = ungroundedProblems(reply, knowledge, given, guide ? `${asked} ${guide.steps.join(' ')}` : asked);
         if (ungrounded.length > 0) {
           logger.write({ event: 'guardrail', uid: req.uid, rail: 'grounding', names: ungrounded });
         }
@@ -368,6 +414,10 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
             status = 'ok';
             explanation = reply;
           }
+        } else if (!matched && guide) {
+          // Guardrail: the model's words never leave the hub, but the farmer still gets the guide's own steps.
+          status = 'ok';
+          explanation = guideReply(guide, replyLanguage(asked));
         } else if (!matched && (isSmallTalk(asked) || isOffTopic(asked))) {
           // Guardrail: the model's words never leave the hub, but small talk still gets the app's own line.
           status = 'ok';
@@ -416,7 +466,10 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
   if (conversations && req.sessionId) {
     const shown = explanation ?? (route === 'chat' ? smallTalkReply(asked) : entries.length ? NOT_SURE_TEXT : NO_MATCH_TEXT);
     const named = clear || bestGuess ? entries[0]!.id : undefined;
-    conversations.put(req.sessionId, withReply(sessionAfter({ ...before, notes }, asked, shown, outcomeKind, named), req.uid, response));
+    const after = sessionAfter({ ...before, notes }, asked, shown, outcomeKind, named);
+    // A help request names no sign, so it stays out of the notes the matcher reads next time.
+    if (help) after.notes = after.notes.filter((n) => n !== asked);
+    conversations.put(req.sessionId, withReply(after, req.uid, response));
   }
   return response;
 }

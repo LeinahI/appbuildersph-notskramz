@@ -274,18 +274,22 @@ describe('fixed replies', () => {
     for (const text of ['sige', 'jdjdjd', 'xyz 123']) expect(routeFor(text, false)).toBe('chat');
   });
 
-  it('leaves planting, harvest, fertilizer, and watering to the agriculturist instead of guessing', () => {
+  it('leaves palay planting, harvest, fertilizer, and watering to the model and its guide, not a fixed line', () => {
     for (const text of ['paano magdilig ng palay?', 'kailan dapat mag-ani ng palay?', 'gaano karaming abono ang ilalagay?', 'anong klaseng binhi ang maganda?', 'when should i plant rice?']) {
       expect(routeFor(text, false)).toBe('chat');
-      expect(fixedReply(text)).toMatch(/pagtatanim, pag-aani, abono, o patubig/);
+      expect(fixedReply(text)).toBeNull();
     }
   });
 
   it('answers planting and climate questions as crop care, even after a "not sure" reply and a correction', () => {
+    // Which seed to use for palay has a guide.
+    for (const text of ['Ano ang magandang itanim na mga seed sa klimang tag init', 'what seeds are best for summer?']) {
+      expect(routeFor(text, false)).toBe('chat');
+      expect(fixedReply(text)).toBeNull();
+    }
+    // Which crop to plant has none: the agriculturist knows the place and the season.
     for (const text of [
-      'Ano ang magandang itanim na mga seed sa klimang tag init',
       'hindi ito problema, at nagtatanong ako kung ano ang magandang pananim sa klimang tag init',
-      'what seeds are best for summer?',
       'anong pananim ang bagay sa tag ulan',
     ]) {
       expect(routeFor(text, false)).toBe('chat');
@@ -398,7 +402,7 @@ describe('chats 14 and 15 of the 20-chat run', () => {
 
   it('sends free seed from the DA to the office, and knows "unsa ka" and "later"', () => {
     expect(fixedReply('paano kumuha ng libreng binhi sa DA?')).toMatch(/Municipal Agriculture Office/);
-    expect(fixedReply('unsa ka?')).toMatch(/Ako po si Ugatan/);
+    expect(fixedReply('unsa ka?')).toMatch(/Ako si Ugatan, inyong katabang/);
     expect(fixedReply('later')).toMatch(/^Ingat po kayo/);
   });
 });

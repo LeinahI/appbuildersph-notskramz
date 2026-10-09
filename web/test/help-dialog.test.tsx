@@ -60,6 +60,36 @@ describe('Tagalog help dialog', () => {
   });
 });
 
+describe('help sheet layout', () => {
+  it('is a bottom sheet with a drag handle and names the three steps, the three features and the advisory', () => {
+    const { html } = renderHelp();
+    expect(html).toContain('class="chat-sheet"');
+    expect(html).toContain('chat-sheet-grip');
+    for (const title of ['Ilarawan o kuhanan', 'Ipadala', 'Suriin ang gabay', 'Mikropono', 'Kamera', 'Lokal na hub']) {
+      expect(html).toContain(title);
+    }
+    expect(html).toContain('Offline / Lokal na Wi-Fi');
+    expect(html).toContain('role="note"');
+  });
+
+  it('keeps the AI setup in its own collapsible module with the storage need', () => {
+    const { html } = renderHelp();
+    expect(html).toMatch(/<details[^>]*>\s*<summary/);
+    expect(html).toContain('~5 GB libre');
+    expect(html).toContain('Hindi pa handa');
+  });
+
+  it('shows a download bar with the real percent while loading, and none otherwise', () => {
+    const loading = renderToStaticMarkup(createElement(HelpDialog, {
+      ai: { status: 'loading', device: '', progress: 'Gemma', bytes: { loaded: 1.7e9, total: 3.4e9 }, error: '' },
+      onPrepareAi: vi.fn(),
+    }));
+    expect(loading).toContain('role="progressbar"');
+    expect(loading).toContain('aria-valuenow="50"');
+    expect(renderHelp('idle').html).not.toContain('role="progressbar"');
+  });
+});
+
 describe('phone AI and device memory', () => {
   const render = (fit: MemoryFit) =>
     renderToStaticMarkup(createElement(HelpDialog, { ai: { status: 'idle', device: '', progress: '', error: '' }, fit, onPrepareAi: vi.fn() }));

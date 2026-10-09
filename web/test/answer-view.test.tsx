@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { DISCLAIMER, findViolations, matchKeywords } from '@ugatan/shared';
-import { AnswerView } from '../src/components/AnswerView';
+import { AnswerView, DiagnosisCard } from '../src/components/AnswerView';
 import { KNOWLEDGE } from '../src/config/knowledge';
 import { LABELS } from '../src/config/labels';
 import { SYMPTOM_TILE } from '../src/symptoms';
@@ -193,13 +193,30 @@ describe('cards in the farmer\u2019s language', () => {
   const render = (entry: typeof stemBorer, language: string, labels = LABELS.tl) =>
     visibleText(renderToStaticMarkup(createElement(AnswerView, { labels, language, matches: [entry], clear: true })));
 
-  it('shows the Tagalog notes, with the English source one tap away', () => {
-    const text = render(stemBorer, 'tl');
+  it('shows the Tagalog notes first, with a TL | EN switch instead of an English block', () => {
+    const html = renderToStaticMarkup(createElement(AnswerView, { labels: LABELS.tl, language: 'tl', matches: [stemBorer], clear: true }));
+    const text = visibleText(html);
     expect(text).toContain(stemBorer.translations!.tl!.signs[0]!);
     expect(text).toContain(stemBorer.translations!.tl!.actions[0]!);
-    expect(text).toContain('Orihinal sa English');
-    expect(text).toContain(stemBorer.signs[0]!);
+    expect(html).toMatch(/aria-label="Wika ng mga tala"/);
+    expect(html).toMatch(/aria-pressed="true"[^>]*>TL<\/button><button[^>]*aria-pressed="false"[^>]*>EN</);
+    expect(text).not.toContain('Orihinal sa English');
+    expect(text).not.toContain(stemBorer.signs[0]!);
+    expect(html).not.toContain('<details');
     expect(text.endsWith(DISCLAIMER)).toBe(true);
+  });
+
+  it('switches the same card to the English notes in place', () => {
+    const html = renderToStaticMarkup(
+      createElement(DiagnosisCard, {
+        original: stemBorer, language: 'tl', labels: LABELS.tl, lead: [], status: null, matchedOn: [], explanationSafe: true, initialEnglish: true,
+      }),
+    );
+    const text = visibleText(html);
+    expect(text).toContain(stemBorer.signs[0]!);
+    expect(text).toContain(stemBorer.actions[0]!);
+    expect(text).not.toContain(stemBorer.translations!.tl!.signs[0]!);
+    expect(html).toMatch(/aria-pressed="false"[^>]*>TL<\/button><button[^>]*aria-pressed="true"[^>]*>EN</);
   });
 
   it('shows the Cebuano notes', () => {
@@ -208,6 +225,7 @@ describe('cards in the farmer\u2019s language', () => {
 
   it('shows only the English, with no toggle, in English', () => {
     const text = render(stemBorer, 'en', LABELS.en);
+    expect(text).not.toContain('TL');
     expect(text).toContain(stemBorer.signs[0]!);
     expect(text).not.toContain('Original in English');
   });
@@ -220,4 +238,46 @@ describe('cards in the farmer\u2019s language', () => {
       expect(text.endsWith(DISCLAIMER)).toBe(true);
     },
   );
+});
+
+describe('the unified diagnosis card', () => {
+  const snail = KNOWLEDGE.find((e) => e.id === 'golden-apple-snail')!;
+  const reply = ['Ang problema ay Golden apple snail.', '', '1. Kunin ang mga kuhol.', '2. Ayusin ang tubig.'].join('\n');
+  const render = (extra: Record<string, unknown> = {}) =>
+    renderToStaticMarkup(
+      createElement(AnswerView, { labels: LABELS.tl, matches: [snail], clear: true, language: 'tl', explanation: reply, explanationStatus: 'phone', ...extra }),
+    );
+
+  it('puts the explanation, picture, signs, steps and one notice in a single card', () => {
+    const html = render();
+    const text = visibleText(html);
+    expect((html.match(/<section/g) ?? []).length).toBe(1);
+    expect(text).toContain('Ang problema ay Golden apple snail.');
+    expect(text).toContain('Mataas na tugma');
+    expect(text).not.toContain('Gabay na larawan');
+    expect(text.split(DISCLAIMER).length - 1).toBe(1);
+    expect(text.endsWith(DISCLAIMER)).toBe(true);
+  });
+
+  it('does not repeat the model’s numbered steps next to the curated ones', () => {
+    const text = visibleText(render());
+    expect(text).not.toContain('Kunin ang mga kuhol.');
+    expect(text).toContain(snail.translations!.tl!.actions[0]!);
+  });
+
+  it('shows follow-up chips only when asked, and sends the question for the problem', () => {
+    expect(render()).not.toContain('Natural na pampuksa');
+    const html = render({ onFollowUp: () => {}, onRequestPhoto: () => {} });
+    const text = visibleText(html);
+    expect(text).toContain('Natural na pampuksa');
+    expect(text).toContain('Paano maiiwasan');
+    expect(text).toContain('Magpadala ng litrato');
+  });
+
+  it('offers no follow-ups on an answer that is not a sure diagnosis', () => {
+    const html = renderToStaticMarkup(
+      createElement(AnswerView, { labels: LABELS.tl, matches: [snail], clear: false, onFollowUp: () => {} }),
+    );
+    expect(html).not.toContain('Natural na pampuksa');
+  });
 });

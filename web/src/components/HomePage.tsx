@@ -4,6 +4,7 @@ import { photoSrc } from '../lib/photo';
 import { VoiceInput } from './VoiceInput';
 import { DisplayPreferencesIcon } from './DisplayPreferencesIcon';
 import { DisplayPreferencesPanel } from './DisplayPreferencesPanel';
+import { NetworkBadge } from './NetworkBadge';
 
 export interface HomePageProps {
   labels: Labels;
@@ -21,6 +22,10 @@ export interface HomePageProps {
   /** The symptom picker toggle. Only offered once the chat has started. */
   symptomsOpen?: boolean;
   onSymptoms?: () => void;
+  /** Bumped to open the camera or gallery choice, for example from a follow-up chip. */
+  photoRequest?: number;
+  /** The conversation sidebar is showing, so it already offers history and a new chat. */
+  sidebarOpen?: boolean;
   onTextChange: (text: string) => void;
   onSubmit: () => void;
   onHistory: () => void;
@@ -53,6 +58,14 @@ export function HomePage(props: HomePageProps) {
   }
   const { labels } = props;
   const canSend = props.text.trim() !== '' || props.photo !== null;
+  const hasChat = Boolean(props.children);
+  const actionLabel = 'max-[339px]:sr-only';
+
+  useEffect(() => {
+    if (!props.photoRequest || !photoMenu.current) return;
+    photoMenu.current.open = true;
+    photoMenu.current.querySelector('button')?.focus();
+  }, [props.photoRequest]);
 
   useEffect(() => {
     const input = textarea.current;
@@ -74,7 +87,8 @@ export function HomePage(props: HomePageProps) {
   return (
     <div className='chat-shell'>
       <header className='chat-header relative'>
-        <div className='flex shrink-0 items-center gap-1'>
+        {/* Wide screens have the sidebar for chats, so the history button is for phones only. */}
+        <div className='flex shrink-0 items-center gap-1 md:hidden'>
           <button
             type='button'
             className='chat-icon-button'
@@ -86,6 +100,26 @@ export function HomePage(props: HomePageProps) {
           >
             <img className='size-6' src='/home/history.svg' alt='' />
           </button>
+        </div>
+        <img
+          className='h-[64px] w-auto min-w-0 max-w-[96px] object-contain min-[400px]:max-w-[120px] sm:max-w-[160px] md:absolute md:left-1/2 md:-translate-x-1/2'
+          src='/UgatanLogo.png'
+          width={3504}
+          height={1827}
+          alt={labels.appName}
+        />
+        <div className='flex shrink-0 items-center gap-1 md:ml-auto'>
+          {/* A new chat is pointless on the welcome screen, and the open sidebar already has the button. */}
+          <button
+            type='button'
+            className={`chat-icon-button bg-leaf-soft ${hasChat ? '' : 'hidden'} ${props.sidebarOpen ? 'md:hidden' : ''}`}
+            aria-label={labels.newConversationLabel}
+            title={labels.newConversationLabel}
+            onClick={props.onNewConversation}
+          >
+            <img className='size-6' src='/home/new-chat.svg' alt='' />
+          </button>
+          <NetworkBadge labels={labels} />
           <button
             type='button'
             className='chat-icon-button'
@@ -96,24 +130,6 @@ export function HomePage(props: HomePageProps) {
             onClick={() => displayDialog.current?.showModal()}
           >
             <DisplayPreferencesIcon />
-          </button>
-        </div>
-        <img
-          className='h-[64px] w-auto min-w-0 max-w-[96px] object-contain min-[400px]:max-w-[120px] sm:max-w-[160px] md:absolute md:left-1/2 md:-translate-x-1/2'
-          src='/UgatanLogo.png'
-          width={3504}
-          height={1827}
-          alt={labels.appName}
-        />
-        <div className='flex shrink-0 items-center gap-1 md:ml-auto'>
-          <button
-            type='button'
-            className='chat-icon-button bg-leaf-soft'
-            aria-label={labels.newConversationLabel}
-            title={labels.newConversationLabel}
-            onClick={props.onNewConversation}
-          >
-            <img className='size-6' src='/home/new-chat.svg' alt='' />
           </button>
           <button
             type='button'
@@ -133,19 +149,19 @@ export function HomePage(props: HomePageProps) {
         {props.children ? (
           <div className='chat-content py-6 md:py-10'>{props.children}</div>
         ) : (
-          <section className='chat-content flex flex-1 flex-col items-center justify-center gap-8 py-10 text-center'>
+          <section className='chat-content chat-content-wide flex flex-1 flex-col items-center gap-6 py-6 text-center md:gap-8 md:py-10'>
             <div className='flex flex-col items-center'>
               <img
-                className='mb-6 h-[96px] w-auto max-w-full object-contain md:h-[112px]'
+                className='mb-4 hidden h-[72px] w-auto max-w-full object-contain md:mb-6 md:block md:h-[96px] [@media(max-height:820px)]:hidden'
                 src='/UgatanLogoIcon.svg'
                 width={4763}
                 height={4880}
                 alt=''
               />
-              <h1 className='m-0 font-display text-[1.75rem] font-extrabold leading-[1.4] tracking-[-0.035em] md:text-[2.5rem]'>
+              <h1 className='m-0 font-display text-[1.5rem] font-extrabold leading-[1.4] tracking-[-0.035em] md:text-[2.5rem]'>
                 {labels.introTitle}
               </h1>
-              <p className='mb-0 mt-4 max-w-[420px] text-base leading-7 text-mist md:text-lg'>
+              <p className='mb-0 mt-2 max-w-[420px] text-[0.9375rem] leading-6 text-mist md:mt-4 md:text-lg md:leading-7'>
                 {labels.introDescription}
               </p>
             </div>
@@ -205,39 +221,41 @@ export function HomePage(props: HomePageProps) {
               <input ref={photoInput} type='file' accept='image/*' hidden onChange={onPhotoInput} />
               <details ref={photoMenu} className='relative'>
                 <summary
-                  className={`chat-icon-button list-none [&::-webkit-details-marker]:hidden ${props.photo ? 'bg-leaf-soft' : ''}`}
+                  className={`chat-action-button list-none [&::-webkit-details-marker]:hidden ${props.photo ? 'ring-2 ring-leaf' : ''}`}
                   aria-label={labels.photoButton}
                   title={labels.photoButton}
                 >
                   <img className='size-6' src='/home/photo-composer.svg' alt='' />
+                  <span className={actionLabel} aria-hidden='true'>{labels.photoButton}</span>
                 </summary>
                 <div className='absolute bottom-full left-0 z-20 mb-2 grid min-w-[12rem] gap-1 rounded-2xl border border-line bg-surface p-1.5 shadow-lg'>
-                  <button type='button' className='rounded-xl px-3 py-2.5 text-left text-[0.9375rem] hover:bg-soft' onClick={() => pickPhoto(cameraInput.current)}>
+                  <button type='button' className='min-h-12 rounded-xl px-3 text-left text-[0.9375rem] hover:bg-soft' onClick={() => pickPhoto(cameraInput.current)}>
                     {labels.photoTake}
                   </button>
-                  <button type='button' className='rounded-xl px-3 py-2.5 text-left text-[0.9375rem] hover:bg-soft' onClick={() => pickPhoto(photoInput.current)}>
+                  <button type='button' className='min-h-12 rounded-xl px-3 text-left text-[0.9375rem] hover:bg-soft' onClick={() => pickPhoto(photoInput.current)}>
                     {labels.photoChoose}
                   </button>
+                  {props.onSymptoms && (
+                    <button
+                      type='button'
+                      className={`min-h-12 rounded-xl px-3 text-left text-[0.9375rem] hover:bg-soft ${props.symptomsOpen ? 'bg-leaf-soft' : ''}`}
+                      aria-expanded={props.symptomsOpen ?? false}
+                      onClick={() => {
+                        if (photoMenu.current) photoMenu.current.open = false;
+                        props.onSymptoms?.();
+                      }}
+                    >
+                      {labels.symptomsHeading}
+                    </button>
+                  )}
                 </div>
               </details>
-              {props.onSymptoms && (
-                <button
-                  type='button'
-                  className={`chat-icon-button ${props.symptomsOpen ? 'bg-leaf-soft' : ''}`}
-                  aria-label={labels.symptomsHeading}
-                  aria-expanded={props.symptomsOpen ?? false}
-                  title={labels.symptomsHeading}
-                  onClick={props.onSymptoms}
-                >
-                  <svg className='size-6' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.7' strokeLinecap='round' aria-hidden='true'>
-                    <path d='M12 5v14M5 12h14' />
-                  </svg>
-                </button>
-              )}
               <VoiceInput
                 labels={labels}
                 language={DEFAULT_UI_LANGUAGE}
                 hubUrl={props.hubUrl}
+                labeled
+                labelClass={actionLabel}
                 onTranscript={appendTranscript}
                 onNotice={props.onNotice}
               />
@@ -253,7 +271,8 @@ export function HomePage(props: HomePageProps) {
             </div>
           </form>
           <p className='chat-notice' role='status'>{props.notice}</p>
-          <p className='m-0 mt-1 px-2 text-center text-xs leading-4 text-mist'>{labels.footer}</p>
+          {/* In a chat the pesticide advisory ends the answer itself, so the line is not repeated here. */}
+          {!hasChat && <p className='m-0 mt-1 px-2 text-center text-xs leading-4 text-mist'>{labels.footer}</p>}
         </div>
       </footer>
       <dialog ref={displayDialog} id='ugatan-display-dialog' className='chat-dialog' aria-labelledby='ugatan-display-heading'>

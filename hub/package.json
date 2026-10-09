@@ -11,6 +11,7 @@
     "build": "tsc",
     "start": "node dist/main.js",
     "eval": "tsx ../eval/run.ts",
+    "eval:chat": "tsx ../eval/chat.ts",
     "test": "vitest run",
     "eval:voice": "tsx ../eval/voice.ts",
     "eval:photo": "tsx ../eval/photo.ts"

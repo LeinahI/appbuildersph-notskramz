@@ -26,11 +26,11 @@ function recorder(): Explainer & { calls: ExplainInput[] } {
   return e;
 }
 
-async function run(outcome: MatchOutcome) {
+async function run(outcome: MatchOutcome, text = 'May batik ang dahon') {
   const explainer = recorder();
   const events: LogEvent[] = [];
   const res = await answerQuestion(
-    { uid: 'u1', crop: 'rice', text: 'May batik ang dahon' },
+    { uid: 'u1', crop: 'rice', text },
     { matcher: matcher(outcome), explainer, knowledge, logger: { write: (e) => events.push(e) } },
   );
   return { res, calls: explainer.calls, events };
@@ -48,10 +48,20 @@ describe('matcher and explainer together', () => {
   });
 
   it('gives the explainer every candidate, marked not sure, when the matcher is not sure', async () => {
-    const { res, calls } = await run({ ids: ['rice-blast', 'bph'], clear: false });
+    // The farmer names no plant part, so no candidate is ruled out.
+    const { res, calls } = await run({ ids: ['rice-blast', 'bph'], clear: false }, 'May batik');
     expect(calls[0]!.entries.map((e) => e.id)).toEqual(['rice-blast', 'bph']);
     expect(calls[0]!.clear).toBe(false);
     expect(res.clear).toBe(false);
+  });
+
+  it('keeps only the candidates that show on the plant part the farmer named', async () => {
+    // Brown planthopper shows at the base of the plant, never as a spot on the leaf.
+    const { res, calls } = await run({ ids: ['rice-blast', 'bph'], clear: false }, 'May batik ang dahon');
+    expect(calls[0]!.entries.map((e) => e.id)).toEqual(['rice-blast']);
+    expect(res.matchIds).toEqual(['rice-blast']);
+    // The one question offers a sign of that problem, on the leaf.
+    expect(calls[0]!.askChoices?.[0]).toMatch(/leaf|leaves/i);
   });
 
   it('skips the explainer when nothing matched', async () => {

@@ -11,6 +11,10 @@ interface VoiceInputProps {
   hubUrl: string;
   onTranscript: (text: string) => void;
   onNotice: (notice: string) => void;
+  /** Shows the action's name beside the icon, for the farmer who does not know what the bare icon does. */
+  labeled?: boolean;
+  /** Extra classes for the visible label, so the page can collapse it to icon-only on a narrow composer row. */
+  labelClass?: string;
 }
 
 /**
@@ -20,7 +24,7 @@ interface VoiceInputProps {
  * reads Tagalog, Taglish, Cebuano, and English. The browser's own speech service is never used, because it sends the
  * audio to the internet. Without a hub that transcribes, the button says so and the farmer types instead.
  */
-export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice }: VoiceInputProps) {
+export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice, labeled = false, labelClass = '' }: VoiceInputProps) {
   const [mode, setMode] = useState<Mode>('idle');
   const [hubVoice, setHubVoice] = useState(false);
   const recorder = useRef<Recorder | null>(null);
@@ -111,7 +115,7 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice }:
   return (
     <button
       type='button'
-      className={`chat-icon-button ${listening ? 'animate-pulse bg-leaf text-white' : ''} ${working ? 'opacity-50' : ''}`}
+      className={`${labeled ? 'chat-action-button' : 'chat-icon-button'} ${listening ? 'animate-pulse bg-leaf text-white' : ''} ${working ? 'opacity-50' : ''}`}
       onClick={() => void onClick()}
       disabled={working}
       aria-label={working ? labels.voiceWorking : listening ? labels.voiceStop : labels.voiceStart}
@@ -129,6 +133,7 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice }:
           <path d='M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8' />
         </svg>
       )}
+      {labeled && <span className={labelClass}>{listening ? labels.voiceStop : labels.voiceStart}</span>}
     </button>
   );
 }

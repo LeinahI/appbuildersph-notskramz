@@ -1,4 +1,4 @@
-import type { ChatTurn, Crop, KnowledgeEntry } from '@ugatan/shared';
+import type { CareGuide, ChatTurn, Crop, KnowledgeEntry } from '@ugatan/shared';
 
 export interface ExplainInput {
   text: string;
@@ -13,6 +13,12 @@ export interface ExplainInput {
   photo?: string | null;
   /** For a match that is not sure: the sign the one question should ask about, chosen by the hub. */
   askAbout?: string | null;
+  /** For a match that is not sure: signs, one per possible problem, the one question offers as choices. */
+  askChoices?: readonly string[];
+  /** The farmer asked what to do before the match is sure: the reply gives the likely problem's first steps. */
+  help?: boolean;
+  /** Earlier turns of the chat, oldest first, so the reply never asks the same thing twice. */
+  history?: readonly ChatTurn[];
 }
 
 export interface ExplainResult {
@@ -36,6 +42,8 @@ export interface ChatInput {
   crop?: Crop | 'any';
   /** The problem the app last named in this chat. Questions about it are answered from its notes. */
   diagnosis?: KnowledgeEntry;
+  /** A rice-growing guide the question is about ("paano magtanim?"). The reply answers from its steps. */
+  guide?: CareGuide;
 }
 
 /**

@@ -98,8 +98,8 @@ describe('loadConfig', () => {
     expect(c.explainer).toBe('gemma');
     expect(c.gemmaRuntime).toBe('llamacpp');
     expect(c.gemmaGguf).toBe(resolve('/repo/hub', '/models/gemma.gguf'));
-    expect(c.gemmaMaxNewTokens).toBe(128);
-    expect(c.gemmaMaxWords).toBe(70);
+    expect(c.gemmaMaxNewTokens).toBe(320);
+    expect(c.gemmaMaxWords).toBe(130);
     expect(() => loadConfig({ GEMMA_MAX_NEW_TOKENS: '0' })).toThrow(/GEMMA_MAX_NEW_TOKENS/);
     expect(() => loadConfig({ GEMMA_MAX_WORDS: '2.5' })).toThrow(/GEMMA_MAX_WORDS/);
   });

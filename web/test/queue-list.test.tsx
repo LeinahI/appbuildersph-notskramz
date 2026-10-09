@@ -23,10 +23,9 @@ describe('question history', () => {
     const cebuano = renderToStaticMarkup(
       createElement(QueueList, { items: [item], labels: LABELS.ceb, locale: 'ceb-PH', onSelect: vi.fn() }),
     );
-    expect(english).toContain('Saved on this device');
+    expect(english).toContain('Why are the leaves yellow?');
     expect(english).toContain('<button');
     expect(english).toContain('dateTime="2026-10-09T08:00:00.000Z"');
-    expect(cebuano).toContain('Na-save sa device');
     // The hub status stays visible: queued questions still wait for the hub.
     expect(english).toContain('Queued');
     expect(cebuano).toContain('Nakapila');

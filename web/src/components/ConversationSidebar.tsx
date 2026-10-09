@@ -93,7 +93,7 @@ export default function ConversationSidebar({
       ) : null}
       <aside
         className={`flex h-dvh shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-200 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-30 max-md:shadow-lg ${
-          open ? 'w-[16.5rem]' : 'w-0 overflow-hidden border-r-0'
+          open ? 'w-[17.5rem] xl:w-[20rem]' : 'w-0 overflow-hidden border-r-0'
         }`}
         aria-hidden={!open}
       >
@@ -146,11 +146,11 @@ export default function ConversationSidebar({
                 <button
                   type="button"
                   onClick={() => onSelect(c)}
-                  className={`flex w-full items-center gap-1 rounded-lg px-2 py-2 text-left text-sm hover:bg-soft ${
+                  className={`flex w-full items-start gap-1 rounded-lg px-2 py-2 text-left text-sm hover:bg-soft ${
                     !searchActive && c.id === activeId ? 'bg-soft' : ''
                   }`}
                 >
-                  <span className="min-w-0 flex-1 truncate">{c.title}</span>
+                  <span className="line-clamp-2 min-w-0 flex-1 break-words leading-5" title={c.title}>{c.title}</span>
                   {c.pinned ? (
                     <span className="shrink-0 text-muted" title="Pinned" aria-hidden>
                       <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor">
