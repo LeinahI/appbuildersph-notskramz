@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { DISCLAIMER, findViolations, matchKeywords } from '@ugatan/shared';
 import { AnswerView } from '../src/components/AnswerView';
 import { KNOWLEDGE } from '../src/config/knowledge';
+import { LABELS } from '../src/config/labels';
 import { SYMPTOM_TILE } from '../src/symptoms';
 
 /** Visible text of the rendered HTML, with tags removed and entities decoded. */
@@ -19,14 +20,18 @@ function visibleText(html: string): string {
 
 describe('rendered answers pass the pesticide guardrail', () => {
   it.each(KNOWLEDGE.map((e) => [e.id, e] as const))('%s: clear match', (_id, entry) => {
-    const html = renderToStaticMarkup(createElement(AnswerView, { matches: [entry], clear: true }));
+    const html = renderToStaticMarkup(
+      createElement(AnswerView, { matches: [entry], clear: true, labels: LABELS.tl }),
+    );
     const text = visibleText(html);
     expect(findViolations(text)).toEqual([]);
     expect(text.endsWith(DISCLAIMER)).toBe(true);
   });
 
   it.each(KNOWLEDGE.map((e) => [e.id, e] as const))('%s: not-sure match', (_id, entry) => {
-    const html = renderToStaticMarkup(createElement(AnswerView, { matches: [entry], clear: false }));
+    const html = renderToStaticMarkup(
+      createElement(AnswerView, { matches: [entry], clear: false, labels: LABELS.tl }),
+    );
     const text = visibleText(html);
     expect(text).toContain('Hindi tiyak. Tawagan ang lokal na agriculturist');
     expect(findViolations(text)).toEqual([]);
@@ -34,7 +39,9 @@ describe('rendered answers pass the pesticide guardrail', () => {
   });
 
   it('shows "not sure, call the agriculturist" when nothing matches', () => {
-    const html = renderToStaticMarkup(createElement(AnswerView, { matches: [], clear: false }));
+    const html = renderToStaticMarkup(
+      createElement(AnswerView, { matches: [], clear: false, labels: LABELS.tl }),
+    );
     const text = visibleText(html);
     expect(text).toContain('Walang malinaw na tugma');
     expect(text.endsWith(DISCLAIMER)).toBe(true);
@@ -45,6 +52,7 @@ describe('rendered answers pass the pesticide guardrail', () => {
       createElement(AnswerView, {
         matches: [KNOWLEDGE[0]],
         clear: true,
+        labels: LABELS.tl,
         explanation: 'Gamitin ang Karate, 2 ml kada litro.',
         explanationStatus: 'phone',
       }),
@@ -60,6 +68,7 @@ describe('rendered answers pass the pesticide guardrail', () => {
       createElement(AnswerView, {
         matches: [KNOWLEDGE[0]],
         clear: true,
+        labels: LABELS.tl,
         explanation: 'Tingnan ang base ng mga halaman para sa maliliit na insekto.',
         explanationStatus: 'ok',
       }),
@@ -75,6 +84,28 @@ describe('rendered answers pass the pesticide guardrail', () => {
       expect(result.matches.map((m) => m.entry.id)).toContain(entry.id);
     }
   });
+
+  it.each([
+    ['en', LABELS.en, 'Signs', 'Steps', 'Consult an expert now if:'],
+    ['ceb', LABELS.ceb, 'Mga timailhan', 'Mga lakang', 'Pakigsulti dayon sa eksperto kung:'],
+  ] as const)(
+    'renders %s interface headings without translating safety content',
+    (_language, labels, signs, steps, consult) => {
+      const html = renderToStaticMarkup(
+        createElement(AnswerView, {
+          matches: [KNOWLEDGE[0]],
+          clear: true,
+          labels,
+        }),
+      );
+      const text = visibleText(html);
+      expect(text).toContain(signs);
+      expect(text).toContain(steps);
+      expect(text).toContain(consult);
+      expect(text.endsWith(DISCLAIMER)).toBe(true);
+      expect(findViolations(text)).toEqual([]);
+    },
+  );
 });
 
 describe('symptom picture list', () => {

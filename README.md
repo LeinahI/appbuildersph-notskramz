@@ -27,9 +27,9 @@ pnpm dev
 
 Open http://localhost:5173. Keyword matching works right away. Offline reloads (no network after the first load) apply to the built site, not to `pnpm dev`, where the service worker is off.
 
-The phone AI is optional. To turn it on, tap **Ihanda ang AI**. That downloads Gemma 4 E2B (`onnx-community/gemma-4-E2B-it-ONNX`, q4f16, text-only) from Hugging Face. It is about 3.1 GB, so the first time it needs a network. The phone tries WebGPU first and falls back to WebAssembly on the CPU, which is slower. The model is held in memory, so a page reload starts at idle and the button shows again.
+The phone AI runtime is optional. The simplified home page currently has no model-preparation control; keyword matching and curated notes work without it. Preparing the runtime downloads Gemma 4 E2B (`onnx-community/gemma-4-E2B-it-ONNX`, q4f16, text-only) from Hugging Face. It is about 3.1 GB, so the first time it needs a network. The phone tries WebGPU first and falls back to WebAssembly on the CPU, which is slower. The model is held in memory, so a page reload starts at idle and the button shows again.
 
-To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`), or type the hub address in the app. `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. An address typed in the app is saved on that phone and overrides it.
+To point the app at a hub, set `VITE_HUB_URL` in `web/.env.local` (copy `web/.env.example`). `VITE_HUB_URL` is built into the app, so restart the dev server or rebuild after changing it. A previously saved address on that phone still overrides it. The home page no longer exposes hub settings or manual sync controls.
 
 Build and preview the static site. The repo does not yet set up how phones load this built site over Wi-Fi (see Pending decisions, hub network):
 
@@ -143,7 +143,7 @@ The verdict goes in the user message, not the system prompt, so llama.cpp keeps 
 | Phone AI | Any phone browser can try. WebGPU is preferred; WebAssembly is the slower fallback. The code has no device check, and the repo has no phone test. | Gemma 4 E2B in the browser, after a first download of about 3.1 GB (estimate from a code comment). The phone explains only the match that keyword matching chose. | Once loaded on that phone. Whether the browser keeps the download across visits is not checked. |
 | Village hub | Cooperative or barangay members | Keyword matching by default. Optional Laya matching and optional Gemma 4 E2B explanation (E4B not run). | Yes, on the local network |
 
-Questions the phone does not answer itself queue on the phone. The app sends them when it starts, when the browser fires an online event, when the farmer taps Sync now, or after a new question when the hub answers its health check. Nothing polls for the hub's Wi-Fi. A question the phone AI answers is marked answered only when generation finishes, and a sync that runs during generation can still send it to the hub (see Known issues). The phone uses keyword matching only; Laya runs on the hub.
+Questions the phone does not answer itself queue on the phone. The app sends them when it starts, when the browser fires an online event, or after a new question when the hub answers its health check. Nothing polls for the hub's Wi-Fi. A question the phone AI answers is marked answered only when generation finishes, and a sync that runs during generation can still send it to the hub (see Known issues). The phone uses keyword matching only; Laya runs on the hub.
 
 No single phone runs the full model, so the plan does not promise AI on every phone.
 
@@ -211,8 +211,8 @@ These need a person to decide. The code does not guess them.
 
 ## Known issues
 
-- **Phone AI retry.** After a load error the **Ihanda ang AI** button comes back, but tapping it does nothing until the page is reloaded. The worker is kept after an error (`web/src/lib/llm.ts`).
-- **Phone AI and sync.** A question the phone AI answers is marked answered only when generation finishes. A sync that runs during generation (Sync now, or an online event) can still send it to the hub, and a failed generation stays queued for the next sync. The app has no status that keeps it out of the sync yet.
+- **Phone AI retry.** After a load error the runtime cannot retry until the page is reloaded. The worker is kept after an error (`web/src/lib/llm.ts`).
+- **Phone AI and sync.** A question the phone AI answers is marked answered only when generation finishes. A sync that runs during generation (for example, an online event) can still send it to the hub, and a failed generation stays queued for the next sync. The app has no status that keeps it out of the sync yet.
 - **Laya errors.** A failure after startup is not retried on the CPU. In `laya` mode `/ask` returns an error. In `hybrid` mode the hub returns keyword's candidates marked not sure, or no match, and logs nothing.
 - **Startup time.** With Gemma on, the hub takes about 40 to 50 s to start listening on the dev laptop (measured 2026-10-09, see `docs/agent-notes/`). Laya's load time adds to that when `laya` or `hybrid` is set, and it has not been measured.
 

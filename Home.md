@@ -18,6 +18,13 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-09-home-page-refinements]] - simplified the home UI, added logo and voice controls, and widened desktop chat; rendered QA remains open
+- [[2026-10-09-home-page-browser-qa-blocked]] - local page served successfully, but responsive and keyboard QA remain blocked without a connected browser
+- [[2026-10-09-ugatan-home-page-implementation]] - implemented the responsive, localized Figma Home frontend; browser comparison remains open
+- [[2026-10-09-ugatan-home-page-plan]] - wrote the test-first frontend plan for the responsive, localized Figma Home
+- [[2026-10-09-home-page-design]] - approved the responsive Figma Home design, three interface languages, and frontend-only scope
+- [[2026-10-09-ui-stack-evaluation]] - keep the existing React PWA stack for the Figma UI; flag HTTPS-to-LAN-hub deployment constraints
+- [[2026-10-09-ui-starting-map]] - mapped the existing React UI and the smallest safe starting point for implementation
 - [[2026-10-09-backend-recommendation]] - research only: keep the Node/TypeScript hub as the backend; add SQLite on the hub if logs need queries; no cloud or BaaS on the answer path
 - [[2026-10-09-push-all-to-main]] - committed and pushed all pending work to main; build and tests not run at the user's request
 - [[2026-10-09-multilingual-matching]] - Tagalog, Taglish, Cebuano (Bisaya), and English questions: new keywords plus Gemma's English before matching; blind-ish holdout2 52.8% to 97.2% right, 0 wrong

@@ -28,5 +28,7 @@ eval/results/
 !.env.example
 
 .cursor/
+.agents/
+.codegraph/
 /gemma-onnx-folder
 /task

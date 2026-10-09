@@ -1,20 +1,24 @@
 {
   "main": {
-    "id": "b119020e94cd4b60",
+    "id": "690c854533774806",
     "type": "split",
     "children": [
       {
-        "id": "1a4c651964febebd",
+        "id": "eb64f4c5e19e86c6",
         "type": "tabs",
         "children": [
           {
-            "id": "8309c1e19993da95",
+            "id": "3e0a5b422b1ff231",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "type": "markdown",
+              "state": {
+                "file": "2026-10-09-home-page-browser-qa-blocked.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "2026-10-09-home-page-browser-qa-blocked"
             }
           }
         ]
@@ -23,15 +27,15 @@
     "direction": "vertical"
   },
   "left": {
-    "id": "aa2c57763c67fd1a",
+    "id": "d50fc8383d8dd679",
     "type": "split",
     "children": [
       {
-        "id": "66d53ef65acc8fdb",
+        "id": "42f39f4568061c9d",
         "type": "tabs",
         "children": [
           {
-            "id": "9864b67b230721b3",
+            "id": "c86124363292f2ea",
             "type": "leaf",
             "state": {
               "type": "file-explorer",
@@ -46,7 +50,7 @@
             }
           },
           {
-            "id": "7bcc508ae2ba70b9",
+            "id": "a915fe6cdde20551",
             "type": "leaf",
             "state": {
               "type": "search",
@@ -63,7 +67,7 @@
             }
           },
           {
-            "id": "7faecfef671aa704",
+            "id": "255b54d12fa6bb3a",
             "type": "leaf",
             "state": {
               "type": "bookmarks",
@@ -82,19 +86,20 @@
     "width": 300
   },
   "right": {
-    "id": "1fbbb63679dd3b88",
+    "id": "e6d32156ccb4db09",
     "type": "split",
     "children": [
       {
-        "id": "7653953247e9e0fe",
+        "id": "66df9829a21d2bea",
         "type": "tabs",
         "children": [
           {
-            "id": "93490712c80f2ec9",
+            "id": "9c662bd933771efe",
             "type": "leaf",
             "state": {
               "type": "backlink",
               "state": {
+                "file": "2026-10-09-home-page-browser-qa-blocked.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -108,11 +113,12 @@
             }
           },
           {
-            "id": "adfc6147098d02a2",
+            "id": "1e765a6920650da3",
             "type": "leaf",
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "2026-10-09-home-page-browser-qa-blocked.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -121,7 +127,7 @@
             }
           },
           {
-            "id": "289e9cfc2a9f06c7",
+            "id": "30c59faf15273c2e",
             "type": "leaf",
             "state": {
               "type": "tag",
@@ -136,7 +142,7 @@
             }
           },
           {
-            "id": "9bf4ec9ac45f1ac9",
+            "id": "bbb93b9bb8718e89",
             "type": "leaf",
             "state": {
               "type": "all-properties",
@@ -150,11 +156,12 @@
             }
           },
           {
-            "id": "2e58d3af4ddaaa8d",
+            "id": "865afdb2ad380aeb",
             "type": "leaf",
             "state": {
               "type": "outline",
               "state": {
+                "file": "2026-10-09-home-page-browser-qa-blocked.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -181,20 +188,25 @@
       "bases:Create new base": false
     }
   },
-  "active": "8309c1e19993da95",
+  "active": "3e0a5b422b1ff231",
   "lastOpenFiles": [
-    "2026-10-09-push-all-to-main.md",
-    "2026-10-09-push-all-to-main.md.tmp.36164.0bed49bf55b6",
-    "2026-10-09-backend-recommendation.md",
-    "2026-10-09-multilingual-matching.md",
-    "2026-10-09-readme-local-ai-setup.md",
-    "2026-10-09-readme-local-ai-setup.md.tmp.57220.829f81e0dabb",
+    "2026-10-09-home-page-refinements.md",
+    "2026-10-09-home-page-design.md",
+    "2026-10-09-ui-starting-map.md",
     "2026-10-09-laya-gemma-roles.md",
-    "2026-10-09-laya-webgpu-speed.md",
-    "sed2Qt47J",
-    "2026-10-09-gemma-llamacpp-speed.md",
-    "2026-10-09-gemma-llamacpp-speed.md.tmp.37712.6125f31d5977",
+    "2026-10-09-home-page-browser-qa-blocked.md",
     "2026-10-09-gemma-english-to-bicolano.md",
+    "2026-10-09-gemma-hub-explainer.md",
+    "2026-10-09-gemma-llamacpp-speed.md",
+    "2026-10-09-laya-webgpu-speed.md",
+    "2026-10-09-push-all-to-main.md",
+    "2026-10-09-ui-stack-evaluation.md",
+    "2026-10-09-sync-local-model-paths.md",
+    "2026-10-09-ugatan-home-page-implementation.md",
+    "2026-10-09-ugatan-home-page-plan.md",
+    "2026-10-09-readme-local-ai-setup.md",
+    "2026-10-09-multilingual-matching.md",
+    "2026-10-09-backend-recommendation.md",
     "2026-10-09-laya-option-text-fix.md"
   ]
 }
