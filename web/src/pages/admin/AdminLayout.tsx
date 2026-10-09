@@ -4,7 +4,7 @@ import { loadAdminToken, saveAdminToken } from '../../config/ws';
 
 export function RequireAdmin({ children }: { children: React.ReactNode }) {
   if (!loadAdminToken()) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
   return <>{children}</>;
 }
@@ -22,7 +22,7 @@ export default function AdminLayout() {
 
   function logout() {
     saveAdminToken('');
-    navigate('/');
+    navigate('/admin/login');
   }
 
   return (

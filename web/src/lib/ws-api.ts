@@ -97,6 +97,21 @@ export function login(email: string, password: string) {
   });
 }
 
+/** The ws API has no farmer password sign-in yet; the farmer portal treats these as unavailable. */
+export function isUnavailable(err: unknown): boolean {
+  return err instanceof WsApiError && (err.status === 404 || err.status === 405 || err.status === 501);
+}
+
+export type FarmerSession = { userId: string; token: string };
+
+export function farmerLogin(email: string, password: string) {
+  return request<FarmerSession>('/api/v1/auth/farmer/login', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify({ email, password }),
+  });
+}
+
 export function me() {
   return request<UserDTO>('/api/v1/auth/me');
 }

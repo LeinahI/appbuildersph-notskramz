@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { PHOTO_FORM, keywordHits, matchKeywords, photoFormText, readPhotoForm, type KnowledgeEntry } from '../src/index';
+import { PHOTO_FORM, keywordHits, matchKeywords, photoFormText, photoIsSure, readPhotoForm, type KnowledgeEntry } from '../src/index';
 
 const KNOWLEDGE_DIR = new URL('../../knowledge/', import.meta.url);
 const KB: KnowledgeEntry[] = readdirSync(KNOWLEDGE_DIR)
@@ -36,7 +36,7 @@ describe('the photo form', () => {
       '11. none or not visible',
     ].join('\n');
     const read = readPhotoForm(raw);
-    expect(read).toEqual({
+    expect(read).toMatchObject({
       kind: 'signs',
       english:
         'Corn plant. Ragged holes in the leaves. The damage is in the whorl, on the young leaves. Scraped white patches on the leaves. Sawdust like droppings.',
@@ -55,21 +55,33 @@ describe('the photo form', () => {
 
   it('reads the answer whatever the layout: one line with commas, or a list', () => {
     const oneLine = readPhotoForm('corn, ragged holes, young leaves in the whorl, scraped white patches, none, none');
-    expect(oneLine).toEqual({
+    expect(oneLine).toMatchObject({
       kind: 'signs',
       english: 'Corn plant. Ragged holes in the leaves. The damage is in the whorl, on the young leaves. Scraped white patches on the leaves.',
     });
-    expect(readPhotoForm('rice\n- white empty grain heads')).toEqual({ kind: 'signs', english: 'Rice plant. Whiteheads: white and empty panicles.' });
+    expect(readPhotoForm('rice\n- white empty grain heads')).toMatchObject({ kind: 'signs', english: 'Rice plant. Whiteheads: white and empty panicles.' });
   });
 
   it('keeps the signs when the plant pick is wrong, and reads another plant only when no sign was listed', () => {
-    expect(readPhotoForm('another plant, ragged holes')).toEqual({ kind: 'signs', english: 'Plant. Ragged holes in the leaves.' });
-    expect(readPhotoForm('another plant')).toEqual({ kind: 'not-plant' });
-    expect(readPhotoForm('rice\nnone')).toEqual({ kind: 'no-signs' });
+    expect(readPhotoForm('another plant, ragged holes')).toMatchObject({ kind: 'signs', english: 'Plant. Ragged holes in the leaves.' });
+    expect(readPhotoForm('another plant')).toEqual({ kind: 'not-plant' });    expect(readPhotoForm('rice\nnone')).toEqual({ kind: 'no-signs' });
   });
 
   it('gives back null for an answer that names no plant and no sign, so the hub reads it as free text', () => {
     expect(readPhotoForm('The leaves look unusual.')).toBeNull();
+    // The model sometimes writes the plant and its picks on one line with no commas.
+    expect(readPhotoForm('Corn pink egg clusters')).toMatchObject({ kind: 'signs', english: 'Corn plant. Pink egg clusters on the stems.' });
+    // A free-text sentence that only mentions the crop is not a plant pick.
+    expect(readPhotoForm('Rice leaf with diamond shaped spots that have a gray center.')).toBeNull();
+    expect(readPhotoForm('Not rice or corn.')).toBeNull();
     expect(readPhotoForm(null)).toBeNull();
+  });
+});
+
+describe('when a photo alone is enough to be sure', () => {
+  it('needs two different picked signs for the problem', () => {
+    expect(photoIsSure('fall-armyworm', ['Ragged holes in the leaves.', 'Sawdust like droppings.'], KB)).toBe(true);
+    // One picked sign carries three keywords of the problem, but it is still one sign.
+    expect(photoIsSure('bacterial-leaf-blight', ['Water soaked stripes along the leaf edges, yellow then white.'], KB)).toBe(false);
   });
 });

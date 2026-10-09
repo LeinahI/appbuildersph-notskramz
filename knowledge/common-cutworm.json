@@ -28,6 +28,46 @@
       "Birds"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Mga batang mais na naputol sa may lupa, kaya may mga puwang sa hanay",
+        "Gasgas ang ibabaw ng dahon, may butas, o kinain ang dahon hanggang sa gitnang ugat",
+        "Kumpol ng itlog na natatakpan ng mabalahibong kaliskis sa dahon; pinakamalala sa taniman na maraming damo"
+      ],
+      "actions": [
+        "Linisin at bungkalin nang mabuti ang mga damo bago magtanim, para walang makain ang mga batang uod",
+        "Sa umaga, hukayin ang paligid ng naputol na halaman, hanapin ang uod sa lupa, at sirain ito",
+        "Magpalit-palit ng pananim at pumili ng malinis na taniman",
+        "Iwasan ang di-kailangang pag-spray ng malawakang pamatay-insekto, para makatulong ang mga putakti at ibon na kumakain ng uod"
+      ],
+      "callExpertIf": "Maraming punla ang napuputol o lumalaki pa ang mga puwang sa hanay",
+      "stageNote": "mga punla at batang halaman",
+      "biological": [
+        "Mga parasitikong putakti, kasama ang braconid wasp",
+        "Mga ibon"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Mga batang mais nga naputol duol sa yuta, busa adunay mga hawan sa linya",
+        "Nakuskos ang ibabaw sa dahon, adunay lungag, o gikaon ang dahon hangtod sa tunga nga ugat",
+        "Pungpong sa itlog nga natabonan og balhiboon nga himbis sa dahon; labing grabe sa uma nga daghang sagbot"
+      ],
+      "actions": [
+        "Limpyohi ug daruha pag-ayo ang mga sagbot sa dili pa magtanom, aron walay makaon ang batang ulod",
+        "Sa buntag, kubkuba ang palibot sa naputol nga tanom, pangitaa ang ulod sa yuta, ug patya kini",
+        "Ilisan ang tanom matag panahon ug pagpili og limpyo nga uma",
+        "Likayi ang dili kinahanglan nga broad-spectrum nga spray, aron makatabang ang mga wasp ug langgam nga mokaon sa ulod"
+      ],
+      "callExpertIf": "Daghang semilya ang naputol o nagkadako pa ang mga hawan sa linya",
+      "stageNote": "mga semilya ug batang tanom",
+      "biological": [
+        "Mga parasitiko nga wasp, lakip ang braconid wasp",
+        "Mga langgam"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

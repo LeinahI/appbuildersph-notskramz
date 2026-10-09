@@ -1,14 +1,48 @@
-import { defineConfig } from 'vite';
+import { createReadStream, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+import { defineConfig, type Plugin, type ViteDevServer } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+const require = createRequire(import.meta.url);
+/** onnxruntime-web's dist folder: the same copy Transformers.js uses, so the runtime always matches the library. */
+const ORT_DIST = dirname(createRequire(require.resolve('@huggingface/transformers')).resolve('onnxruntime-web'));
+/** The runtime builds Transformers.js picks from: asyncify by default, the plain one on old Safari without WebGPU. */
+const ORT_FILES = ['ort-wasm-simd-threaded.asyncify', 'ort-wasm-simd-threaded'].flatMap((n) => [`${n}.wasm`, `${n}.mjs`]);
+
+/**
+ * Serves the ONNX runtime from this app at /ort/, so the phone AI never fetches it from a CDN. `pnpm dev` streams the
+ * files from node_modules; a build writes them into dist/ort/. They load only when the farmer prepares the AI.
+ */
+function localOnnxRuntime(): Plugin {
+  return {
+    name: 'ugatan-local-onnxruntime',
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use('/ort/', (req, res, next) => {
+        const name = (req.url ?? '').split('?')[0]!.replace(/^\//, '');
+        if (!ORT_FILES.includes(name)) return next();
+        res.setHeader('content-type', name.endsWith('.wasm') ? 'application/wasm' : 'text/javascript');
+        createReadStream(join(ORT_DIST, name)).pipe(res);
+      });
+    },
+    generateBundle() {
+      for (const name of ORT_FILES) {
+        this.emitFile({ type: 'asset', fileName: `ort/${name}`, source: readFileSync(join(ORT_DIST, name)) });
+      }
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    localOnnxRuntime(),
     VitePWA({
-      // Installs from a link and works offline after the first visit. The model host and the hub are never cached here.
+      // Installs from a link and works offline after the first visit. Nothing is fetched from the internet: the app,
+      // the knowledge base, and the fonts are bundled, the phone model comes from the hub, and the runtime from /ort/.
       registerType: 'autoUpdate',
       manifest: {
         name: 'Ugatan: Offline na Payo para sa Palay at Mais',
@@ -27,19 +61,18 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,svg,woff2,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,png,svg,webp,woff2,webmanifest}'],
         navigateFallback: 'index.html',
-        // The phone AI loads its ONNX runtime (wasm) from jsDelivr, pinned to one version. Keep those files after the
-        // first online load, so the model can start with the network off. The model weights are cached by
-        // Transformers.js, not here.
+        // The ONNX runtime (about 41 MB) is not precached: most farmers never prepare the AI. It is kept after the
+        // first load from /ort/, so the model can start again with no hub. Transformers.js caches the weights itself.
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/onnxruntime-web@/,
+            urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname.includes('/ort/'),
             handler: 'CacheFirst',
             options: {
               cacheName: 'onnxruntime-web',
-              expiration: { maxEntries: 20 },
-              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 8 },
+              cacheableResponse: { statuses: [200] },
             },
           },
         ],
@@ -51,5 +84,7 @@ export default defineConfig({
   server: { port: 3000, strictPort: true },
   preview: { port: 3000, strictPort: true },
   worker: { format: 'es' },
+  // The workers load these on "Ihanda ang AI". Listed here so `pnpm dev` does not find them then and reload the page.
+  optimizeDeps: { include: ['@huggingface/transformers', '@huggingface/tokenizers', 'onnxruntime-web/webgpu'] },
   build: { target: 'es2022' },
 });

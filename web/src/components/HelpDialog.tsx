@@ -1,15 +1,21 @@
 import { forwardRef } from 'react';
 import { DISCLAIMER } from '@ugatan/shared';
 import { L } from '../config/labels';
-import type { PhoneAiState } from '../lib/llm';
+import { PHONE_MODEL } from '../config/models';
+import type { LayaState } from '../lib/laya';
+import type { MemoryFit, PhoneAiState } from '../lib/llm';
 
 interface HelpDialogProps {
   ai: PhoneAiState;
+  /** Laya, the phone's matcher for questions keyword is not sure of. Loads after Gemma. */
+  laya?: LayaState;
+  /** Whether this phone has the memory for the model. A phone without it is never offered the download. */
+  fit?: MemoryFit;
   onPrepareAi: () => void;
 }
 
 export const HelpDialog = forwardRef<HTMLDialogElement, HelpDialogProps>(function HelpDialog(
-  { ai, onPrepareAi },
+  { ai, laya, fit = 'unknown', onPrepareAi },
   ref,
 ) {
   return (
@@ -42,7 +48,7 @@ export const HelpDialog = forwardRef<HTMLDialogElement, HelpDialogProps>(functio
         </li>
         <li className='pl-1'>
           <h3 className='m-0 text-base font-semibold'>Gamitin ang mga icon.</h3>
-          <p className='m-0 text-mist'>Ang mikropono ay nagsusulat ng iyong sinabi. Payagan ang paggamit nito kapag tinanong ng browser; maaaring kailangan nito ng internet. Kung may hub, ang hub ang magsusulat kahit walang internet. Ang kamera ay nagdadagdag ng litrato ng pananim; ang hub ang bumabasa nito, kaya kailangan mong nasa Wi-Fi ng hub.</p>
+          <p className='m-0 text-mist'>Ang mikropono ay nagsusulat ng iyong sinabi. Payagan ang paggamit nito kapag tinanong ng browser. Ang hub ang nagsusulat nito sa Wi-Fi ng hub, walang internet; kung wala ka sa Wi-Fi ng hub, i-type ang tanong. Ang kamera ay nagdadagdag ng litrato ng pananim; binabasa ito ng AI sa device kapag handa na, o ng hub kung nasa Wi-Fi ka nito.</p>
         </li>
       </ol>
       <section className='rounded-2xl border border-sprout-line bg-sprout p-4' aria-labelledby='ugatan-local-ai-heading'>
@@ -51,15 +57,28 @@ export const HelpDialog = forwardRef<HTMLDialogElement, HelpDialogProps>(functio
           May nakahandang gabay kahit walang model na na-download. Kapag naka-install at na-load na ang app, magagamit ang gabay kahit walang internet. Para sa dagdag na paliwanag, maaari mong ihanda ang AI sa device mo.
         </p>
         <p className='my-3 text-sm leading-6 text-mist'>
-          Kailangan ng internet at humigit-kumulang 3.1 GB na download sa unang paghahanda. Gumamit ng Wi-Fi at maglaan ng sapat na espasyo. Kapag handa na, magtanong sa chat. Kailangang ihanda muli ang AI kapag ni-reload ang pahina; hindi garantisadong mapapanatili ng browser ang download.
+          Hindi kailangan ng internet: ang hub ang nagbibigay ng mga model sa Wi-Fi nito sa unang paghahanda, mga 3.4 GB ang Gemma (sagot at litrato) at 1.7 GB ang Laya (pantugma). Kumonekta sa Wi-Fi ng hub at maglaan ng sapat na espasyo. Kapag handa na, magtanong sa chat. Kailangang ihanda muli ang AI kapag ni-reload ang pahina; hindi garantisadong mapapanatili ng browser ang download.
         </p>
+        {fit === 'unknown' && ai.status === 'idle' && (
+          <p className='my-3 text-sm leading-6 text-mist'>
+            Hindi masabi ng browser kung sapat ang memorya ng cellphone mo. Kailangan ng mga {PHONE_MODEL.minMemoryGb} GB. Kung magsara ang pahina habang naghahanda, gamitin na lang ang nakahandang gabay.
+          </p>
+        )}
         <div role='status' className='text-sm leading-6 text-leaf'>
-          {ai.status === 'idle' && <p className='my-3'>Hindi pa handa ang AI sa device. Maaari ka nang gumamit ng nakahandang gabay.</p>}
+          {fit === 'too-small' && ai.status === 'idle' && (
+            <p className='my-3'>
+              Kulang ang memorya ng cellphone na ito para sa AI (kailangan ng mga {PHONE_MODEL.minMemoryGb} GB). Gumagana pa rin ang nakahandang gabay, sa Tagalog, kahit walang internet.
+            </p>
+          )}
+          {fit !== 'too-small' && ai.status === 'idle' && <p className='my-3'>Hindi pa handa ang AI sa device. Maaari ka nang gumamit ng nakahandang gabay.</p>}
           {ai.status === 'loading' && <p className='my-3'>Nagda-download at naghahanda. Maaaring abutin ng ilang minuto.{ai.progress && <span className='block text-mist'>{ai.progress}</span>}</p>}
           {ai.status === 'ready' && <p className='my-3'>Handa na ang AI. Isara ang tulong at ipadala ang iyong tanong.{ai.device && <span className='block text-mist'>{L.phoneAiDevice} {ai.device}.</span>}</p>}
-          {ai.status === 'error' && <p className='my-3'>Hindi maihanda ang AI sa device na ito ngayon. Maaari mo pa ring gamitin ang nakahandang gabay. I-reload ang pahina kung gusto mong subukan muli.</p>}
+          {laya && laya.status === 'loading' && <p className='my-3'>Inihahanda ang Laya.{laya.progress && <span className='block text-mist'>{laya.progress}</span>}</p>}
+          {laya && laya.status === 'ready' && <p className='my-3'>Handa na rin ang Laya.{laya.device && <span className='block text-mist'>{L.phoneAiDevice} {laya.device}.</span>}</p>}
+          {laya && laya.status === 'error' && <p className='my-3'>Hindi naihanda ang Laya. Keyword at Gemma ang tutugma.{laya.error && <span className='block text-mist'>{laya.error}</span>}</p>}
+          {ai.status === 'error' && <p className='my-3'>Hindi maihanda ang AI sa device na ito ngayon. Maaari mo pa ring gamitin ang nakahandang gabay. I-reload ang pahina kung gusto mong subukan muli.{ai.error && <span className='block text-mist'>{ai.error}</span>}</p>}
         </div>
-        {ai.status === 'idle' && (
+        {fit !== 'too-small' && ai.status === 'idle' && (
           <button type='button' className='btn min-h-12' onClick={onPrepareAi}>{L.phoneAiPrepare}</button>
         )}
       </section>

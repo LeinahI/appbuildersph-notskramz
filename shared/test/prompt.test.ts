@@ -44,7 +44,7 @@ describe('photo reading', () => {
     expect(PHOTO_SYSTEM_PROMPT).toContain('Pick only what you can clearly see');
     expect(PHOTO_SYSTEM_PROMPT).toContain('Write the plant on the first line');
     expect(PHOTO_SYSTEM_PROMPT).toContain('Do not name any disease, pest, or cause');
-    expect(buildPhotoMessages('ano ang mali', 'any')[1]!.content).toContain('First line, the plant: corn / rice /');
+    expect(buildPhotoMessages('ano ang mali', 'any')[1]!.content).toContain('First line, the plant, judged by its leaves: rice (thin grass-like leaves in clumps) / corn (');
   });
 
   it('keeps the system prompt fixed and puts the crop and the farmer note in the user message', () => {
@@ -239,5 +239,19 @@ describe('an answer to a photo', () => {
     expect(user!.content).toContain("Farmer's description: ano ang mali\nSeen in the farmer's photo (written by the app in English): Corn plant.");
     expect(system!.content).toContain('never from the photo line');
     expect(buildMessages('may butas', 'corn', [])[1]!.content).not.toContain("farmer's photo");
+  });
+});
+
+describe('the question after an unsure photo', () => {
+  const faw = {
+    id: 'fall-armyworm', crop: 'corn' as const, name: 'Fall armyworm', keywords: [], reviewedBy: '', reviewedOn: '', callExpertIf: '',
+    signs: ['Ragged holes in leaves, with sawdust-like droppings in the whorl'], actions: [],
+  };
+
+  it('tells the model which sign to ask about, only when the match is not sure', () => {
+    const unsure = buildMessages('ano ang mali', 'corn', [faw], { sure: false, askAbout: 'Ragged holes in leaves' })[1]!.content;
+    expect(unsure).toContain('Your one question asks whether the farmer sees this sign, in simple words: Ragged holes in leaves.');
+    const sure = buildMessages('ano ang mali', 'corn', [faw], { sure: true, askAbout: 'Ragged holes in leaves' })[1]!.content;
+    expect(sure).not.toContain('Your one question');
   });
 });

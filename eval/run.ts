@@ -1,8 +1,7 @@
 // Scores keyword matching and Laya side by side on eval/descriptions.csv.
 // Run from the hub folder: pnpm eval [-- --file descriptions-paraphrase.csv] [--describe]
 // --describe also scores hybrid with Gemma putting each unclear question into English first (needs GEMMA_GGUF).
-// Laya's default bundle is about 1.69 GB. The run downloads it only with --allow-download,
-// or uses a local bundle when LAYA_MODEL_DIR is set.
+// Laya runs only from a local bundle (LAYA_MODEL_DIR). Nothing is downloaded.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { loadConfig } from '../hub/src/config.js';
@@ -17,7 +16,6 @@ import { LANGS, parseEvalCsv, type EvalRow } from './lib/csv.js';
 import { outcomeFor, rate, scoreRun, type Prediction, type Report } from './lib/score.js';
 
 const here = new URL('.', import.meta.url);
-const allowDownload = process.argv.includes('--allow-download');
 const withDescribe = process.argv.includes('--describe');
 // --file <name> scores another labeled CSV in eval/ (default descriptions.csv).
 const fileFlag = process.argv.indexOf('--file');
@@ -59,9 +57,9 @@ async function main() {
   const results: Record<string, unknown> = { rows: rows.length, keyword: keywordReport };
   const runs: { key: 'laya' | 'hybrid' | 'hybridDescribe'; report: Report; predictions: Prediction[] }[] = [];
 
-  const layaAllowed = Boolean(config.layaModelDir) || allowDownload;
+  const layaAllowed = Boolean(config.layaModelDir);
   if (!layaAllowed) {
-    console.log('\nLaya skipped. Set LAYA_MODEL_DIR to a local bundle, or pass --allow-download (about 1.69 GB).');
+    console.log('\nLaya skipped. Set LAYA_MODEL_DIR to a local bundle. Nothing is downloaded.');
   } else {
     try {
       const laya = await createLayaMatcher(knowledge, {

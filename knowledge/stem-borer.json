@@ -31,6 +31,44 @@
       "Long-horned grasshoppers"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Patay na puso: natutuyo ang gitnang usbong at madaling mabunot",
+        "Puting uhay: mga uhay na puti at walang laman"
+      ],
+      "actions": [
+        "Bunutin at sirain ang mga suwing may patay na puso, malayo sa palayan",
+        "Makipag-ugnayan sa mga kapitbahay para sabay ang pagtatanim at hindi dumami ang peste",
+        "Alisin ang pinagputulan at natirang dayami pagkatapos ng ani"
+      ],
+      "callExpertIf": "Lumalabas ang patay na puso sa kapansin-pansing bahagi ng mga halaman",
+      "stageNote": "mula pagsusuwi hanggang pamumulaklak; ang striped borer ay maaaring manatili hanggang paghinog",
+      "biological": [
+        "Maliliit na putakti na umaatake sa kumpol ng itlog",
+        "Mga gagamba",
+        "Mga tipaklong na mahahaba ang sungot (long-horned grasshopper)"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Patay nga puso: mauga ang tunga nga usbong ug dali ra ibton",
+        "Puti nga uhay: mga uhay nga puti ug walay sulod"
+      ],
+      "actions": [
+        "Ibton ug gub-a ang mga suwi nga adunay patay nga puso, layo sa basakan",
+        "Pakig-uyon sa mga silingan aron dungan ang pagtanom ug dili modaghan ang peste",
+        "Kuhaa ang dagami ug ang nahibilin sa tanom human sa ani"
+      ],
+      "callExpertIf": "Makita ang patay nga puso sa dayag nga bahin sa mga tanom",
+      "stageNote": "gikan sa pagsuwi hangtod sa pagpamulak; ang striped borer mahimong magpabilin hangtod sa paghinog",
+      "biological": [
+        "Gagmay nga wasp nga moatake sa pungpong sa itlog",
+        "Mga lawa-lawa",
+        "Long-horned grasshopper"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

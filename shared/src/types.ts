@@ -23,6 +23,23 @@ export interface InsectProfile {
   biological: string[];
 }
 
+/** A language the card text is translated into. English is the source in the entry itself. */
+export type CardLanguage = 'tl' | 'ceb';
+
+/**
+ * The card's farmer-facing text in another language, shown on the phone with no model. Same items in the same order
+ * as the English. Drafted translations count as unreviewed until the entry's reviewedBy is set.
+ */
+export interface EntryTranslation {
+  signs: string[];
+  actions: string[];
+  callExpertIf: string;
+  /** Required when the entry has an insect profile. */
+  stageNote?: string;
+  /** Required when the entry has an insect profile. Same items as insect.biological. */
+  biological?: string[];
+}
+
 /** One curated problem. Lives in knowledge/<id>.json. */
 export interface KnowledgeEntry {
   /** Stable slug. Must equal the file name without ".json". */
@@ -40,6 +57,8 @@ export interface KnowledgeEntry {
   callExpertIf: string;
   /** Present when the problem is an insect. Adds its names, growth stage, and natural enemies to the answer. */
   insect?: InsectProfile;
+  /** Tagalog and Cebuano text for the card. Matching and the model prompts still use the English. */
+  translations?: Partial<Record<CardLanguage, EntryTranslation>>;
   /** Agronomist who signed off. Empty until review. */
   reviewedBy: string;
   /** ISO date (YYYY-MM-DD) of the review. Empty until review. */

@@ -23,7 +23,7 @@ function startServer(explainer: Explainer, logger = silentLogger): Promise<void>
     explainer,
     knowledge,
     logger,
-    info: { matcher: 'keyword', explainer: explainer.name, vision: 'off', voice: 'off' },
+    info: { matcher: 'keyword', explainer: explainer.name, vision: 'off', voice: 'off', phoneModel: 'off' },
   });
   return new Promise((resolve) => {
     server.listen(0, '127.0.0.1', () => {
@@ -53,7 +53,7 @@ describe('hub HTTP', () => {
   it('answers /health with the active matcher and explainer', async () => {
     const res = await fetch(`${base}/health`);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, matcher: 'keyword', explainer: 'off', vision: 'off', voice: 'off' });
+    expect(await res.json()).toEqual({ ok: true, matcher: 'keyword', explainer: 'off', vision: 'off', voice: 'off', phoneModel: 'off' });
   });
 
   it('answers OPTIONS for CORS preflight', async () => {

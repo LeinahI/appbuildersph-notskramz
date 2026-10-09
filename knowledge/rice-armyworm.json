@@ -31,6 +31,48 @@
       "Spiders"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Batang palay na naputol sa may lupa, at mas matatandang halaman na gitnang ugat na lang ng dahon ang natira",
+        "Uhay na naputol sa puno, kaya lumalaylay o nahuhulog sa lupa",
+        "Mga uod na kumakain sa gabi o kapag maulap, at nagtatago sa damo o kalat sa araw"
+      ],
+      "actions": [
+        "Bahain ang punlaan: ito ang pinakamabisang depensa sa yugto ng punla",
+        "Linisin ang mga damo sa loob at paligid ng punlaan at taniman, at araruhin ang nakatiwangwang na lupa",
+        "Maghukay ng kanal sa paligid ng taniman, lagyan ng abo o sanga, at pulutin ang mga nahuling uod",
+        "Hanapin ang mga uod sa gabi o madaling-araw at pulutin",
+        "Iwasan ang di-kailangang pag-spray ng malawakang pamatay-insekto, para mabuhay ang mga putakti at gagamba na kumakain sa kanila"
+      ],
+      "callExpertIf": "Maraming punla ang naputol o maraming uhay ang nahuhulog",
+      "stageNote": "mula punlaan hanggang paglaman ng butil; ang pagputol ng uhay ay karaniwan sa paglabas ng uhay",
+      "biological": [
+        "Mga putakti na umaatake sa uod",
+        "Mga gagamba"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Batang humay nga naputol duol sa yuta, ug mas tigulang nga tanom nga tunga nga ugat na lang sa dahon ang nahabilin",
+        "Uhay nga naputol sa punoan, busa nagluylay o nahulog sa yuta",
+        "Mga ulod nga mokaon sa gabii o kung dag-om, ug motago sa sagbot o basura sa tanom sa adlaw"
+      ],
+      "actions": [
+        "Bahaa ang semilyahan: kini ang labing maayo nga depensa sa yugto sa semilya",
+        "Limpyohi ang mga sagbot sulod ug palibot sa semilyahan ug uma, ug daruha ang biniyaan nga yuta",
+        "Pagkalot og kanal palibot sa uma, butangi og abo o sanga, ug pupuha ang mga ulod nga nalit-ag",
+        "Pangitaa ang mga ulod sa gabii o sayo sa buntag ug pupuha",
+        "Likayi ang dili kinahanglan nga broad-spectrum nga spray, aron mabuhi ang mga wasp ug lawa-lawa nga mokaon kanila"
+      ],
+      "callExpertIf": "Daghang semilya ang naputol o daghang uhay ang nahulog",
+      "stageNote": "gikan sa semilyahan hangtod sa pagpuno sa lugas; ang pagputol sa uhay kasagaran inig gawas sa uhay",
+      "biological": [
+        "Mga wasp nga moatake sa ulod",
+        "Mga lawa-lawa"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

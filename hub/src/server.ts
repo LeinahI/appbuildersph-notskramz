@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { KnowledgeEntry } from '@ugatan/shared';
 import type { AudioTranscriber } from './explain/index.js';
 import { parseTranscribeRequest, transcribeSpeech } from './transcribe.js';
+import { LAYA_PREFIX, MODEL_PREFIX, modelFile, sendModelFile } from './models.js';
 import { answerQuestion, MAX_BODY_BYTES, MAX_IMAGE_BODY_BYTES, parseAskRequest, type AnswerDeps } from './answer.js';
 
 export interface HubInfo {
@@ -11,6 +12,12 @@ export interface HubInfo {
   vision: string;
   /** "on" when the hub transcribes speech. */
   voice: string;
+  /** "on" when the hub serves the phone model's files (GEMMA_MODEL_DIR is set). */
+  phoneModel: string;
+  /** "on" when the hub serves Laya's bundle to phones (LAYA_MODEL_DIR and LAYA_CONFIDENCE_THRESHOLD are set). */
+  phoneLaya?: string;
+  /** The team's Laya confidence threshold, so the phone decides "sure" the same way. */
+  layaThreshold?: number;
 }
 
 export interface HubDeps extends AnswerDeps {
@@ -18,13 +25,17 @@ export interface HubDeps extends AnswerDeps {
   knowledge: readonly KnowledgeEntry[];
   /** Transcribes recordings. Without it, POST /transcribe answers "unavailable". */
   transcriber?: AudioTranscriber;
+  /** Folder of the Gemma 4 ONNX model. When set, the hub serves its files to phones under /models/. */
+  modelDir?: string | null;
+  /** Laya's bundle folder. When set, the hub serves its files to phones under /models/laya/. */
+  layaDir?: string | null;
 }
 
 // The hub serves the LAN only. The phone app is often hosted on another origin, so CORS is open.
 // No cookies and no credentials are used.
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET, POST, OPTIONS',
+  'access-control-allow-methods': 'GET, HEAD, POST, OPTIONS',
   'access-control-allow-headers': 'content-type',
   'access-control-max-age': '600',
 };
@@ -69,6 +80,20 @@ export function createHubServer(deps: HubDeps): Server {
 
     if (req.method === 'GET' && path === '/health') {
       send(res, 200, { ok: true, ...deps.info });
+      return;
+    }
+
+    if ((req.method === 'GET' || req.method === 'HEAD') && path.startsWith(MODEL_PREFIX)) {
+      const file = deps.modelDir ? modelFile(deps.modelDir, path) : null;
+      if (file) sendModelFile(req, res, file, CORS_HEADERS);
+      else send(res, 404, { error: 'Not found.' });
+      return;
+    }
+
+    if ((req.method === 'GET' || req.method === 'HEAD') && path.startsWith(LAYA_PREFIX)) {
+      const file = deps.layaDir ? modelFile(deps.layaDir, path, LAYA_PREFIX) : null;
+      if (file) sendModelFile(req, res, file, CORS_HEADERS);
+      else send(res, 404, { error: 'Not found.' });
       return;
     }
 

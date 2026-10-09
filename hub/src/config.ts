@@ -42,6 +42,7 @@ export interface HubConfig {
   vision: boolean;
   /** Cap on the generated description of a photo (VISION_MAX_NEW_TOKENS). */
   visionMaxNewTokens: number;
+
   /** Transcribe recordings with the local Gemma 4 ONNX audio model (HUB_VOICE=on). Needs GEMMA_MODEL_DIR. Off by default. */
   voice: boolean;
   /** Cap on the generated transcript (VOICE_MAX_NEW_TOKENS). */
@@ -99,6 +100,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
     }
     if (layaConfidenceThreshold === null) {
       throw new Error(`HUB_MATCHER=${matcher} needs LAYA_CONFIDENCE_THRESHOLD, set by the team from the labeled test.`);
+    }
+    // Local only: the hub never downloads Laya's weights. Put the bundle on the hub machine first.
+    if (!env.LAYA_MODEL_DIR) {
+      throw new Error(`HUB_MATCHER=${matcher} needs LAYA_MODEL_DIR, a local Laya bundle. The hub downloads nothing. See README, "Laya bundle".`);
     }
   }
 

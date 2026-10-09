@@ -30,6 +30,44 @@
       "The fungus Beauveria bassiana"
     ]
   },
+  "translations": {
+    "tl": {
+      "signs": [
+        "Maliliit na butas sa dahon na nakahanay, at kasunod nito ay mga lagusan sa tangkay na may dumi ng uod (frass)",
+        "Nabaling tangkay o tassel"
+      ],
+      "actions": [
+        "Alisin at sirain ang mga natirang tangkay at dahon pagkatapos ng ani",
+        "Magtanim nang kasabay ng mga kapitbahay para hindi dumami ang peste"
+      ],
+      "callExpertIf": "Nababali ang mga tangkay o may mga lagusan sa maraming halaman",
+      "stageNote": "mula mga apat na linggo pagkatapos itanim hanggang sa anihan; pinakamalala kapag naglalabas ng tassel",
+      "biological": [
+        "Trichogramma, maliliit na putakti na umaatake sa itlog",
+        "Mga earwig na kumakain ng itlog at batang uod",
+        "Minute pirate bug, maliliit na surot na kumakain ng ibang insekto",
+        "Ang fungus na Beauveria bassiana"
+      ]
+    },
+    "ceb": {
+      "signs": [
+        "Gagmay nga lungag sa dahon nga naglinya, ug human niini mga lungag-agianan sa tukog nga adunay hugaw sa ulod (frass)",
+        "Nabali nga tukog o tassel"
+      ],
+      "actions": [
+        "Kuhaa ug gub-a ang nahibilin nga tukog ug dahon human sa ani",
+        "Pagtanom dungan sa mga silingan aron dili modaghan ang peste"
+      ],
+      "callExpertIf": "Nabali ang mga tukog o adunay mga lungag-agianan sa daghang tanom",
+      "stageNote": "gikan sa mga upat ka semana human sa pagtanom hangtod sa ani; labing grabe inig gawas sa tassel",
+      "biological": [
+        "Trichogramma, gagmay nga wasp nga moatake sa itlog",
+        "Mga earwig nga mokaon sa itlog ug batang ulod",
+        "Minute pirate bug, gagmay nga insekto nga mokaon sa ubang insekto",
+        "Ang fungus nga Beauveria bassiana"
+      ]
+    }
+  },
   "reviewedBy": "",
   "reviewedOn": ""
 }

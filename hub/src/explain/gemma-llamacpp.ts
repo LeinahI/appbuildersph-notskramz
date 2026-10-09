@@ -1,4 +1,4 @@
-import { NO_SIGNS, OTHER_CROP, buildChatMessages, buildDescribeMessages, buildMessages, type Crop } from '@ugatan/shared';
+import { buildChatMessages, buildDescribeMessages, buildMessages, describeOutcome, type Crop } from '@ugatan/shared';
 import type { ChatHistoryItem } from 'node-llama-cpp';
 import { trimToSentence } from './gemma.js';
 import type { ChatInput, Describer, ExplainInput, ExplainResult, Explainer } from './index.js';
@@ -59,9 +59,9 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
   // One model on one GPU: explaining, describing, and chatting share the queue.
   const enqueue = oneAtATime();
 
-  async function generate({ text, crop, entries, clear, bestGuess, photo }: ExplainInput, maxTokens = opts.maxNewTokens): Promise<string> {
+  async function generate({ text, crop, entries, clear, bestGuess, photo, askAbout }: ExplainInput, maxTokens = opts.maxNewTokens): Promise<string> {
     // The matcher's verdict goes in the user message, so the cached system prompt stays the same.
-    const [, user] = buildMessages(text, crop, entries, { maxWords: opts.maxWords, sure: clear, bestGuess, photo });
+    const [, user] = buildMessages(text, crop, entries, { maxWords: opts.maxWords, sure: clear, bestGuess, photo, askAbout });
     // Each question stands alone. Only the system prompt carries over.
     session.resetChatHistory();
     const result = await session.promptWithMeta(user!.content, {
@@ -81,11 +81,8 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
       temperature: 0,
       budgets: { thoughtTokens: 0 },
     });
-    const english = result.responseText.trim();
-    // Nothing to match on. The matcher then matches nothing instead of words Gemma made up.
-    if (english.startsWith(NO_SIGNS.slice(0, -1))) return NO_SIGNS;
-    if (english.startsWith(OTHER_CROP.slice(0, -1))) return OTHER_CROP;
-    return english || null;
+    // Nothing to match on (NO_SIGNS or OTHER_CROP): the matcher then matches nothing instead of words Gemma made up.
+    return describeOutcome(result.responseText);
   }
 
   async function chat({ text, history, ...options }: ChatInput): Promise<string> {

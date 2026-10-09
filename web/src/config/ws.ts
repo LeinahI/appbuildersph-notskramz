@@ -7,16 +7,18 @@ const DEVICE_KEY = 'ugatan.deviceId';
 
 export function loadAdminToken(): string {
   try {
-    return localStorage.getItem(TOKEN_KEY) ?? '';
+    return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY) ?? '';
   } catch {
     return '';
   }
 }
 
-export function saveAdminToken(token: string): void {
+/** `remember` keeps the token across browser restarts; otherwise it lasts for this tab only. An empty token signs out. */
+export function saveAdminToken(token: string, remember = true): void {
   try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    if (token) (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token);
   } catch {
     // private window
   }
@@ -47,6 +49,7 @@ export function loadClaimLink(): ClaimLink | null {
   }
 }
 
+/** The link is kept on this device until the farmer logs out. The server is not asked again to keep the chat open. */
 export function saveClaimLink(link: ClaimLink): void {
   try {
     localStorage.setItem(CLAIM_KEY, JSON.stringify(link));

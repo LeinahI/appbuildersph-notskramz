@@ -1,0 +1,43 @@
+# Photo credits
+
+Photos from Wikimedia Commons, used for evaluating photo recognition only. Each keeps its own license.
+
+- `bacterial-leaf-blight-1.jpg`: [Bacterial blight of rice.jpeg](https://commons.wikimedia.org/wiki/File:Bacterial_blight_of_rice.jpeg), Donald Groth, Louisiana State University AgCenter, Bugwood.org, CC BY 3.0 us
+- `rice-blast-1.jpg`: [Pyricularia oryzae 173066184.jpg](https://commons.wikimedia.org/wiki/File:Pyricularia_oryzae_173066184.jpg), Jie-Hao Ou, CC BY 4.0
+- `bph-1.jpg`: [Nilaparvata lugens 439634058.jpg](https://commons.wikimedia.org/wiki/File:Nilaparvata_lugens_439634058.jpg), portioid, CC BY 4.0
+- `bph-2.jpg`: [Nilaparvata lugens 439632934.jpg](https://commons.wikimedia.org/wiki/File:Nilaparvata_lugens_439632934.jpg), portioid, CC BY 4.0
+- `bph-3.jpg`: [BPH damage2.jpg](https://commons.wikimedia.org/wiki/File:BPH_damage2.jpg), Roy Bateman, CC BY-SA 4.0
+- `stem-borer-1.jpg`: [Foto Penggerek Batang Padi (Scirpopaga Incertulas).jpg](https://commons.wikimedia.org/wiki/File:Foto_Penggerek_Batang_Padi_(Scirpopaga_Incertulas).jpg), Taufiqzulman12, CC BY-SA 4.0
+- `golden-apple-snail-1.jpg`: [Eggs of Golden apple snails (Pomacea canaliculata) in rice paddies, Hunan Province, China.jpg](https://commons.wikimedia.org/wiki/File:Eggs_of_Golden_apple_snails_(Pomacea_canaliculata)_in_rice_paddies,_Hunan_Province,_China.jpg), FlyingBatt, CC BY-SA 4.0
+- `golden-apple-snail-2.jpg`: [Golden apple snail Pomacea canaliculata Eggs. Singapore DSCF6583 (6).JPG](https://commons.wikimedia.org/wiki/File:Golden_apple_snail_Pomacea_canaliculata_Eggs._Singapore_DSCF6583_(6).JPG), Dr. Raju Kasambe, CC BY-SA 3.0
+- `golden-apple-snail-3.jpg`: [A golden apple snail (Pomacea canaliculata) freshly collected from rice fields in rural Hunan, China.jpg](https://commons.wikimedia.org/wiki/File:A_golden_apple_snail_(Pomacea_canaliculata)_freshly_collected_from_rice_fields_in_rural_Hunan,_China.jpg), FlyingBatt, CC BY-SA 4.0
+- `rice-bug-1.jpg`: [Walang Sangit ( Leptocorisa oratorius ).jpg](https://commons.wikimedia.org/wiki/File:Walang_Sangit_(_Leptocorisa_oratorius_).jpg), Maulidya Fachra, CC BY-SA 4.0
+- `rice-bug-2.jpg`: [Leptocorisa acuta.jpg](https://commons.wikimedia.org/wiki/File:Leptocorisa_acuta.jpg), Spur08, CC BY-SA 4.0
+- `rice-bug-3.jpg`: [Rice ear bug1.jpg](https://commons.wikimedia.org/wiki/File:Rice_ear_bug1.jpg), Challiyan, CC BY-SA 3.0
+- `rice-black-bug-1.jpg`: [Scotinophara coarctata Bali ID.jpg](https://commons.wikimedia.org/wiki/File:Scotinophara_coarctata_Bali_ID.jpg), TheImmortalFrog, CC BY 4.0
+- `rice-black-bug-2.jpg`: [Scotinophara coarctata 15362821.jpg](https://commons.wikimedia.org/wiki/File:Scotinophara_coarctata_15362821.jpg), Claas Damken, CC BY-SA 4.0
+- `green-leafhopper-1.jpg`: [Green leafhopper (Nephotettix virescens) UGA5190052.jpg](https://commons.wikimedia.org/wiki/File:Green_leafhopper_(Nephotettix_virescens)_UGA5190052.jpg), Natasha Wright, Braman Termite &amp; Pest Elimination, Bugwood.org, CC BY 3.0 us
+- `green-leafhopper-2.jpg`: [Rice plants affected by tungro disease1.jpg](https://commons.wikimedia.org/wiki/File:Rice_plants_affected_by_tungro_disease1.jpg), Nozaki Michio (JIRCAS Photo Archive), CC BY 2.0
+- `healthy-rice-1.jpg`: [Oryza sativa in Kadavoor.jpg](https://commons.wikimedia.org/wiki/File:Oryza_sativa_in_Kadavoor.jpg), Jeevan Jose, Kerala, India, CC BY-SA 4.0
+- `healthy-rice-2.jpg`: [Rice fields bohol philippines 2017.jpg](https://commons.wikimedia.org/wiki/File:Rice_fields_bohol_philippines_2017.jpg), Øyvind Holmstad, CC BY-SA 4.0
+- `fall-armyworm-1.jpg`: [Zea mays damaged by Spodoptera frugiperda (200218-0814).jpg](https://commons.wikimedia.org/wiki/File:Zea_mays_damaged_by_Spodoptera_frugiperda_(200218-0814).jpg), Wee Hong, CC BY-SA 4.0
+- `fall-armyworm-2.jpg`: [Spodoptera frugiperda (200211-0809).jpg](https://commons.wikimedia.org/wiki/File:Spodoptera_frugiperda_(200211-0809).jpg), Wee Hong, CC BY-SA 4.0
+- `fall-armyworm-3.jpg`: [Spodoptera frugiperda in stalk of Zea mays.jpg](https://commons.wikimedia.org/wiki/File:Spodoptera_frugiperda_in_stalk_of_Zea_mays.jpg), Wee Hong, CC BY-SA 4.0
+- `asiatic-corn-borer-1.jpg`: [O furnacalis 1.JPG](https://commons.wikimedia.org/wiki/File:O_furnacalis_1.JPG), Myself (User:Kembangraps), CC BY-SA 3.0
+- `asiatic-corn-borer-2.jpg`: [O furnacalis 2.JPG](https://commons.wikimedia.org/wiki/File:O_furnacalis_2.JPG), Kembangraps, CC BY-SA 3.0
+- `downy-mildew-1.jpg`: [Typical symptom of maize downy mildew (Peronosclerospora maydis) Pj DSC 0774.jpg](https://commons.wikimedia.org/wiki/File:Typical_symptom_of_maize_downy_mildew_(Peronosclerospora_maydis)_Pj_DSC_0774.jpg), Kembangraps, CC BY-SA 4.0
+- `downy-mildew-2.jpg`: [Symptom of maize downy mildew (Peronosclerospora maydis) Pj DSC 0775.jpg](https://commons.wikimedia.org/wiki/File:Symptom_of_maize_downy_mildew_(Peronosclerospora_maydis)_Pj_DSC_0775.jpg), Kembangraps, CC BY-SA 4.0
+- `common-cutworm-1.jpg`: [Larva of Spodoptera litura on leaf.jpg](https://commons.wikimedia.org/wiki/File:Larva_of_Spodoptera_litura_on_leaf.jpg), Wee Hong, CC BY-SA 4.0
+- `corn-aphid-1.jpg`: [Corn leaf aphids (Rhopalosiphum maidis) on maize (Zea mays).jpg](https://commons.wikimedia.org/wiki/File:Corn_leaf_aphids_(Rhopalosiphum_maidis)_on_maize_(Zea_mays).jpg), GeorgJander, CC BY-SA 4.0
+- `corn-armyworm-1.jpg`: [Mythimna separata 6442172.jpg](https://commons.wikimedia.org/wiki/File:Mythimna_separata_6442172.jpg), Jacqui Geux, CC BY 4.0
+- `corn-armyworm-3.jpg`: [African armyworm.jpg](https://commons.wikimedia.org/wiki/File:African_armyworm.jpg), ChriKo, CC BY-SA 4.0
+- `corn-earworm-1.jpg`: [Green caterpillar on ear of corn.jpg](https://commons.wikimedia.org/wiki/File:Green_caterpillar_on_ear_of_corn.jpg), Sarah from Statesboro GA, USA, CC BY 2.0
+- `corn-earworm-2.jpg`: [Helicoverpa armigera larva.jpg](https://commons.wikimedia.org/wiki/File:Helicoverpa_armigera_larva.jpg), Gyorgy Csoka, Hungary Forest Research Institute, Bugwood.org, CC BY 3.0 us
+- `corn-planthopper-1.jpg`: [Peregrinus maidis from USDA.jpg](https://commons.wikimedia.org/wiki/File:Peregrinus_maidis_from_USDA.jpg), ARS Corn And Soybean Research Unit, Public domain
+- `healthy-corn-1.jpg`: [Young Plants.jpg](https://commons.wikimedia.org/wiki/File:Young_Plants.jpg), Sjgdzn, CC BY-SA 4.0
+- `healthy-corn-2.jpg`: [Corn Zea mays Plant 2000px.jpg](https://commons.wikimedia.org/wiki/File:Corn_Zea_mays_Plant_2000px.jpg), Photo by and (c)2007 Derek Ramsey (Ram-Man), GFDL 1.2
+- `healthy-corn-3.jpg`: [Maize seedlings in Arbigny (close-up).jpg](https://commons.wikimedia.org/wiki/File:Maize_seedlings_in_Arbigny_(close-up).jpg), Tangopaso, Public domain
+- `not-rice-or-corn-1.jpg`: [Tomato Plant Leaves 01.jpg](https://commons.wikimedia.org/wiki/File:Tomato_Plant_Leaves_01.jpg), Sabina Bajracharya, CC BY-SA 4.0
+- `not-rice-or-corn-2.jpg`: [Hagonoy Banana Plant.JPG](https://commons.wikimedia.org/wiki/File:Hagonoy_Banana_Plant.JPG), Michael Padada, CC BY-SA 3.0
+- `not-rice-or-corn-3.jpg`: [San Vicente, Carabao, Buffalo, Palawan, Philippines.jpg](https://commons.wikimedia.org/wiki/File:San_Vicente,_Carabao,_Buffalo,_Palawan,_Philippines.jpg), Vyacheslav Argenberg, CC BY 4.0
+- `asiatic-corn-borer-3.jpg`: [Telur O furnacalis.jpg](https://commons.wikimedia.org/wiki/File:Telur_O_furnacalis.jpg), Suputa, CC0

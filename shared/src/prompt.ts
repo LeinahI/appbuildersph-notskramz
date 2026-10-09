@@ -48,6 +48,8 @@ export interface PromptOptions {
   bestGuess?: boolean;
   /** What the hub saw in the farmer's photo, in English. Kept apart from the farmer's words so the reply keeps their language. */
   photo?: string | null;
+  /** For a match that is not sure: the sign the one question should ask about, in English, chosen by the app. */
+  askAbout?: string | null;
 }
 
 /** What the model is told about the matcher's verdict. Exported so the tests check the same wording. */
@@ -68,7 +70,7 @@ export function buildMessages(
   question: string,
   crop: string,
   refs: readonly KnowledgeEntry[],
-  { maxWords, sure = true, bestGuess = false, photo }: PromptOptions = {},
+  { maxWords, sure = true, bestGuess = false, photo, askAbout }: PromptOptions = {},
 ): ChatMessage[] {
   const refText = refs.length
     ? refs
@@ -78,7 +80,8 @@ export function buildMessages(
         )
         .join('\n')
     : 'No matching reference notes.';
-  const verdict = refs.length ? `${sure ? MATCH_SURE : bestGuess ? MATCH_BEST_GUESS : MATCH_NOT_SURE}\n` : '';
+  const ask = !sure && !bestGuess && askAbout ? ` Your one question asks whether the farmer sees this sign, in simple words: ${askAbout}.` : '';
+  const verdict = refs.length ? `${sure ? MATCH_SURE : bestGuess ? MATCH_BEST_GUESS : MATCH_NOT_SURE}${ask}\n` : '';
 
   return [
     { role: 'system', content: systemPrompt(maxWords) },
@@ -122,6 +125,17 @@ Questions that report no sign, such as "pwede ba itong kainin?", "kailan mag-aan
 Farm words you may see:
 Tagalog: palay = rice plant; uhay = grain head (panicle); suwi, usbong = tiller, shoot; tangkay = stem, stalk; gilid = edge; dulo = tip; ilalim = underside; leeg = neck; kulisap, insekto = insects; uod, higad = worm, caterpillar; kuhol, suso = snail; itlog = eggs; punla = seedling; amag = mold; bansot, pandak = stunted, short; maputla = pale; hungkag, walang laman = empty; bunutin, hilahin = pull out.
 Cebuano (Bisaya): humay = rice plant (not corn); mais = corn; uhay = grain head (panicle); tukog, punoan = stalk, stem; kilid = edge; tumoy = tip; tunga = middle; ilawom = underside; liog = neck; ulod = worm, caterpillar; kuhol = snail; itlog = eggs; semilya = seedling; lungag = hole; agianan = tunnel, channel; nabali = broken; nauga = dried; nadalag = turned yellow; luspad = pale; mubo = short, stunted; agup-op = mold; tulbok, mantsa = spots; buntag = morning; gatas = milk; walay sulod = empty; ibton = pull out.`;
+
+/**
+ * Gemma's answer to the describe prompt, as the matcher reads it: NO_SIGNS or OTHER_CROP when there is nothing to
+ * match, the English otherwise, and null for an empty answer. The hub and the phone read it the same way.
+ */
+export function describeOutcome(raw: string | null | undefined): string | null {
+  const english = (raw ?? '').trim();
+  if (english.startsWith(NO_SIGNS.slice(0, -1))) return NO_SIGNS;
+  if (english.startsWith(OTHER_CROP.slice(0, -1))) return OTHER_CROP;
+  return english || null;
+}
 
 export function buildDescribeMessages(question: string, crop: string): ChatMessage[] {
   return [
@@ -184,7 +198,8 @@ export function transcriptText(raw: string | null | undefined, maxChars = 2000):
 
 /** What the vision model's answer means. */
 export type PhotoOutcome =
-  | { kind: 'signs'; english: string }
+  /** `picks`: the signs picked on the photo form, one sentence each. Absent when the answer was free text. */
+  | { kind: 'signs'; english: string; picks?: string[] }
   | { kind: 'not-plant' }
   | { kind: 'no-signs' };
 
