@@ -39,11 +39,12 @@ describe('buildDescribeMessages', () => {
 });
 
 describe('photo reading', () => {
-  it('asks for visible signs only, with no diagnosis and fixed answers for the two empty cases', () => {
-    expect(PHOTO_SYSTEM_PROMPT).toContain('Write only what is visible');
+  it('asks the model to fill in a form from what it can see, with no diagnosis', () => {
+    expect(PHOTO_SYSTEM_PROMPT).toContain('fill in a short form');
+    expect(PHOTO_SYSTEM_PROMPT).toContain('Pick only what you can clearly see');
+    expect(PHOTO_SYSTEM_PROMPT).toContain('Write the plant on the first line');
     expect(PHOTO_SYSTEM_PROMPT).toContain('Do not name any disease, pest, or cause');
-    expect(PHOTO_SYSTEM_PROMPT).toContain(`Answer exactly ${OTHER_CROP} only when`);
-    expect(PHOTO_SYSTEM_PROMPT).toContain(`answer exactly: ${NO_SIGNS}`);
+    expect(buildPhotoMessages('ano ang mali', 'any')[1]!.content).toContain('First line, the plant: corn / rice /');
   });
 
   it('keeps the system prompt fixed and puts the crop and the farmer note in the user message', () => {
@@ -229,5 +230,14 @@ describe('what the chat is told about the turn', () => {
     expect(SYSTEM_PROMPT).toContain('panicle = uhay');
     expect(SYSTEM_PROMPT).toContain('diamond-shaped = hugis diyamante');
     expect(SYSTEM_PROMPT).toContain('never "crop"');
+  });
+});
+
+describe('an answer to a photo', () => {
+  it("keeps the photo line apart from the farmer's words, so the reply stays in the farmer's language", () => {
+    const [system, user] = buildMessages('ano ang mali', 'corn', [], { photo: 'Corn plant. Ragged holes in the whorl.' });
+    expect(user!.content).toContain("Farmer's description: ano ang mali\nSeen in the farmer's photo (written by the app in English): Corn plant.");
+    expect(system!.content).toContain('never from the photo line');
+    expect(buildMessages('may butas', 'corn', [])[1]!.content).not.toContain("farmer's photo");
   });
 });

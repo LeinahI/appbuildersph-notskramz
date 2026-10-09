@@ -1,5 +1,6 @@
 import type { ChatTurn } from './api.js';
 import { insectFacts } from './insect.js';
+import { photoFormText } from './photo-form.js';
 import type { KnowledgeEntry } from './types.js';
 
 export interface ChatMessage {
@@ -16,7 +17,7 @@ export interface ChatMessage {
  */
 export function systemPrompt(maxWords = 150): string {
   return `You are Ugatan, a helper for Filipino rice (palay) and corn (mais) farmers.
-Reply in the language the farmer uses: Tagalog, Taglish, or English. Use "po" and "opo" when the farmer does.
+Reply in the language the farmer uses: Tagalog, Taglish, or English. Judge it from the farmer's own words only, never from the photo line, which the app always writes in English. When the farmer's words are too short to tell, reply in Tagalog. Use "po" and "opo" when the farmer does.
 A matching step has already chosen the reference notes for the farmer's description. Your job is to explain them, not to diagnose.
 Talk about the crop the Crop line names. Never say palay or palayan for a corn question, and never say mais for a rice question.
 Answer the farmer's question first, directly and briefly, in simple words. Base your answer ONLY on the reference notes, and never name a problem that is not in them.
@@ -45,6 +46,8 @@ export interface PromptOptions {
   sure?: boolean;
   /** Set when the farmer has already been asked enough questions. The model then gives its best guess and asks nothing. */
   bestGuess?: boolean;
+  /** What the hub saw in the farmer's photo, in English. Kept apart from the farmer's words so the reply keeps their language. */
+  photo?: string | null;
 }
 
 /** What the model is told about the matcher's verdict. Exported so the tests check the same wording. */
@@ -65,7 +68,7 @@ export function buildMessages(
   question: string,
   crop: string,
   refs: readonly KnowledgeEntry[],
-  { maxWords, sure = true, bestGuess = false }: PromptOptions = {},
+  { maxWords, sure = true, bestGuess = false, photo }: PromptOptions = {},
 ): ChatMessage[] {
   const refText = refs.length
     ? refs
@@ -81,7 +84,7 @@ export function buildMessages(
     { role: 'system', content: systemPrompt(maxWords) },
     {
       role: 'user',
-      content: `Crop: ${crop}\nFarmer's description: ${question}\n\n${verdict}Reference notes:\n${refText}`,
+      content: `Crop: ${crop}\nFarmer's description: ${question}\n${photo ? `Seen in the farmer's photo (written by the app in English): ${photo}\n` : ''}\n${verdict}Reference notes:\n${refText}`,
     },
   ];
 }
@@ -131,20 +134,22 @@ export function buildDescribeMessages(question: string, crop: string): ChatMessa
  * The vision model's job, when a farmer sends a photo: write down what is visible, in plain English, so keyword
  * matching and Laya can read it. Like the describe step, it does not diagnose. The matcher still decides.
  */
-export const PHOTO_SYSTEM_PROMPT = `You look at a photo that a Filipino farmer took of a rice (palay) or corn (mais) plant.
-Write only what is visible: which part of the plant (leaf, stem, grain head, roots, ear), colors, spots and their shape and color, stripes, holes, chewed or torn edges, insects, worms, snails, eggs, droppings, mold, wilting, drying, stunting.
-If an insect, worm, or caterpillar is visible, write its size, color, body shape, wings, and where it sits on the plant (for example a slender brown bug on the grain head, or a striped caterpillar in the whorl).
-Say rice or corn only if you can tell which one it is. A close-up of a grass-like leaf, stalk, or grain head is a plant to describe even when you cannot tell which crop it is.
-Do not name any disease, pest, or cause, and do not give advice.
-Answer with one or two short English sentences and nothing else.
-Answer exactly ${OTHER_CROP} only when the photo shows no plant at all (a person, an object, an animal, a building, bare soil), or a plant that is plainly another crop (tomato, eggplant, banana, coconut, kangkong).
-If the photo shows a plant but nothing looks wrong, or it is too dark or blurry to see, answer exactly: ${NO_SIGNS}`;
+export const PHOTO_SYSTEM_PROMPT = `You look at a photo that a Filipino farmer took of a rice (palay) or corn (mais) plant, and you fill in a short form about it.
+Corn has broad flat leaves wrapped around one thick stalk, with a funnel of young rolled leaves at the top (the whorl), and the plants stand apart in rows. Rice has thin grass-like leaves growing in clumps, often in a flooded field.
+Write the plant on the first line. Then copy, one per line, the signs from the list that you can clearly see, in the list's exact words. Most photos show only one or two signs. If you see none of them, write only the plant.
+Pick only what you can clearly see in the photo. Do not name any disease, pest, or cause, do not give advice, and write nothing else.`;
 
-/** The text half of the photo question. The hub adds the image to the user message. */
+/**
+ * The text half of the photo question: the form the vision model fills in (see photo-form.ts). The hub adds the
+ * image to the user message and writes the description from the answers.
+ */
 export function buildPhotoMessages(note: string, crop: string): ChatMessage[] {
   return [
     { role: 'system', content: PHOTO_SYSTEM_PROMPT },
-    { role: 'user', content: `Crop: ${crop}\nFarmer's note: ${note.trim() || '(none)'}\nDescribe what you see on the plant in this photo.` },
+    {
+      role: 'user',
+      content: `Crop: ${crop}\nFarmer's note: ${note.trim() || '(none)'}\n\n${photoFormText()}`,
+    },
   ];
 }
 

@@ -9,6 +9,8 @@ export interface ExplainInput {
   clear: boolean;
   /** Set after two questions in a row with no clear match. The reply then gives its best guess and asks nothing. */
   bestGuess?: boolean;
+  /** The signs the hub read from the farmer's photo, in English. `text` then holds the farmer's own words only. */
+  photo?: string | null;
 }
 
 export interface ExplainResult {

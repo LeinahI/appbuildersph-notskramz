@@ -79,8 +79,8 @@ export async function createGemmaExplainer(opts: GemmaExplainerOptions): Promise
 
   return {
     name: 'gemma',
-    async explain({ text: question, crop, entries, clear, bestGuess }: ExplainInput): Promise<ExplainResult> {
-      const messages = buildMessages(question, crop, entries, { maxWords: opts.maxWords, sure: clear, bestGuess });
+    async explain({ text: question, crop, entries, clear, bestGuess, photo }: ExplainInput): Promise<ExplainResult> {
+      const messages = buildMessages(question, crop, entries, { maxWords: opts.maxWords, sure: clear, bestGuess, photo });
       const text = await enqueue(() => generate(messages));
       return text ? { status: 'ok', text } : { status: 'unavailable', text: null };
     },

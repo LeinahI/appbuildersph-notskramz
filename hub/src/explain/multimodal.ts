@@ -1,5 +1,5 @@
 import { basename, dirname } from 'node:path';
-import { TRANSCRIBE_PROMPT, buildPhotoMessages } from '@ugatan/shared';
+import { NO_SIGNS, OTHER_CROP, TRANSCRIBE_PROMPT, buildPhotoMessages, readPhotoForm } from '@ugatan/shared';
 import type { AudioTranscriber, ImageDescriber } from './index.js';
 import { oneAtATime } from './queue.js';
 
@@ -15,7 +15,7 @@ export interface GemmaMultimodalOptions {
    * a more exact variant costs little memory, and 4-bit weights lose detail in the sound that the text model cannot get back.
    */
   audioDtype?: string;
-  /** Cap on a photo description. One or two short sentences fit well inside it. */
+  /** Cap on the filled-in photo form. Eleven short lines fit inside it. */
   imageMaxNewTokens: number;
   /** Cap on a transcript. 30 seconds of speech is at most about 100 words. */
   audioMaxNewTokens: number;
@@ -89,7 +89,14 @@ export function createGemmaMultimodal(opts: GemmaMultimodalOptions): GemmaMultim
       { role: 'user', content: [{ type: 'image' }, { type: 'text', text: user!.content }] },
     ];
     const photo = await load_image(new Blob([image], { type: 'image/jpeg' }));
-    return generate(messages, { image: photo }, opts.imageMaxNewTokens);
+    const raw = await generate(messages, { image: photo }, opts.imageMaxNewTokens);
+    // The model fills in a form, and the description is written from its picks in the knowledge base's words.
+    // An answer that is not a form is passed on as it is, and read as free text.
+    const form = readPhotoForm(raw);
+    if (!form) return raw;
+    if (form.kind === 'not-plant') return OTHER_CROP;
+    if (form.kind === 'no-signs') return NO_SIGNS;
+    return form.english;
   }
 
   async function transcribe(samples: Float32Array): Promise<string | null> {

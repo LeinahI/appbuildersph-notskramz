@@ -16,6 +16,7 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-09-photo-form-recognition]] - photo reading uses a form built from every knowledge entry; the user's corn photo now matches fall armyworm (sure) with a Tagalog reply
 - [[2026-10-09-insect-identification]] - 12 insect notes plus insect profiles (English, scientific, and Filipino names, crop stage, natural enemies, last-resort line with PPE), name-weighted matching, and research on sources and open datasets
 - [[2026-10-09-chat-behaviour-20-chats]] - 320-message real-model chat test with fixes after each chat: fixed lines for pesticide, health, office, and growing questions, no re-matching of answered problems, problem name always said
 - [[2026-10-09-open-source-guardrail-patterns]] - input rail for prompt injection, grounding check on replies, wider dosage guard

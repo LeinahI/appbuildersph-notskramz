@@ -126,7 +126,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, cwd: string = p
   if (vision && gemmaModelDir === null) {
     throw new Error('HUB_VISION=on needs GEMMA_MODEL_DIR, the folder of the Gemma 4 ONNX model.');
   }
-  const visionMaxNewTokens = positiveInteger('VISION_MAX_NEW_TOKENS', env.VISION_MAX_NEW_TOKENS, 64);
+  const visionMaxNewTokens = positiveInteger('VISION_MAX_NEW_TOKENS', env.VISION_MAX_NEW_TOKENS, 128);
 
   const voiceRaw = env.HUB_VOICE ?? 'off';
   if (voiceRaw !== 'on' && voiceRaw !== 'off') {

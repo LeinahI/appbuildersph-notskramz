@@ -208,7 +208,13 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
   // What the matcher and the chat's notes read: the farmer's words, plus the photo's signs when it showed some.
   // A photo that showed nothing adds nothing here. The chat reply alone is told about it (`said`).
   const asked = photo?.status === 'ok' ? withPhoto(farmerText, photo) : farmerText;
-  const said = photo ? withPhoto(farmerText, photo) : farmerText;
+  // The chat reply hears the photo as a marked English note, so it answers in the farmer's language, not the note's.
+  const said =
+    photo?.status === 'ok'
+      ? `${farmerText} [The farmer's photo shows, in the app's English: ${photo.signs}]`
+      : photo
+        ? withPhoto(farmerText, photo)
+        : farmerText;
   // The farmer never picks a crop: the newest message that names one decides, earlier chat included.
   const crop: Crop | 'any' = req.crop === 'any' ? cropOfChat(asked, earlierTurns) : req.crop;
   // Signs read from a photo always go to matching, even when the keywords do not know the wording. A photo that
@@ -284,7 +290,9 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
   } else if (matched) {
     run = () =>
       explainer.explain({
-        text: description,
+        // The farmer's own words, with the photo's English signs beside them, so the reply keeps the farmer's language.
+        text: photo?.status === 'ok' ? sessionText([...notes, farmerText]) : description,
+        ...(photo?.status === 'ok' ? { photo: photo.signs } : {}),
         crop: explainCrop,
         entries: notesToExplain(entries, clear || bestGuess),
         clear,

@@ -83,3 +83,4 @@ export {
   type ComposeInput,
   type ComposedAnswer,
 } from './answer.js';
+export { PHOTO_FORM, photoFormText, readPhotoForm, type PhotoFormReading } from './photo-form.js';

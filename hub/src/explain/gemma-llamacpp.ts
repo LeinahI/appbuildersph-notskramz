@@ -59,9 +59,9 @@ export async function createGemmaLlamaCppExplainer(opts: GemmaLlamaCppExplainerO
   // One model on one GPU: explaining, describing, and chatting share the queue.
   const enqueue = oneAtATime();
 
-  async function generate({ text, crop, entries, clear, bestGuess }: ExplainInput, maxTokens = opts.maxNewTokens): Promise<string> {
+  async function generate({ text, crop, entries, clear, bestGuess, photo }: ExplainInput, maxTokens = opts.maxNewTokens): Promise<string> {
     // The matcher's verdict goes in the user message, so the cached system prompt stays the same.
-    const [, user] = buildMessages(text, crop, entries, { maxWords: opts.maxWords, sure: clear, bestGuess });
+    const [, user] = buildMessages(text, crop, entries, { maxWords: opts.maxWords, sure: clear, bestGuess, photo });
     // Each question stands alone. Only the system prompt carries over.
     session.resetChatHistory();
     const result = await session.promptWithMeta(user!.content, {

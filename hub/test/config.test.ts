@@ -59,7 +59,7 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ HUB_VISION: 'yes' }, '/repo/hub')).toThrow(/HUB_VISION/);
     const c = loadConfig({ HUB_VISION: 'on', GEMMA_MODEL_DIR: '/models/gemma' }, '/repo/hub');
     expect(c.vision).toBe(true);
-    expect(c.visionMaxNewTokens).toBe(64);
+    expect(c.visionMaxNewTokens).toBe(128);
     expect(loadConfig({ HUB_VISION: 'on', GEMMA_MODEL_DIR: '/m', VISION_MAX_NEW_TOKENS: '32' }, '/repo/hub').visionMaxNewTokens).toBe(32);
   });
 
