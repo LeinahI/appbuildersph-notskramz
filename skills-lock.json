@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "ai-ml-security": {
+      "source": "yaklang/hack-skills",
+      "sourceType": "github",
+      "skillPath": "skills/ai-ml-security/SKILL.md",
+      "computedHash": "22fc89055c72abdbb7d96b8c03c856ff0381e8def5231bbe49f1047952881349"
+    },
+    "configuring-guardrails": {
+      "source": "celigo/ai",
+      "sourceType": "github",
+      "skillPath": "skills/configuring-guardrails/SKILL.md",
+      "computedHash": "65b9bead342ac47df7bfc43c47f68379cf5a2271fdd14814d4ebe9e349c95fa9"
+    },
+    "prompt-guard": {
+      "source": "orchestra-research/ai-research-skills",
+      "sourceType": "github",
+      "skillPath": "07-safety-alignment/prompt-guard/SKILL.md",
+      "computedHash": "fa4d4c55a03f0df8967c35c40c18c13c01fa4d36ab7758f78d2d687a4365cc4b"
+    },
+    "prompt-injection-defense": {
+      "source": "bagelhole/devops-security-agent-skills",
+      "sourceType": "github",
+      "skillPath": "security/ai/prompt-injection-defense/SKILL.md",
+      "computedHash": "385f0a96acbeb4f19a51fba814d38674d6a3c437eb2ea9b117e14de064b38c98"
+    }
+  }
+}

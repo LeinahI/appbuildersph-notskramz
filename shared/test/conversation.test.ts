@@ -304,6 +304,13 @@ describe('fixed replies', () => {
     expect(fixedReply('may tanong ako')).toBe('Opo, ano po ang itatanong ninyo tungkol sa palay o mais?');
   });
 
+  it('refuses general other-crop asks even when the farmer says magtanong', () => {
+    const text = 'pwede ba ako magtanong tungkol sa pananim maliban sa palay o mais';
+    expect(routeFor(text, false)).toBe('chat');
+    expect(fixedReply(text)).toMatch(/ibang pananim/);
+    expect(fixedReply(text)).not.toMatch(/ano po ang itatanong/);
+  });
+
   it('leaves greetings, help, and complaints to the model', () => {
     for (const text of ['hello po', 'tulungan mo ako', 'bat ganyan response mo', 'test']) expect(fixedReply(text)).toBeNull();
   });

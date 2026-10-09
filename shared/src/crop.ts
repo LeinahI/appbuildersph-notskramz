@@ -9,7 +9,12 @@ const CROP_WORDS: Record<Crop, readonly string[]> = {
 
 /** The crop a message names, or null when it names none or both. "May butas ang palay" is rice. */
 export function detectCrop(text: string): Crop | null {
-  const padded = ` ${normalize(text)} `;
+  // Strip excluded/negated crops so "maliban sa palay" / "hindi mais" are not misread as rice/corn.
+  const crop = '(?:palay|rice|humay|bigas|pinitpit|mais|corn|maize)';
+  const cleaned = text
+    .replace(new RegExp(`\\b(?:maliban|bukod|liban)\\s+sa\\s+(?:mga\\s+)?${crop}(?:\\s+o\\s+(?:mga\\s+)?${crop})?\\b`, 'gi'), ' ')
+    .replace(new RegExp(`\\b(?:hindi|di|dili|not|except|other\\s+than)\\s+(?:mga\\s+)?${crop}\\b`, 'gi'), ' ');
+  const padded = ` ${normalize(cleaned)} `;
   const named = (Object.keys(CROP_WORDS) as Crop[]).filter((crop) => CROP_WORDS[crop].some((w) => padded.includes(` ${w} `)));
   return named.length === 1 ? named[0]! : null;
 }

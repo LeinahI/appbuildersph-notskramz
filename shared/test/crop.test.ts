@@ -16,6 +16,14 @@ describe('detectCrop', () => {
     // Whole words only: "maisip" is not corn.
     expect(detectCrop('hindi ko maisip')).toBeNull();
   });
+
+  it('ignores negated or excluded crop words', () => {
+    expect(detectCrop('maliban sa palay')).toBeNull();
+    expect(detectCrop('maliban sa palay o mais')).toBeNull();
+    expect(detectCrop('hindi palay')).toBeNull();
+    expect(detectCrop('other than rice')).toBeNull();
+    expect(detectCrop('may butas sa mais, hindi palay')).toBe('corn');
+  });
 });
 
 describe('cropOfChat', () => {

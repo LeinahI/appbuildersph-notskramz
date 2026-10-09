@@ -9,6 +9,7 @@ import {
   describeOutcome,
   findViolations,
   fixedReply,
+  guardPromptLeak,
   isFinalAnswer,
   isInjectionAttempt,
   matchKeywords,
@@ -338,9 +339,12 @@ export default function App() {
     while (lastClear >= 0 && outcomeOf(messages[lastClear]!) !== 'clear') lastClear--;
     const earlier = messages.slice(lastClear + 1).map((m) => m.text);
     const picked = symptomId ? KNOWLEDGE_BY_ID.get(symptomId) : undefined;
-    const plan: Plan = picked
-      ? { route: 'match', description: trimmed, notes: [], crop: 'any', entries: [picked], clear: true, matchedOn: [] }
-      : planFor(trimmed, earlier);
+    // Mirror hub: injection never goes to matching or the phone model, even with a tapped symptom.
+    const plan: Plan = isInjectionAttempt(trimmed)
+      ? { route: 'chat', description: trimmed, notes: [], crop: 'any', entries: [], clear: false, matchedOn: [] }
+      : picked
+        ? { route: 'match', description: trimmed, notes: [], crop: 'any', entries: [picked], clear: true, matchedOn: [] }
+        : planFor(trimmed, earlier);
 
     const followUps = messages.reduce((n, r) => nextFollowUps(n, outcomeOf(r)), 0);
     const final = isFinalAnswer(followUps);
@@ -471,16 +475,19 @@ export default function App() {
       const given = notesToExplain(entries, clear || bestGuess);
       const generated = await phoneAi.generate(buildMessages(asked, CROP, given, { sure: clear, bestGuess }));
       // The output rail: a reply that names a problem it was not given notes for is dropped, and the curated notes show instead.
-      const raw = generated !== null && ungroundedProblems(generated, KNOWLEDGE, given, text).length > 0 ? null : generated;
+      const grounded = generated !== null && ungroundedProblems(generated, KNOWLEDGE, given, text).length > 0 ? null : generated;
+      const tidied =
+        grounded === null
+          ? null
+          : clear || bestGuess
+            ? withProblemName(tidyReply(grounded, text), entries[0]!.name, clear)
+            : tidyReply(grounded, text);
+      // Prompt leaks (persona / system text) become INJECTION_REPLY.
+      const raw = tidied === null ? null : guardPromptLeak(tidied);
       await db.questions.update(id, {
         status: 'answered',
         // A sure match or a best guess always says the problem's name.
-        explanation:
-          raw === null
-            ? null
-            : clear || bestGuess
-              ? withProblemName(tidyReply(raw, text), entries[0]!.name, clear)
-              : tidyReply(raw, text),
+        explanation: raw,
         explanationStatus: raw === null ? 'blocked' : 'phone',
         answeredAt: new Date().toISOString(),
       });
@@ -495,11 +502,12 @@ export default function App() {
       (await phoneAi.generate(
         buildChatMessages(said, turns, undefined, { notes: plan.notes, unmatched, final: unmatched && final, crop: plan.crop }),
       ));
-    // A chat reply has no notes to explain, so it may name no problem at all.
-    const raw = generated !== null && ungroundedProblems(generated, KNOWLEDGE, [], text).length > 0 ? null : generated;
+    // A chat reply has no notes to explain, so it may name no problem at all. Prompt leaks become INJECTION_REPLY.
+    const grounded = generated !== null && ungroundedProblems(generated, KNOWLEDGE, [], text).length > 0 ? null : generated;
+    const raw = grounded === null ? null : guardPromptLeak(fixed ? grounded : tidyReply(grounded, text));
     await db.questions.update(id, {
       status: 'answered',
-      explanation: raw === null ? null : tidyReply(raw, text),
+      explanation: raw,
       explanationStatus: raw === null ? 'blocked' : 'phone',
       answeredAt: new Date().toISOString(),
     });
