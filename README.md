@@ -73,6 +73,10 @@ Only the staff portal talks to `ws`. Set `VITE_WS_URL` (default `http://127.0.0.
 
 The app picks this from `hubReachable` (`web/src/lib/ai-route.ts`): on hub premises prefer hub/ONNX multimodal; away prefer LiteRT on native.
 
+The left header button opens conversations. Desktop screens (1024 px+) have a collapsible panel; tablet/phone screens have a closed-by-default modal drawer. Chat actions offer rename, pin/unpin, and confirmed deletion with inline retry feedback and no success toast. Deleting while searching stays on search.
+
+Both New Chat buttons keep saved conversations, ask before discarding unsent text/photos or unsaved questions, and focus the empty composer. A row is saved only on the first send. Switching/searching also protects unsent drafts. Delayed saves, replies, and photo processing remain tied to the original chat; loading a deep link blocks sends until it resolves and offers retry on failure.
+
 Build and preview the static site. The repo does not yet set up how phones load this built site over Wi-Fi (see Pending decisions, hub network):
 
 ```bash
@@ -95,17 +99,17 @@ make run-api           # http://127.0.0.1:8080
 
 PII columns are AES-GCM ciphertext. ID images never leave the admin browser. Farmers claim with `/claim?token=…` (single-use, default 24h). Revoke users or invites from `/admin`. Confirm retention and LAN TLS with your co-op before production.
 
-## Admin UI preview
+## Admin interfaces
 
-The staff portal UI is `/admin/overview` (and `/admin/users`, `/admin/qr`, `/admin/activity`, `/admin/login`) inside the main SPA. `/admin-preview.html` is an optional second entry that mounts the same `AdminApp` with hash routes (`#overview`) for isolated frontend QA — it must not be named `admin.html`, or Vite would steal `/admin`. After a successful login from either entry, the browser opens `/admin/overview`.
+The staff sign-in page is `/admin/login`; it authenticates against `ws` and opens the staff console at `/admin/overview` (Users, QR access, Activity). There is no forgot-password control. `/admin-preview.html` mounts the same shell with hash routes for isolated frontend QA; its default and `#login` views redirect to the same `/admin/login` page. The preview entry must not be named `admin.html`, because Vite would intercept `/admin`.
 
-This is frontend only: login, registration persistence, ID reading, duplicate checks, QR generation/redemption, and access changes are not connected. These controls explain the missing integration rather than simulating success. No credentials, ID images, sample users, or personal records are stored.
+The isolated dashboard preview is `/admin-preview.html#overview`; it is not authenticated access. Development-status banners remain removed in both entries. List, metric, registration-save and invitation controls are not yet connected to the staff API; unavailable actions remain disabled with specific guidance. No sample users or personal records are stored by the shell.
 
-Manual registration supports consent, draft validation, review, editing, and explicit discard. There is no minimum-age eligibility rule. Drafts live in memory and are lost on reload; the browser is asked to warn before leaving an unfinished draft. Record and QR previews do not create accounts or grant access.
+Manual registration in the sidebar dashboard supports consent, draft validation, review, editing, and explicit discard. There is no minimum-age eligibility rule. Drafts live in memory and are lost on reload; the browser is asked to warn before leaving an unfinished draft. Record and QR previews do not create accounts or grant access. Staff sign-in is connected to `ws`; the sidebar dashboard still needs its record and invitation actions wired to that API.
 
 ## Text and display preferences
 
-Open the sliders icon beside history on the farmer page (**Teksto at display**), or **Display preferences** from the admin sidebar/mobile menu. Login and the registration drawer have no preference controls; both still inherit saved preferences. Choose Standard/Large/Extra large text (100/125/150%), Regular/Stronger weight, and Automatic/High contrast. Changes apply immediately to both entries; Automatic follows the device contrast preference. Reset restores the defaults.
+Open the sliders icon in the farmer page header (**Teksto at display**), or **Display preferences** from the admin sidebar/mobile menu. Login and the registration drawer have no preference controls; both still inherit saved preferences. Choose Standard/Large/Extra large text (100/125/150%), Regular/Stronger weight, and Automatic/High contrast. Changes apply immediately to both entries; Automatic follows the device contrast preference. Reset restores the defaults.
 
 Preferences are saved only in this browser on this origin and shared with its other Ugatan tabs. On a shared computer, the next operator inherits them. If storage is blocked, the controls still work for the current page and explain that saving is unavailable. Changing appearance does not alter AI language, reload a chat, save a registration, or store personal information. Browser zoom and forced-color accessibility modes remain available.
 

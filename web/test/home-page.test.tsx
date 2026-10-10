@@ -67,7 +67,7 @@ describe('Ugatan home page', () => {
   it('offers the symptom picker toggle only once the chat has started', () => {
     const fresh = renderToStaticMarkup(createElement(HomePage, props()));
     const started = renderToStaticMarkup(createElement(HomePage, { ...props(), onSymptoms: () => {}, children: createElement('p', {}, 'Hi') }));
-    expect(fresh).not.toContain('aria-expanded');
+    expect(fresh).not.toContain('aria-label='+JSON.stringify(L.symptomsHeading));
     expect(started).toContain('aria-expanded="false"');
   });
 
@@ -173,7 +173,7 @@ it('identifies the history control as opening the chat dialog', () => {
   const page = HomePage({ ...props(), onHistory });
   const history = findElement(page, (element) => element.props['aria-label'] === 'Mga usapan');
   expect(history?.props['aria-haspopup']).toBe('dialog');
-  expect(history?.props['aria-controls']).toBe('ugatan-history-dialog');
+  expect(history?.props['aria-controls']).toBe('ugatan-conversation-sidebar');
   history?.props.onClick();
   expect(onHistory).toHaveBeenCalledOnce();
 });
@@ -219,16 +219,16 @@ describe('home page header and action bar', () => {
     expect(html.indexOf('aria-label="Tulong"')).toBeGreaterThan(html.indexOf('aria-label="Teksto at display"'));
   });
 
-  it('leaves history and new chat to the sidebar on wide screens', () => {
-    const history = renderToStaticMarkup(createElement(HomePage, props())).match(/<div class="[^"]*md:hidden[^"]*"><button[^>]*aria-label="Mga usapan"/);
+  it('leaves actions to the open desktop sidebar and keeps its collapsed toggle available', () => {
+    const history = renderToStaticMarkup(createElement(HomePage, { ...props(), sidebarOpen: true, sidebarDesktop: true })).match(/<div class="[^"]*lg:hidden[^"]*"><button[^>]*aria-label="Mga usapan"/);
     expect(history).not.toBeNull();
     const welcome = renderToStaticMarkup(createElement(HomePage, props())).match(/<button[^>]*aria-label="Bagong usapan"[^>]*>/)?.[0];
     expect(welcome).toMatch(/class="[^"]*\bhidden\b/);
     const chat = renderToStaticMarkup(createElement(HomePage, { ...props(), children: createElement('p', {}, 'Hi') })).match(/<button[^>]*aria-label="Bagong usapan"[^>]*>/)?.[0];
     expect(chat).not.toMatch(/class="[^"]*\bhidden\b/);
-    expect(chat).not.toContain('md:hidden');
-    const withSidebar = renderToStaticMarkup(createElement(HomePage, { ...props(), sidebarOpen: true, children: createElement('p', {}, 'Hi') })).match(/<button[^>]*aria-label="Bagong usapan"[^>]*>/)?.[0];
-    expect(withSidebar).toContain('md:hidden');
+    expect(chat).not.toContain('lg:hidden');
+    const withSidebar = renderToStaticMarkup(createElement(HomePage, { ...props(), sidebarOpen: true, sidebarDesktop: true, children: createElement('p', {}, 'Hi') })).match(/<button[^>]*aria-label="Bagong usapan"[^>]*>/)?.[0];
+    expect(withSidebar).toContain('lg:hidden');
   });
 
   it('shows the camera and voice actions with visible names beside the input', () => {

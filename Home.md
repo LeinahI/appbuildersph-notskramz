@@ -13,10 +13,13 @@ Offline Taglish advisor for rice and corn farmers.
 - [Team list](docs/TEAM.md)
 
 ## Agent notes
-
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
-
 - [[2026-10-10-hub-setup-page-redesign]] - laptop `/` page redesigned: single hotspot QR + copy link, 4-step cards, "Katayuan ng Hub" readiness card (plain CSS, offline)
+- [[2026-10-10-preserve-current-ui-main-merge]] - resolved seven main/FrontEnd conflicts, preserved current sidebar and single login; build passed, tests and browser/Android QA unrun
+- [[2026-10-10-admin-login-dashboard-cleanup]] - kept /admin/login, removed duplicate login/recovery UI and developer banners; build and 319 frontend tests pass, browser and local-model gates remain
+- [[2026-10-10-chat-sidebar-refinements-implementation]] - rename/delete dialogs, responsive shared sidebar, quiet actions, and draft-safe New Chat; build/311 frontend tests pass, browser/Android and hub-model gates remain
+- [[2026-10-10-quiet-chat-action-feedback]] - excluded rename/delete/pin/unpin success toasts; sidebar state provides feedback, confirmations and failures remain
+- [[2026-10-10-chat-sidebar-refinement-review]] - mapped merged chat/sidebar gaps and proposed rename modal, quiet mutation feedback, responsive drawer, and protected New Chat flow; awaiting design approval
 - [[2026-10-10-admin-frontend-at-admin]] - `/admin` serves FrontEnd AdminApp (overview/users/qr/activity), not old top-nav portal
 - [[2026-10-10-landing-gpu-machine-note]] - Landing benchmarks label from `node-llama-cpp inspect gpu` (Vulkan · RTX 3060)
 - [[2026-10-10-landing-benchmarks]] - Browser `/` landing (GSAP/Motion) + hub `benchmark:landing` → real `benchmarks.json`

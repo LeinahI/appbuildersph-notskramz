@@ -28,6 +28,15 @@ Ugatan is a mobile-first, offline-capable adviser for rice and corn farmers. The
 - Keep the Ugatan wordmark visually centered at desktop widths. On smaller widths, preserve the balanced left/right control groups instead of forcing absolute centering.
 - All icon controls are circular 48 x 48 px touch targets. The new-conversation control uses the soft leaf fill; other controls are transparent until hover/active.
 
+### Chat navigation and sidebar
+
+- The left header control toggles the conversation sidebar, not a separate question-history dialog. Search has the same accessible toggle.
+- At 1024 px and wider, use a collapsible 288 px in-flow panel. Smaller screens use a closed-by-default native modal drawer, independent scrolling, safe areas, focus return, and Escape/backdrop dismissal. Persist only the desktop open preference.
+- Chat selection and actions are sibling buttons with 48 px minimum targets. Keep titles compact with their complete text available; action labels and dialogs wrap with enlarged text.
+- Rename uses a prefilled native dialog with Save/Cancel, trimmed non-empty validation, pending protection, and editable inline retry errors. Deletion requires confirmation. Reflect changes only after persistence and refresh search results.
+- Header/sidebar New Chat share one flow: confirm before discarding unsent text/photos or unsaved questions, retain saved chats, open the empty /chat draft, and focus its composer. Save a conversation only on its first sent question.
+- Keep sends blocked while a deep-link chat is unresolved, preserve typing during its initial load, and offer retry if loading fails. Late async work must not select an old chat, attach an old photo, or overwrite a newer draft.
+
 ### Empty state
 
 - Center the hero vertically within the available main area.
@@ -60,6 +69,7 @@ Ugatan is a mobile-first, offline-capable adviser for rice and corn farmers. The
 
 ### Notifications
 
+- Do not show success toasts for renaming, deleting, pinning, or unpinning chats. The persisted sidebar state is the confirmation; keep deletion confirmation and clear failure feedback.
 - Use the shared `notify` helper and `ToastHost` for brief event feedback on farmer and admin pages. Keep validation, important failures, progress, and agricultural safety content inline.
 - Toasts inherit display preferences and use localized copy, visible 48 px dismissal targets, and top placement clear of the composer. Short success confirmations auto-dismiss after 3 seconds; information after 5 seconds; errors remain until dismissed. Retain early dismissal and Sileo's hover pause. Essential information must also remain available without a timer; a fixed timeout alone is not an accessibility guarantee.
 - The host follows the active native dialog. Enlarged text, narrow viewports, keyboard focus, high contrast, and reduced motion use a wrapping card rather than fixed SVG geometry.
@@ -72,7 +82,7 @@ Ugatan is a mobile-first, offline-capable adviser for rice and corn farmers. The
 ## Content and localization
 
 - Default interface language is Tagalog. Use the existing typed label map for all visible copy; never hard-code user-facing text in a component when a label exists.
-- Keep language concise, reassuring, and capability-honest. Photo input is not implemented: its controls must show the localized unavailable notice rather than accept, upload, or analyse an image.
+- Keep language concise, reassuring, and capability-honest. Photos use the existing camera/gallery and on-device/hub processing flow; distinguish unavailable processing from a failed photo read.
 - Never make the UI imply a diagnosis, pesticide recommendation, brand, or dosage. Preserve the application's required safety disclaimer and existing answer guardrails.
 
 ## Implementation rules

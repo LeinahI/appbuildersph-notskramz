@@ -6,6 +6,8 @@ import '@fontsource-variable/manrope';
 import '@fontsource-variable/dm-sans';
 import { Capacitor } from '@capacitor/core';
 import App from './App';
+import AdminLoginPage from './pages/admin/LoginPage';
+import { RequireAdmin } from './pages/admin/AdminLayout';
 import { loadSetup } from './config/setup';
 import SearchChatsPage from './pages/SearchChatsPage';
 import SetupPage from './pages/SetupPage';
@@ -70,6 +72,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/claim" element={<Navigate to="/" replace />} />
           {NATIVE ? null : (
             <>
+              <Route path="/admin/login" element={<AdminLoginPage />} />
               {/* FrontEnd AdminApp (sidebar hub UI). Old Users/Register/Audit paths redirect here. */}
               <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
               <Route path="/admin/register" element={<Navigate to="/admin/users" replace />} />
@@ -79,7 +82,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                 path="/admin/:page"
                 element={
                   <Suspense fallback={<AdminFallback />}>
-                    <AdminHub />
+                    <RequireAdmin>
+                      <AdminHub />
+                    </RequireAdmin>
                   </Suspense>
                 }
               />

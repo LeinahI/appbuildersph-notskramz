@@ -1,9 +1,7 @@
-import { FormEvent, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { A } from './copy';
 import { DisplayPreferencesPanel } from '../components/DisplayPreferencesPanel';
 import { DisplayPreferencesIcon } from '../components/DisplayPreferencesIcon';
-import { loadAdminToken, saveAdminToken } from '../config/ws';
-import { login, WsApiError } from '../lib/ws-api';
 import { AdminDialog, AdminIcon, type IconName } from './AdminDialog';
 import { RegistrationDialog } from './RegistrationDialog';
 
@@ -13,8 +11,6 @@ export function adminPage(hash: string): AdminPage {
   const page = hash.replace(/^#/, '');
   return pages.includes(page as AdminPage) ? page as AdminPage : 'login';
 }
-
-const ADMIN_HOME = '/admin/overview';
 
 const navigation: { id: Exclude<AdminPage, 'login'>; icon: IconName; label: string }[] = [
   { id: 'overview', icon: 'overview', label: A.overview },
@@ -157,118 +153,6 @@ function Overview({ onRegister }: { onRegister: () => void }) {
   );
 }
 
-export function Login({ onSignedIn }: { onSignedIn?: () => void } = {}) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (!loadAdminToken()) return;
-    if (onSignedIn) onSignedIn();
-    else window.location.replace(ADMIN_HOME);
-  }, [onSignedIn]);
-
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    setError('');
-    const trimmed = email.trim();
-    if (!trimmed.includes('@')) {
-      setError(A.emailRequired);
-      return;
-    }
-    if (!password) {
-      setError(A.passwordRequired);
-      return;
-    }
-    setBusy(true);
-    try {
-      const res = await login(trimmed, password);
-      saveAdminToken(res.token, true);
-      if (onSignedIn) onSignedIn();
-      else window.location.assign(ADMIN_HOME);
-    } catch (err) {
-      setError(err instanceof WsApiError && err.status === 401 ? A.loginFailed : A.loginOffline);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <main className='admin-login'>
-      <section className='admin-login-card' aria-labelledby='admin-login-heading'>
-        <Logo />
-        <p className='admin-eyebrow'>{A.workspace}</p>
-        <h1 id='admin-login-heading'>{A.login}</h1>
-        <p className='admin-description'>{A.loginDescription}</p>
-        <form onSubmit={onSubmit}>
-          <label className='admin-field' htmlFor='admin-email'>
-            {A.email}
-            <input
-              id='admin-email'
-              type='email'
-              inputMode='email'
-              autoComplete='username'
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={busy}
-            />
-          </label>
-          <label className='admin-field mt-4' htmlFor='admin-password'>
-            {A.password}
-          </label>
-          <div className='admin-password'>
-            <input
-              id='admin-password'
-              type={showPassword ? 'text' : 'password'}
-              autoComplete='current-password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={busy}
-            />
-            <button
-              type='button'
-              aria-label={showPassword ? A.hidePassword : A.showPassword}
-              title={showPassword ? A.hidePassword : A.showPassword}
-              aria-controls='admin-password'
-              aria-pressed={showPassword}
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              <svg
-                width='20'
-                height='20'
-                viewBox='0 0 24 24'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='1.7'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                aria-hidden={true}
-              >
-                <path d='M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z' />
-                <circle cx='12' cy='12' r='3' />
-                {showPassword && <path d='m3 3 18 18' />}
-              </svg>
-            </button>
-          </div>
-          {error ? (
-            <p role='alert' className='admin-callout'>
-              {error}
-            </p>
-          ) : null}
-          <button type='submit' className='btn w-full' disabled={busy}>
-            {busy ? 'Signing in…' : A.signIn}
-          </button>
-        </form>
-        <a className='admin-text-button' href='/chat'>
-          {A.backHome}
-        </a>
-      </section>
-    </main>
-  );
-}
-
 export type AdminAppProps = {
   /** Controlled page (SPA `/admin/:page`). When omitted, hash routing is used (`admin-preview.html`). */
   page?: AdminPage;
@@ -291,12 +175,16 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
   }, [pageProp]);
 
   useEffect(() => {
+    if (page === 'login') {
+      window.location.replace('/admin/login');
+      return;
+    }
     document.title = 'Ugatan | ' + A[page];
     document.documentElement.lang = 'en';
     heading.current?.focus();
   }, [page]);
 
-  const hrefFor = (id: AdminPage) => (onNavigate ? (id === 'login' ? '/admin/login' : `/admin/${id}`) : `#${id}`);
+  const hrefFor = (id: AdminPage) => id === 'login' ? '/admin/login' : onNavigate ? `/admin/${id}` : `#${id}`;
   const go = (id: AdminPage, event?: MouseEvent) => {
     if (!onNavigate) return;
     event?.preventDefault();
@@ -304,11 +192,10 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
   };
   const register = () => setDialog('registration');
 
+  if (page === 'login') return <main className='p-6'><a className='admin-text-button' href='/admin/login'>{A.login}</a></main>;
+
   return (
     <>
-      {page === 'login' ? (
-        <Login onSignedIn={onNavigate ? () => onNavigate('overview') : undefined} />
-      ) : (
         <div className='admin-shell'>
           <a
             className='admin-skip-link'
@@ -333,10 +220,6 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
               </span>
             </div>
             <Navigation page={page} hrefFor={hrefFor} onNavigate={onNavigate} />
-            <p className='admin-connection'>
-              <AdminIcon name='lock' />
-              {A.disconnected}
-            </p>
             <div className='admin-sidebar-bottom'>
               <button
                 type='button'
@@ -377,10 +260,9 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
                 <span aria-hidden='true'>/</span>
                 <strong>{A[page]}</strong>
               </p>
-              <span className='admin-preview-badge'>{A.preview}</span>
               <button
                 type='button'
-                className='chat-icon-button lg:hidden'
+                className='chat-icon-button ml-auto lg:hidden'
                 onClick={() => setDialog('help')}
                 aria-label={A.help}
                 title={A.help}
@@ -408,7 +290,6 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
                   {A.register}
                 </button>
               </div>
-              <p className='admin-preview-notice'>{A.previewNotice}</p>
               {page === 'overview' ? (
                 <Overview onRegister={register} />
               ) : page === 'activity' ? (
@@ -434,7 +315,6 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
             </main>
           </div>
         </div>
-      )}
       {dialog === 'registration' && <RegistrationDialog onClose={() => setDialog(null)} />}
       {dialog === 'menu' && (
         <AdminDialog id='admin-menu' title={A.menuTitle} drawer='left' onClose={() => setDialog(null)}>
@@ -501,7 +381,7 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
               <dd>{A.qrPolicy}</dd>
             </div>
           </dl>
-          <p className='admin-callout'>{A.backendRequired}</p>
+          <p className='admin-callout'>{A.actionUnavailable}</p>
         </AdminDialog>
       )}
     </>

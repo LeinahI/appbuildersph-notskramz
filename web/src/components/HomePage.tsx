@@ -29,6 +29,7 @@ export interface HomePageProps {
   onTextChange: (text: string) => void;
   onSubmit: () => void;
   onHistory: () => void;
+  sidebarDesktop?: boolean;
   onHelp: () => void;
   onNewConversation: () => void;
   onPhotoFile: (file: File | undefined) => void;
@@ -87,15 +88,16 @@ export function HomePage(props: HomePageProps) {
   return (
     <div className='chat-shell'>
       <header className='chat-header relative'>
-        {/* Wide screens have the sidebar for chats, so the history button is for phones only. */}
-        <div className='flex shrink-0 items-center gap-1 md:hidden'>
+        {/* Keep the toggle available on mobile and when the desktop panel is collapsed. */}
+        <div className={`flex shrink-0 items-center gap-1 ${props.sidebarDesktop && props.sidebarOpen ? 'lg:hidden' : ''}`}>
           <button
             type='button'
             className='chat-icon-button'
             aria-label={labels.historyLabel}
-            title={labels.historyLabel}
-            aria-haspopup='dialog'
-            aria-controls='ugatan-history-dialog'
+            title={props.sidebarOpen ? labels.sidebarCloseLabel : labels.sidebarOpenLabel}
+            aria-haspopup={props.sidebarDesktop ? undefined : 'dialog'}
+            aria-expanded={props.sidebarOpen ?? false}
+            aria-controls='ugatan-conversation-sidebar'
             onClick={props.onHistory}
           >
             <img className='size-6' src='/home/history.svg' alt='' />
@@ -112,7 +114,7 @@ export function HomePage(props: HomePageProps) {
           {/* A new chat is pointless on the welcome screen, and the open sidebar already has the button. */}
           <button
             type='button'
-            className={`chat-icon-button bg-leaf-soft ${hasChat ? '' : 'hidden'} ${props.sidebarOpen ? 'md:hidden' : ''}`}
+            className={`chat-icon-button bg-leaf-soft ${hasChat ? '' : 'hidden'} ${props.sidebarDesktop && props.sidebarOpen ? 'lg:hidden' : ''}`}
             aria-label={labels.newConversationLabel}
             title={labels.newConversationLabel}
             onClick={props.onNewConversation}

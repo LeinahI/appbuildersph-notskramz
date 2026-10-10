@@ -3,8 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HighlightedText } from '../components/HighlightedText';
+import { useConversationSidebar } from '../components/useConversationSidebar';
 import { DEFAULT_UI_LANGUAGE, L, localeFor } from '../config/labels';
-import { ensureActiveConversation, saveActiveConversationId } from '../lib/conversations';
+import { saveActiveConversationId } from '../lib/conversations';
 import type { ConversationRow } from '../lib/db';
 import {
   formatChatDate,
@@ -15,19 +16,11 @@ import {
 
 const ConversationSidebar = lazy(() => import('../components/ConversationSidebar'));
 
-const SIDEBAR_KEY = 'ugatan.sidebarOpen';
-
 export default function SearchChatsPage() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [listKey, setListKey] = useState(0);
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    try {
-      return localStorage.getItem(SIDEBAR_KEY) !== '0';
-    } catch {
-      return true;
-    }
-  });
+  const sidebar = useConversationSidebar();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const locale = localeFor(DEFAULT_UI_LANGUAGE);
@@ -63,19 +56,8 @@ export default function SearchChatsPage() {
     overscan: 8,
   });
 
-  function toggleSidebar() {
-    setSidebarOpen((o) => {
-      const next = !o;
-      try {
-        localStorage.setItem(SIDEBAR_KEY, next ? '1' : '0');
-      } catch {
-        // ignore
-      }
-      return next;
-    });
-  }
-
   function openConversation(id: string, messageUid?: string) {
+    sidebar.closeOnMobile();
     saveActiveConversationId(id);
     if (messageUid && needle) {
       navigate(`/chat/${id}?m=${encodeURIComponent(messageUid)}&q=${encodeURIComponent(needle)}`);
@@ -89,6 +71,7 @@ export default function SearchChatsPage() {
   }
 
   function newChat() {
+    sidebar.closeOnMobile();
     saveActiveConversationId('');
     navigate('/chat');
   }
@@ -97,25 +80,27 @@ export default function SearchChatsPage() {
     <div className="relative flex h-dvh bg-surface">
       <Suspense fallback={null}>
         <ConversationSidebar
-          open={sidebarOpen}
+          open={sidebar.open}
+          desktop={sidebar.desktop}
           activeId=""
           searchActive
           labels={L}
-          onToggle={toggleSidebar}
+          onToggle={sidebar.toggle}
           onSelect={onSelect}
           onNewChat={newChat}
-          onSearch={() => navigate('/search')}
-          onDeleted={async () => {
-            const next = await ensureActiveConversation();
-            if (next) openConversation(next.id);
-            else newChat();
-            setListKey((k) => k + 1);
-          }}
+          onSearch={sidebar.closeOnMobile}
+          onDeleted={() => setListKey((k) => k + 1)}
           refreshKey={listKey}
         />
       </Suspense>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        <div className='px-3 pt-3'>
+          <button type='button' className='chat-icon-button' aria-label={sidebar.open ? L.sidebarCloseLabel : L.sidebarOpenLabel}
+            aria-controls='ugatan-conversation-sidebar' aria-expanded={sidebar.open} aria-haspopup={sidebar.desktop ? undefined : 'dialog'} onClick={sidebar.toggle}>
+            <svg width={20} height={20} viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={1.8} aria-hidden><rect x='3' y='4' width='18' height='16' rx='2' /><path d='M9 4v16' /></svg>
+          </button>
+        </div>
         <div className="mx-auto w-full max-w-[720px] px-4 pb-3 pt-6 md:px-8 md:pt-10">
           <label className="flex items-center gap-3 rounded-full border border-line bg-white px-4 py-3 shadow-[0_2px_12px_rgba(43,66,43,0.04)]">
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="shrink-0 text-muted" aria-hidden>
