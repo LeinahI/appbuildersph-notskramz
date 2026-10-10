@@ -163,7 +163,6 @@ describe('admin pages and backend boundaries', () => {
     hooks.index = 0;
     const view = QrInvitation({ user: savedUser });
     expect(button(view, A.generateQr).props.disabled).toBe(false);
-    expect(() => button(view, A.regenerateQr)).toThrow();
   });
   it('does not offer an invitation to a revoked user', () => {
     hooks.index = 0;

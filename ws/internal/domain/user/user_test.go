@@ -64,18 +64,45 @@ func TestNewUserPendingThenClaim(t *testing.T) {
 	}
 }
 
-func TestAdminSkipsAgeAddress(t *testing.T) {
+func TestNewRejectsNonUserRole(t *testing.T) {
+	t.Parallel()
+	_, err := New(NewInput{
+		Role:      Role("admin"),
+		FullName:  "Admin",
+		BirthDate: time.Now().UTC().AddDate(-30, 0, 0),
+		Address: Address{
+			Line1: "1 Rizal St", Barangay: "Poblacion", City: "Nabua", Province: "Camarines Sur",
+		},
+	})
+	if err != ErrInvalidRole {
+		t.Fatalf("got %v, want ErrInvalidRole", err)
+	}
+}
+
+func TestRename(t *testing.T) {
 	t.Parallel()
 	u, err := New(NewInput{
-		Role:         RoleAdmin,
-		Email:        "admin@ugatan.local",
-		PasswordHash: "hash",
-		FullName:     "Admin",
+		Role:      RoleUser,
+		FullName:  "Juan Dela Cruz",
+		BirthDate: time.Now().UTC().AddDate(-30, 0, 0),
+		Address: Address{
+			Line1: "1 Rizal St", Barangay: "Poblacion", City: "Nabua", Province: "Camarines Sur",
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if u.Status() != StatusActive {
-		t.Fatalf("admin status %s", u.Status())
+	if err := u.Rename("  Maria Santos  "); err != nil {
+		t.Fatal(err)
+	}
+	if u.FullName() != "Maria Santos" {
+		t.Fatalf("got %q", u.FullName())
+	}
+	if err := u.Rename("   "); err != ErrInvalidName {
+		t.Fatalf("got %v, want ErrInvalidName", err)
+	}
+	_ = u.Revoke()
+	if err := u.Rename("Ok"); err != ErrRevoked {
+		t.Fatalf("got %v, want ErrRevoked", err)
 	}
 }

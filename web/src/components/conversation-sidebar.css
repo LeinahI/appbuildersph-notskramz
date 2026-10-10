@@ -17,3 +17,6 @@
 html:has(.conversation-sidebar-drawer[open]) { overflow: hidden; }
 .chat-action-dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; }
 .chat-action-dialog button { min-height: 48px; }
+.conversation-sidebar-profile { flex-shrink: 0; padding: 8px 8px max(12px, env(safe-area-inset-bottom)); border-top: 1px solid var(--color-line); }
+.conversation-sidebar-profile > p { margin: 0; padding: 12px; }
+.conversation-sidebar-profile .conversation-sidebar-select { width: 100%; }

@@ -13,6 +13,7 @@ const (
 	EventUserRegistered    = "user.registered"
 	EventInviteCreated     = "invite.created"
 	EventInviteClaimed     = "invite.claimed"
+	EventInviteDownloaded  = "invite.downloaded"
 	EventInviteRevoked     = "invite.revoked"
 	EventInviteRegenerated = "invite.regenerated"
 	EventUserRevoked       = "user.revoked"

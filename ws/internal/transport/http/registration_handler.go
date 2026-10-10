@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
 	"time"
 
@@ -186,6 +187,27 @@ func (h *RegistrationHandler) RevokeInvite(w http.ResponseWriter, r *http.Reques
 	response.JSON(w, http.StatusOK, map[string]string{"status": "revoked"})
 }
 
+func (h *RegistrationHandler) MarkDownloaded(w http.ResponseWriter, r *http.Request) {
+	if !loopback(r.RemoteAddr) {
+		response.Error(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	if err := h.svc.MarkDownloaded(r.Context()); err != nil {
+		writeRegError(w, err)
+		return
+	}
+	response.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func loopback(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		host = addr
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
 func (h *RegistrationHandler) Claim(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Token    string `json:"token"`
@@ -200,7 +222,49 @@ func (h *RegistrationHandler) Claim(w http.ResponseWriter, r *http.Request) {
 		writeRegError(w, err)
 		return
 	}
-	response.JSON(w, http.StatusOK, map[string]any{"userId": res.UserID, "token": res.Token})
+	response.JSON(w, http.StatusOK, map[string]any{
+		"userId": res.UserID, "token": res.Token,
+		"fullName": res.FullName, "status": res.Status,
+	})
+}
+
+func (h *RegistrationHandler) GetMeFarmer(w http.ResponseWriter, r *http.Request) {
+	c := middleware.ClaimsFrom(r.Context())
+	if c == nil {
+		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	u, err := h.svc.GetMe(r.Context(), c.Sub)
+	if err != nil {
+		writeRegError(w, err)
+		return
+	}
+	response.JSON(w, http.StatusOK, map[string]any{
+		"id": u.ID(), "fullName": u.FullName(), "status": u.Status(),
+	})
+}
+
+func (h *RegistrationHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
+	c := middleware.ClaimsFrom(r.Context())
+	if c == nil {
+		response.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	var req struct {
+		FullName string `json:"fullName"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	u, err := h.svc.UpdateMe(r.Context(), registration.UpdateMeInput{UserID: c.Sub, FullName: req.FullName})
+	if err != nil {
+		writeRegError(w, err)
+		return
+	}
+	response.JSON(w, http.StatusOK, map[string]any{
+		"id": u.ID(), "fullName": u.FullName(), "status": u.Status(),
+	})
 }
 
 func (h *RegistrationHandler) RevokeUser(w http.ResponseWriter, r *http.Request) {
@@ -239,7 +303,7 @@ func toAdminDTO(a *admin.Admin) map[string]any {
 func toUserDTO(u *user.User) map[string]any {
 	addr := u.Address()
 	dto := map[string]any{
-		"id": u.ID(), "role": u.Role(), "status": u.Status(), "email": u.Email(),
+		"id": u.ID(), "role": u.Role(), "status": u.Status(),
 		"fullName": u.FullName(), "phone": u.Phone(), "deviceId": u.DeviceID(),
 		"age": u.Age(), "createdAt": u.CreatedAt().Format(time.RFC3339),
 		"address": map[string]string{

@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { clearFarmerSession, loadFarmerSession, updateFarmerSessionName, type FarmerSession } from '../config/farmerSession';
 import type { Labels } from '../config/labels';
 import type { ConversationRow } from '../lib/db';
 import { deleteConversation, listLocalConversations, renameConversation, setPinned } from '../lib/conversations';
+import { farmerMe, updateFarmerName } from '../lib/ws-api';
 import './conversation-sidebar.css';
+
+/** Chat rename/delete, or the claimed farmer's own name and logout. */
+type Action = { kind: 'rename'; chat: ConversationRow } | { kind: 'delete'; chat: ConversationRow } | { kind: 'name' } | { kind: 'logout' };
 
 type Props = {
   open: boolean;
@@ -23,7 +28,9 @@ export default function ConversationSidebar({ open, desktop, activeId, labels, o
   const queryClient = useQueryClient();
   const [items, setItems] = useState<ConversationRow[]>([]);
   const [menuId, setMenuId] = useState<string | null>(null);
-  const [action, setAction] = useState<{ kind: 'rename' | 'delete'; chat: ConversationRow } | null>(null);
+  const [action, setAction] = useState<Action | null>(null);
+  const [session, setSession] = useState<FarmerSession | null>(() => loadFarmerSession());
+  const [profileOpen, setProfileOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [error, setError] = useState('');
   const [panelError, setPanelError] = useState('');
@@ -34,6 +41,8 @@ export default function ConversationSidebar({ open, desktop, activeId, labels, o
   const input = useRef<HTMLInputElement>(null);
   const headerButton = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLLIElement>(null);
+  const profile = useRef<HTMLDivElement>(null);
+  const profileButton = useRef<HTMLButtonElement>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const savingRef = useRef(false);
 
@@ -54,6 +63,30 @@ export default function ConversationSidebar({ open, desktop, activeId, labels, o
   }, [refreshKey, open, labels.chatLoadError]);
 
   useEffect(() => {
+    if (!open) return;
+    const local = loadFarmerSession();
+    setSession(local);
+    // Older claims saved a JWT without fullName: fill it from ws.
+    if (!local?.token || local.fullName.trim()) return;
+    let cancelled = false;
+    void farmerMe().then(me => {
+      if (cancelled || !me.fullName?.trim()) return;
+      updateFarmerSessionName(me.fullName);
+      setSession(loadFarmerSession());
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [open, refreshKey]);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    function outside(event: PointerEvent) {
+      if (!profile.current?.contains(event.target as Node)) setProfileOpen(false);
+    }
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, [profileOpen]);
+
+  useEffect(() => {
     const dialog = drawer.current;
     if (!dialog) return;
     if (open && !desktop && !dialog.open) dialog.showModal();
@@ -63,7 +96,7 @@ export default function ConversationSidebar({ open, desktop, activeId, labels, o
   useEffect(() => {
     if (!action) return;
     if (!actionDialog.current?.open) actionDialog.current?.showModal();
-    if (action.kind === 'rename') { input.current?.focus(); input.current?.select(); }
+    if (action.kind === 'rename' || action.kind === 'name') { input.current?.focus(); input.current?.select(); }
   }, [action]);
 
   useEffect(() => {
@@ -90,6 +123,41 @@ export default function ConversationSidebar({ open, desktop, activeId, labels, o
     setMenuId(null);
   }
 
+  function requestProfile(kind: 'name' | 'logout') {
+    trigger.current = profileButton.current;
+    setTitle(session?.fullName ?? '');
+    setError('');
+    setProfileOpen(false);
+    setAction({ kind });
+  }
+
+  async function submitProfile(kind: 'name' | 'logout') {
+    if (kind === 'logout') {
+      clearFarmerSession();
+      setSession(null);
+      trigger.current = headerButton.current;
+      closeAction();
+      return;
+    }
+    const next = title.trim();
+    if (!next) { setError(labels.chatTitleRequired); input.current?.focus(); return; }
+    savingRef.current = true;
+    setSaving(true);
+    setError('');
+    try {
+      const me = await updateFarmerName(next);
+      updateFarmerSessionName(me.fullName);
+      setSession(loadFarmerSession());
+    } catch {
+      setError(labels.chatActionError);
+      return;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+    closeAction();
+  }
+
   async function refreshSearch() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['chat-search'] }),
@@ -100,14 +168,16 @@ export default function ConversationSidebar({ open, desktop, activeId, labels, o
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!action || savingRef.current) return;
+    if (action.kind === 'name' || action.kind === 'logout') return submitProfile(action.kind);
+    const { chat } = action;
     const next = title.trim();
     if (action.kind === 'rename' && !next) { setError(labels.chatTitleRequired); input.current?.focus(); return; }
     savingRef.current = true;
     setSaving(true);
     setError('');
     try {
-      if (action.kind === 'rename') await renameConversation(action.chat.id, next);
-      else await deleteConversation(action.chat.id);
+      if (action.kind === 'rename') await renameConversation(chat.id, next);
+      else await deleteConversation(chat.id);
     } catch {
       setError(labels.chatActionError);
       savingRef.current = false;
@@ -118,13 +188,13 @@ export default function ConversationSidebar({ open, desktop, activeId, labels, o
     savingRef.current = false;
     setSaving(false);
     closeAction();
-    if (action.kind === 'rename') setItems(rows => rows.map(row => row.id === action.chat.id ? { ...row, title: next } : row));
+    if (action.kind === 'rename') setItems(rows => rows.map(row => row.id === chat.id ? { ...row, title: next } : row));
     else {
-      setItems(rows => rows.filter(row => row.id !== action.chat.id));
+      setItems(rows => rows.filter(row => row.id !== chat.id));
       headerButton.current?.focus();
     }
     try {
-      if (action.kind === 'delete') await onDeleted(action.chat.id);
+      if (action.kind === 'delete') await onDeleted(chat.id);
       await refreshSearch();
       await reload();
     } catch { setPanelError(labels.chatLoadError); }
@@ -184,7 +254,28 @@ export default function ConversationSidebar({ open, desktop, activeId, labels, o
         {!loading && !items.length ? <li className='py-4 text-sm text-muted'>{labels.searchNoChats}</li> : null}
       </ul>
     </div>
+    <div ref={profile} className='conversation-sidebar-profile'>
+      {session ? <>
+        {profileOpen ? <div id='farmer-profile-actions' className='conversation-sidebar-actions' onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setProfileOpen(false); profileButton.current?.focus(); } }}>
+          <button type='button' onClick={() => requestProfile('name')}>{labels.profileRenameLabel}</button>
+          <button type='button' className='text-accent' onClick={() => requestProfile('logout')}>{labels.profileLogoutLabel}</button>
+        </div> : null}
+        <button ref={profileButton} type='button' className='conversation-sidebar-select' aria-expanded={profileOpen} aria-controls='farmer-profile-actions'
+          title={labels.profileMenuLabel} onClick={() => setProfileOpen(value => !value)}>
+          <span className='min-w-0 flex-1 truncate'>{session.fullName.trim() || labels.profileDefaultName}</span>
+          <span aria-hidden>{profileOpen ? '▴' : '▾'}</span>
+        </button>
+      </> : <p className='text-sm text-muted'>{labels.profileNoAccount}</p>}
+    </div>
   </>;
+
+  const actionTitle = action?.kind === 'rename' ? labels.chatRenameLabel
+    : action?.kind === 'name' ? labels.profileRenameLabel
+    : action?.kind === 'logout' ? `${labels.profileLogoutLabel}?`
+    : labels.deleteConversationConfirmTitle;
+  const submitLabel = action?.kind === 'rename' || action?.kind === 'name' ? labels.chatSaveLabel
+    : action?.kind === 'logout' ? labels.profileLogoutLabel
+    : labels.deleteConversationConfirmYes;
 
   return <>
     {desktop ? (open ? <aside id='ugatan-conversation-sidebar' className='conversation-sidebar' aria-label={labels.sidebarTitle}>{content}</aside> : null)
@@ -192,17 +283,17 @@ export default function ConversationSidebar({ open, desktop, activeId, labels, o
         onCancel={event => { event.preventDefault(); onToggle(); }}
         onClose={() => { if (open && !desktop) onToggle(); }}
         onClick={event => { const box = event.currentTarget.getBoundingClientRect(); if (event.target === event.currentTarget && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) onToggle(); }}>{content}</dialog>}
-    <dialog ref={actionDialog} className='chat-history chat-action-dialog' aria-labelledby='chat-action-title' aria-describedby={action?.kind === 'delete' ? 'chat-action-body' : undefined}
+    <dialog ref={actionDialog} className='chat-history chat-action-dialog' aria-labelledby='chat-action-title' aria-describedby={action?.kind === 'delete' || action?.kind === 'logout' ? 'chat-action-body' : undefined}
       onCancel={event => { event.preventDefault(); closeAction(); }}>
       <form onSubmit={submit} aria-busy={saving}>
-        <h2 id='chat-action-title' className='m-0 text-xl font-semibold'>{action?.kind === 'rename' ? labels.chatRenameLabel : labels.deleteConversationConfirmTitle}</h2>
-        {action?.kind === 'rename' ? <label className='block mt-4'>{labels.chatTitleLabel}<input ref={input} className='mt-2 w-full rounded-xl border border-line bg-surface p-3 text-base' value={title} maxLength={120} disabled={saving}
+        <h2 id='chat-action-title' className='m-0 text-xl font-semibold'>{actionTitle}</h2>
+        {action?.kind === 'rename' || action?.kind === 'name' ? <label className='block mt-4'>{action.kind === 'name' ? labels.profileNameLabel : labels.chatTitleLabel}<input ref={input} className='mt-2 w-full rounded-xl border border-line bg-surface p-3 text-base' value={title} maxLength={120} disabled={saving}
           aria-invalid={!!error} aria-describedby={error ? 'chat-action-error' : undefined} onChange={event => { setTitle(event.target.value); setError(''); }} /></label>
-          : <p id='chat-action-body' className='text-mist'>{labels.deleteConversationConfirmBody}</p>}
+          : <p id='chat-action-body' className='text-mist'>{action?.kind === 'logout' ? labels.profileLogoutBody : labels.deleteConversationConfirmBody}</p>}
         {error ? <p id='chat-action-error' role='alert'>{error}</p> : null}
         <div className='mt-6 flex flex-wrap justify-end gap-2'>
           <button type='button' className='pill-btn' disabled={saving} onClick={closeAction}>{labels.deleteConversationConfirmNo}</button>
-          <button type='submit' className='btn' disabled={saving}>{action?.kind === 'rename' ? labels.chatSaveLabel : labels.deleteConversationConfirmYes}</button>
+          <button type='submit' className='btn' disabled={saving}>{submitLabel}</button>
         </div>
       </form>
     </dialog>

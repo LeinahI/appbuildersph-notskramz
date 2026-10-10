@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { A } from './copy';
 import { AdminDialog, AdminIcon } from './AdminDialog';
@@ -6,7 +6,6 @@ import { notify } from '../components/ToastHost';
 import {
   createInvite,
   getUser,
-  regenerateInvite,
   revokeInvite,
   revokeUser,
   WsApiError,
@@ -114,9 +113,6 @@ export function QrInvitation({ user, onChanged }: { user: UserDTO; onChanged?: (
           {A.generateQr}
         </button>
       ) : <>
-        <button type='button' className='btn' disabled={busy || !pending} onClick={() => run(() => regenerateInvite(user.id))}>
-          {A.regenerateQr}
-        </button>
         {image ? (
           <a className='btn btn-secondary' href={image} download={`ugatan-invite-${user.id}.png`}>{A.downloadQr}</a>
         ) : null}
@@ -144,6 +140,24 @@ export function UserDrawer({ userId, onClose, onChanged }: { userId: string; onC
       .catch((err) => { if (live) setError(errorText(err, A.unavailableList)); });
     return () => { live = false; };
   }, [userId, version]);
+
+  // A finished app download on the hub activates the user, so watch a pending user with an open QR.
+  const waiting = user?.status === 'pending' && !!user.invite;
+  const changed = useRef(onChanged);
+  changed.current = onChanged;
+  useEffect(() => {
+    if (!waiting) return;
+    const timer = setInterval(() => {
+      getUser(userId)
+        .then((value) => {
+          if (value.status === 'pending') return;
+          setUser(value);
+          changed.current();
+        })
+        .catch(() => undefined);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [waiting, userId]);
 
   async function revoke() {
     if (!user) return;
