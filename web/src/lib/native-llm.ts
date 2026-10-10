@@ -18,6 +18,8 @@ interface LocalLlmPlugin {
     maxTokens: number;
   }): Promise<NativeAnswer>;
   unload(): Promise<void>;
+  /** The phone's Wi-Fi: its gateway (the hub's hotspot address) and the phone's own address. Null off Wi-Fi. */
+  network(): Promise<{ gateway: string | null; ip: string | null }>;
   addListener(event: 'downloadProgress', listener: (e: { loaded: number; total: number }) => void): Promise<PluginListenerHandle>;
 }
 

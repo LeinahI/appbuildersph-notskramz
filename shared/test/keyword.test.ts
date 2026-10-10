@@ -1,5 +1,6 @@
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { matchKeywords, normalize, type KnowledgeEntry } from '../src/index';
+import { matchKeywords, normalize, onlyVagueSigns, type KnowledgeEntry } from '../src/index';
 
 const entry = (id: string, crop: 'rice' | 'corn', keywords: string[]): KnowledgeEntry => ({
   id,
@@ -64,5 +65,53 @@ describe('matchKeywords', () => {
   it('is deterministic when scores tie and sorts by id', () => {
     const r = matchKeywords('diamond at armyworm', 'any', KB);
     expect(r.matches.map((m) => m.entry.id)).toEqual(['armyworm', 'blast']);
+  });
+});
+
+describe('vague signs', () => {
+  const KNOWLEDGE_DIR = new URL('../../knowledge/', import.meta.url);
+  const REAL: KnowledgeEntry[] = readdirSync(KNOWLEDGE_DIR)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => JSON.parse(readFileSync(new URL(f, KNOWLEDGE_DIR), 'utf8')) as KnowledgeEntry);
+
+  it.each([
+    'dilaw ang dahon',
+    'Dilaw ang dahon ng mais',
+    'naninilaw ang dahon ng palay ko',
+    'nalalanta ang mais',
+    'dalag ang dahon sa humay',
+    'nangalaya ang akong mais',
+    'yellow leaves',
+    'The corn leaves are turning yellow.',
+  ])('"%s" names only a vague sign, and no note claims it', (text) => {
+    expect(onlyVagueSigns(text)).toBe(true);
+    // Regression: "dilaw ang dahon" used to end as armyworm through Laya. No keyword supports any problem here.
+    expect(matchKeywords(text, 'any', REAL).matches).toEqual([]);
+  });
+
+  it.each([
+    'dilaw ang dahon at may butas',
+    'dilaw na guhit sa dahon',
+    'yellow leaves with brown spots',
+    'naninilaw at may maliliit na kulisap',
+    'dalag ang dahon ug naay ulod',
+    'nalalanta ang gitnang dahon at madaling hilahin',
+    'The middle leaf of the rice plant dried and pulls out easily.',
+    'may uod sa dahon',
+    'hello po',
+  ])('"%s" is not only vague', (text) => {
+    expect(onlyVagueSigns(text)).toBe(false);
+  });
+
+  it('reads the farmer words and the English together', () => {
+    expect(onlyVagueSigns('dilaw ang dahon', 'Yellow leaves on the corn.')).toBe(true);
+    expect(onlyVagueSigns('dilaw ang dahon', 'Yellow leaves with small holes.')).toBe(false);
+  });
+
+  it('knows the Cebuano words for signs the notes already list in Tagalog', () => {
+    const top = (text: string) => matchKeywords(text, 'any', REAL).matches[0]?.entry.id;
+    expect(top('dalag kahel nga dahon sa humay')).toBe('green-leafhopper');
+    expect(top('dalag nga gilis sa dahon sa mais')).toBe('downy-mildew');
+    expect(top('nauga sa ngilit ang dahon sa humay')).toBe('bacterial-leaf-blight');
   });
 });

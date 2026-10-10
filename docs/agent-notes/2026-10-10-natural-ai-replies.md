@@ -19,6 +19,8 @@ The chat answered like a form: it asked the same question again and again, asked
 - [eval/chat.ts](../../eval/chat.ts) and [eval/chat-questions.json](../../eval/chat-questions.json): `pnpm eval:chat` replays 20 made-up farmer chats through the hub with the real Gemma and Laya and prints every reply.
 - Tests: new [shared/test/guides.test.ts](../../shared/test/guides.test.ts); updated prompt, conversation, hub answer, hub conversation, and config tests.
 
+- Follow-up "make the app give the same replies": the web app calls the hub at 127.0.0.1:8787, which was running from the other checkout (`ugatan-phone-speed`). Stopped it and changed the `hub-8787` config in [.claude/launch.json](../../.claude/launch.json) to run this checkout with the same Gemma + Laya settings. Two fixes from checking the app: `withProblemName` writes "atangya (Rice bug)" instead of a second sentence naming the same problem, and `dropRepeatedSteps` removes numbered steps the farmer already got earlier in the chat (hub and phone).
+
 ## Decisions
 - Kept Gemma 4 E2B on the phone and hub (offline in the field) and gave it Claude's answer style through the prompt, rather than calling a cloud model.
 - Guides are curated, like the knowledge notes, so the model explains vetted steps and never guesses farm advice (the old reason for refusing growing questions).
@@ -29,7 +31,7 @@ The chat answered like a form: it asked the same question again and again, asked
 - `pnpm build`: passed. Shared 321 tests, web 323, hub 204 (without the model tests): passed.
 - Hub model tests (`test/gemma-llamacpp.test.ts`, real GGUF): 10 of 11 pass. "answers two requests that arrive together" fails only in the full file run (passes alone, and with context 2048 too): greedy decoding on the GPU is not bit-exact with KV-cache prefix reuse on the new prompt. Left unchanged. The ONNX test hit "bad allocation" while another hub held the memory.
 - Ran the made-up chats on the real model three times and tuned between runs; the screenshot chat now gives steps on "ano po pwedeng gawin ko" and never repeats a question.
-- Not checked: the Android app on a phone (LiteRT), and the browser UI with these replies.
+- In the browser app (localhost:3000 on the new 8787 hub), the screenshot chat, a Tagalog how-to, and a Bisaya how-to all gave the new replies; after the last fix the 4th reply gives only the new step. Rebuilt the APK with `pnpm --filter @ugatan/web android:apk` (passed; the bundle contains the new guide and language code). Not installed or tested on a phone: no device was connected.
 
 ## Follow-ups
 - Have an agronomist review `shared/src/guides.ts` (all three languages) and the Cebuano fixed lines.

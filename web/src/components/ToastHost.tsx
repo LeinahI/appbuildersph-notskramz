@@ -20,6 +20,11 @@ export function notify({ title, description, type = 'info', language = 'tl' }: {
   return id;
 }
 
+/** Closes a toast that notify() opened. */
+export function dismissNotify(id: string) {
+  sileo.dismiss(id);
+}
+
 export function ToastHost() {
   const { preferences } = useSyncExternalStore(subscribeDisplayPreferences, getDisplaySnapshot, getServerDisplaySnapshot);
   const [container, setContainer] = useState<HTMLElement | null>(null);

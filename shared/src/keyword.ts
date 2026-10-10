@@ -108,3 +108,29 @@ export function matchKeywords(
   const clear = matches.length === 1 || (matches.length > 1 && matches[0].score > matches[1].score);
   return { matches, clear };
 }
+
+/**
+ * Sign words that fit many problems, or none: yellowing, paleness, wilting, drying. Yellow leaves alone can be a
+ * lack of fertilizer, water stress, a virus, or ripening, so they never decide a problem on their own.
+ * English, Tagalog, and Cebuano, on normalized text.
+ */
+const VAGUE_SIGN =
+  /\b(yellow|yellowing|yellowish|yellowed|pale|wilting|wilted|wilts?|drying|dried|dry|dying|sick|unhealthy|weak|dilaw|madilaw|naninilaw|nanilaw|nagdidilaw|nagdilaw|dumidilaw|nadilaw|paninilaw|lanta|nalalanta|nalanta|nanlalanta|natutuyo|natuyo|tuyo|namamatay|namatay|matamlay|may sakit|dalag|nagdalag|nagkadalag|madalag|dalagon|nalaya|nangalaya|nalawos|nauga|uga|nangamatay|masakiton)\b/;
+
+/**
+ * Words that tell problems apart: an insect or its eggs, a spot, streak, hole, or bite, a rot or mold, a color other
+ * than yellow, stunting, curling or rolling, a burn, a smell, an empty grain or a center shoot that pulls out, or where
+ * on the plant. Any one of them makes a description specific.
+ */
+const SPECIFIC_SIGN =
+  /\b(insects?|bugs?|worms?|caterpillars?|larva|larvae|hoppers?|aphids?|ants?|snails?|rats?|eggs?|spots?|streaks?|stripes?|lines?|holes?|bites?|eaten|chewed|cut|torn|rot|rotten|rotting|mold|mould|fuzz|powder|white|brown|gray|grey|black|red|reddish|orange|rust|stunted|short|curled|curling|rolled|folded|burned|burnt|scorched|edges?|tips?|patch(es)?|kulisap|insekto|uod|ulod|higad|kuto|langgam|kuhol|suso|daga|ilaga|itlog|batik|tulbok|mantsa|guhit|gilis|linya|butas|lungag|kagat|kinain|kinakain|gisi|punit|putol|naputol|bulok|nabubulok|amag|agup op|puti|maputi|kayumanggi|kape|abo|abuhin|abuhon|itim|nangingitim|itom|pula|mapula|kahel|dalandan|kalawang|bansot|pandak|kulang tubo|kulot|kulubot|bilot|tiklop|sunog|nasunog|gilid|ngilit|kilid|dulo|tumatalon|lumilipad|molukso|middle|center|centre|whorl|pulls?|pulled|empty|smells?|gitna|gitnang|ubod|puso|tunga|hilahin|bunot|nabubunot|hugutin|ibton|hungkag|walang laman|walay sulod|baho|mabaho|nabali|bali|nakabilot)\b/;
+
+/**
+ * True when the texts name a sign only in vague words ("dilaw ang dahon", "yellow leaves", "nalalanta ang mais"),
+ * with nothing that tells one problem from another. A matcher with no keyword for it must not guess a problem from
+ * such words: the app asks the farmer for a telling detail instead.
+ */
+export function onlyVagueSigns(...texts: readonly string[]): boolean {
+  const t = ` ${normalize(texts.join(' '))} `;
+  return VAGUE_SIGN.test(t) && !SPECIFIC_SIGN.test(t);
+}

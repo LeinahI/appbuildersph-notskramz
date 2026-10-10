@@ -80,14 +80,14 @@ func (p *Product) Reserve(qty int) error {
 	return nil
 }
 
-func (p *Product) ID() string              { return p.id }
-func (p *Product) Name() string            { return p.name }
-func (p *Product) Slug() string            { return p.slug }
-func (p *Product) Description() string     { return p.description }
-func (p *Product) Price() shared.Money     { return p.price }
-func (p *Product) Stock() int              { return p.stock }
-func (p *Product) CreatedAt() time.Time    { return p.createdAt }
-func (p *Product) UpdatedAt() time.Time    { return p.updatedAt }
+func (p *Product) ID() string           { return p.id }
+func (p *Product) Name() string         { return p.name }
+func (p *Product) Slug() string         { return p.slug }
+func (p *Product) Description() string  { return p.description }
+func (p *Product) Price() shared.Money  { return p.price }
+func (p *Product) Stock() int           { return p.stock }
+func (p *Product) CreatedAt() time.Time { return p.createdAt }
+func (p *Product) UpdatedAt() time.Time { return p.updatedAt }
 
 type ListFilter struct {
 	Query string

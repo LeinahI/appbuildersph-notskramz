@@ -2,61 +2,34 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { A } from './copy';
 import { notify } from '../components/ToastHost';
 import { AdminDialog, AdminIcon } from './AdminDialog';
-import { emptyDraft, fields, hasDraft, validateDraft, type Draft, type DraftErrors, type Method } from './registration';
+import { emptyDraft, fields, hasDraft, isoDate, optional, toRegisterBody, validateDraft, type Draft, type DraftErrors, type Method } from './registration';
+import { registerUser, type UserDTO } from '../lib/ws-api';
+import { QrInvitation, UserDetails, errorText } from './UserPanel';
 
 function Details({ draft }: { draft: Draft }) {
   return <dl className='admin-details'>
-    {fields.map(({ key, label }) => <div key={key}><dt>{label}</dt><dd>{draft[key].trim()}</dd></div>)}
+    {fields.map(({ key, label }) => <div key={key}><dt>{label}</dt><dd>{draft[key].trim() || '—'}</dd></div>)}
     <div><dt>{A.initialStatus}</dt><dd><span className='admin-status'>{A.pending}</span></dd></div>
   </dl>;
 }
 
-export function QrInvitation() {
-  return <>
-    <div className='admin-qr-placeholder'>
-      <AdminIcon name='qr' />
-      <strong>{A.qrUnavailable}</strong>
-    </div>
-    <p className='admin-description'>{A.qrRequirement}</p>
-    <p className='admin-policy'>{A.qrPolicy}</p>
-    <p id='admin-qr-unavailable' className='admin-callout'>{A.actionUnavailable}</p>
-    <div className='admin-actions'>
-      <button type='button' className='btn' disabled aria-describedby='admin-qr-unavailable'>{A.generateQr}</button>
-      <button type='button' className='btn btn-secondary' disabled aria-describedby='admin-qr-unavailable'>{A.regenerateQr}</button>
-      <button type='button' className='btn btn-secondary' disabled aria-describedby='admin-qr-unavailable'>{A.downloadQr}</button>
-    </div>
-  </>;
-}
-
-export function DraftRecord({ draft, onQr }: { draft: Draft; onQr: () => void }) {
-  return <>
-    <p className='admin-description'>{A.recordPreviewNotice}</p>
-    <Details draft={draft} />
-    <dl className='admin-details'>
-      <div><dt>{A.accountAccess}</dt><dd>{A.notLinked}</dd></div>
-      <div><dt>{A.consentRecorded}</dt><dd>{A.consentYes}</dd></div>
-    </dl>
-    <div className='admin-actions'>
-      <button type='button' className='btn' onClick={onQr}>{A.openQrPreview}</button>
-      <button type='button' className='btn btn-secondary' disabled aria-describedby='admin-record-unavailable'>{A.revokeAccess}</button>
-    </div>
-    <p id='admin-record-unavailable' className='admin-description'>{A.noRecordActions}</p>
-    <button type='button' className='admin-text-button' disabled aria-describedby='admin-record-unavailable'>{A.viewActivity}</button>
-  </>;
-}
-
-export function RegistrationDialog({ onClose }: { onClose: () => void }) {
+export function RegistrationDialog({ onClose, onSaved }: { onClose: () => void; onSaved?: (user: UserDTO) => void }) {
   const [step, setStep] = useState<'method' | 'details' | 'review' | 'record' | 'qr'>('method');
   const [method, setMethod] = useState<Method>('manual');
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [errors, setErrors] = useState<DraftErrors>({});
   const [discarding, setDiscarding] = useState(false);
+  const [saved, setSaved] = useState<UserDTO | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  // Once saved, there is no draft left to lose.
+  const unsaved = !saved && hasDraft(draft);
   useEffect(() => {
-    if (!hasDraft(draft)) return;
+    if (!unsaved) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [draft]);
+  }, [unsaved]);
 
   function choose(next: Method) {
     setMethod(next);
@@ -66,8 +39,23 @@ export function RegistrationDialog({ onClose }: { onClose: () => void }) {
   }
   function requestClose() {
     if (discarding) setDiscarding(false);
-    else if (hasDraft(draft)) setDiscarding(true);
+    else if (unsaved) setDiscarding(true);
     else onClose();
+  }
+  async function save() {
+    setSaving(true);
+    setSaveError('');
+    try {
+      const user = await registerUser(toRegisterBody(draft));
+      setSaved(user);
+      setStep('record');
+      onSaved?.(user);
+      notify({ title: A.savedTitle, description: user.fullName, type: 'success', language: 'en' });
+    } catch (err) {
+      setSaveError(errorText(err, A.saveFailed));
+    } finally {
+      setSaving(false);
+    }
   }
   function review(event: FormEvent) {
     event.preventDefault();
@@ -83,7 +71,7 @@ export function RegistrationDialog({ onClose }: { onClose: () => void }) {
   }
   const title = discarding ? A.discardTitle : {
     method: A.methodTitle, details: A.detailsTitle, review: A.reviewTitle,
-    record: A.recordPreviewTitle, qr: A.qrDialogTitle,
+    record: A.savedTitle, qr: A.qrDialogTitle,
   }[step];
 
   return (
@@ -127,11 +115,12 @@ export function RegistrationDialog({ onClose }: { onClose: () => void }) {
           {errors.consent && <p id='registration-consent-error' className='admin-error' role='alert'>{errors.consent}</p>}
           <fieldset className='admin-form-grid' disabled={method === 'scan'}>
             <legend className='sr-only'>{A.detailsTitle}</legend>
-            {fields.map(({ key, label }) => <div className={key === 'fullName' ? 'sm:col-span-2' : ''} key={key}>
+            {fields.map(({ key, label }) => <div className={key === 'fullName' || key === 'line1' ? 'sm:col-span-2' : ''} key={key}>
               <label className='admin-field' htmlFor={'registration-' + key}>{label}
-                <input id={'registration-' + key} name={key} type={key === 'age' ? 'number' : 'text'}
-                  min={key === 'age' ? 0 : undefined} step={key === 'age' ? 1 : undefined} required
-                  maxLength={key === 'age' ? undefined : 150} value={draft[key]}
+                <input id={'registration-' + key} name={key} type={key === 'birthDate' ? 'date' : key === 'phone' ? 'tel' : 'text'}
+                  max={key === 'birthDate' ? isoDate(new Date()) : undefined} required={!optional.has(key)}
+                  inputMode={key === 'phone' ? 'tel' : undefined}
+                  maxLength={key === 'birthDate' ? undefined : key === 'phone' ? 20 : 150} value={draft[key]}
                   aria-invalid={!!errors[key]} aria-describedby={errors[key] ? 'registration-' + key + '-error' : undefined}
                   onChange={(event) => { setDraft({ ...draft, [key]: event.target.value }); setErrors({ ...errors, [key]: undefined }); }} />
               </label>
@@ -148,19 +137,25 @@ export function RegistrationDialog({ onClose }: { onClose: () => void }) {
         <p className='admin-eyebrow'>{A.reviewStep}</p>
         <p className='admin-description'>{A.reviewDescription}</p>
         <Details draft={draft} />
-        <p id='admin-save-unavailable' className='admin-callout'>{A.validationNotice}</p>
+        {saveError ? <p className='admin-error' role='alert'>{saveError}</p> : null}
         <div className='admin-dialog-actions'>
-          <button type='button' className='btn btn-secondary' onClick={() => setStep('details')}>{A.edit}</button>
-          <button type='button' className='btn' disabled aria-describedby='admin-save-unavailable'>{A.confirm}</button>
+          <button type='button' className='btn btn-secondary' onClick={() => setStep('details')} disabled={saving}>{A.edit}</button>
+          <button type='button' className='btn' onClick={save} disabled={saving}>{saving ? A.saving : A.confirm}</button>
         </div>
-        <button type='button' className='admin-text-button mt-4' onClick={() => setStep('record')}>{A.previewRecord}</button>
-      </> : step === 'record' ? <>
-        <DraftRecord draft={draft} onQr={() => setStep('qr')} />
-        <div className='admin-dialog-actions'><button type='button' className='btn btn-secondary' onClick={() => setStep('review')}>{A.back}</button></div>
-      </> : <>
-        <QrInvitation />
-        <div className='admin-dialog-actions'><button type='button' className='btn btn-secondary' onClick={() => setStep('record')}>{A.back}</button></div>
-      </>}
+      </> : step === 'record' && saved ? <>
+        <p className='admin-description'>{A.savedNotice}</p>
+        <UserDetails user={saved} />
+        <div className='admin-dialog-actions'>
+          <button type='button' className='btn btn-secondary' onClick={onClose}>{A.close}</button>
+          <button type='button' className='btn' onClick={() => setStep('qr')}>{A.openQr}</button>
+        </div>
+      </> : saved ? <>
+        <QrInvitation user={saved} />
+        <div className='admin-dialog-actions'>
+          <button type='button' className='btn btn-secondary' onClick={() => setStep('record')}>{A.back}</button>
+          <button type='button' className='btn' onClick={onClose}>{A.close}</button>
+        </div>
+      </> : null}
     </AdminDialog>
   );
 }

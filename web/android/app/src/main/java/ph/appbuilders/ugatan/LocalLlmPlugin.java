@@ -1,5 +1,11 @@
 package ph.appbuilders.ugatan;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.LinkAddress;
+import android.net.LinkProperties;
+import android.net.Network;
+import android.net.RouteInfo;
 import android.util.Base64;
 
 import com.getcapacitor.JSArray;
@@ -24,6 +30,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
+import java.net.Inet4Address;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -353,6 +360,41 @@ public class LocalLlmPlugin extends Plugin {
                 call.reject(e.getMessage() != null ? e.getMessage() : e.toString());
             }
         });
+    }
+
+    /**
+     * The phone's network as the app finds the hub: the default gateway (on a laptop's hotspot, the laptop itself)
+     * and the phone's own IPv4 address. Both are null when the phone is on no network.
+     */
+    @PluginMethod
+    public void network(PluginCall call) {
+        String gateway = null;
+        String ip = null;
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+            Network active = cm == null ? null : cm.getActiveNetwork();
+            LinkProperties link = active == null ? null : cm.getLinkProperties(active);
+            if (link != null) {
+                for (RouteInfo route : link.getRoutes()) {
+                    if (route.isDefaultRoute() && route.getGateway() instanceof Inet4Address) {
+                        gateway = route.getGateway().getHostAddress();
+                        break;
+                    }
+                }
+                for (LinkAddress address : link.getLinkAddresses()) {
+                    if (address.getAddress() instanceof Inet4Address) {
+                        ip = address.getAddress().getHostAddress();
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // No network information: the app falls back to the usual hotspot addresses.
+        }
+        JSObject result = new JSObject();
+        result.put("gateway", gateway);
+        result.put("ip", ip);
+        call.resolve(result);
     }
 
     /** Frees the model's memory. Loading again reads it from the phone's storage. */

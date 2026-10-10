@@ -130,8 +130,14 @@ export function buildMessages(
     : 'No matching reference notes.';
   const ask = !sure && !bestGuess ? askLine(askAbout, askChoices) : '';
   const verdict = refs.length ? `${sure ? MATCH_SURE : bestGuess ? MATCH_BEST_GUESS : help ? MATCH_HELP : MATCH_NOT_SURE}${ask}\n` : '';
+  // Steps the farmer already got are not listed again: the reply says what the new detail means instead.
+  const gaveSteps = history.slice(-EXPLAIN_HISTORY_TURNS).some((t) => /^\s*\d+[.)]\s/m.test(t.reply));
   const earlier = history.length
-    ? `Earlier in this chat (oldest first). Do not ask again anything you already asked here:\n${historyLines(history)}\n\n`
+    ? `Earlier in this chat (oldest first). Do not ask again anything you already asked here:\n${historyLines(history)}\n${
+        gaveSteps
+          ? 'You already gave numbered steps above. Do not list them again: in one or two sentences say what the farmer\'s new message means for the problem, and give only steps you have not given yet, if any.\n'
+          : ''
+      }\n`
     : '';
 
   return [

@@ -1,6 +1,11 @@
 import { AUDIO_SAMPLE_RATE, MAX_AUDIO_SECONDS } from '@ugatan/shared';
 import { EndOfSpeech, FRAME_SECONDS, rms, trimToSpeech } from './speech';
 
+/** Quiet after speech that ends the recording by itself. */
+const END_PAUSE_SECONDS = 1.2;
+/** The recording ends when nothing at all is said for this long. */
+const NO_SPEECH_SECONDS = 8;
+
 /** True when this browser can record from the microphone. Browsers allow it on localhost and https only. */
 export function canRecord(): boolean {
   return typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined';
@@ -54,10 +59,15 @@ export interface Recorder {
 
 /**
  * Starts recording from the microphone. `onLimit` runs when the 30-second limit ends the recording, and
- * `onPause` runs when the farmer has spoken and then paused for a moment; the caller then calls stop() as usual.
+ * `onPause` runs when the farmer has spoken and then paused for a moment, or has said nothing for a few seconds; the
+ * caller then calls stop() as usual. `onLevel` gets the mic level (0 to 1) for the listening screen.
  * Rejects when the microphone is missing or the farmer refuses it.
  */
-export async function startRecorder(onLimit: () => void, onPause: () => void = () => {}): Promise<Recorder> {
+export async function startRecorder(
+  onLimit: () => void,
+  onPause: () => void = () => {},
+  onLevel: (level: number) => void = () => {},
+): Promise<Recorder> {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
   const recorder = new MediaRecorder(stream);
   const chunks: Blob[] = [];
@@ -81,11 +91,17 @@ export async function startRecorder(onLimit: () => void, onPause: () => void = (
   meter.createMediaStreamSource(stream).connect(analyser);
   const frame = Math.round(meter.sampleRate * FRAME_SECONDS);
   const window = new Float32Array(analyser.fftSize);
-  const end = new EndOfSpeech();
+  const end = new EndOfSpeech(END_PAUSE_SECONDS);
   let paused = false;
+  let frames = 0;
   const watcher = setInterval(() => {
     analyser.getFloatTimeDomainData(window);
-    if (!paused && end.push(rms(window, window.length - frame))) {
+    const level = rms(window, window.length - frame);
+    // About -50 dB is silence and -10 dB is loud speech.
+    onLevel(Math.max(0, Math.min(1, (20 * Math.log10(level || 1e-6) + 50) / 40)));
+    frames++;
+    const done = end.push(level) || (!end.heard && frames * FRAME_SECONDS >= NO_SPEECH_SECONDS);
+    if (!paused && done) {
       paused = true;
       if (recorder.state === 'recording') recorder.stop();
       onPause();

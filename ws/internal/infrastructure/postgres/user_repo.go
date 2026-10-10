@@ -100,7 +100,12 @@ func (r *UserRepository) List(ctx context.Context, filter user.ListFilter) ([]*u
 		args = append(args, string(filter.Status))
 		n++
 	}
-	query := fmt.Sprintf(`SELECT %s FROM users %s ORDER BY created_at DESC LIMIT %d`, userColumns, where, limit)
+	// Names and phones are encrypted, so a search reads every row and filters here; without one, SQL limits.
+	q := strings.TrimSpace(strings.ToLower(filter.Query))
+	query := fmt.Sprintf(`SELECT %s FROM users %s ORDER BY created_at DESC`, userColumns, where)
+	if q == "" {
+		query += fmt.Sprintf(" LIMIT %d", limit)
+	}
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -113,14 +118,27 @@ func (r *UserRepository) List(ctx context.Context, filter user.ListFilter) ([]*u
 		if err != nil {
 			return nil, err
 		}
-		if q := strings.TrimSpace(strings.ToLower(filter.Query)); q != "" {
-			if !strings.Contains(strings.ToLower(u.FullName()), q) && !strings.Contains(strings.ToLower(u.Phone()), q) {
-				continue
-			}
+		if q != "" && !strings.Contains(strings.ToLower(u.FullName()), q) && !strings.Contains(strings.ToLower(u.Phone()), q) {
+			continue
 		}
 		out = append(out, u)
+		if len(out) == limit {
+			break
+		}
 	}
 	return out, rows.Err()
+}
+
+func (r *UserRepository) Stats(ctx context.Context) (user.Stats, error) {
+	var st user.Stats
+	err := r.db.QueryRowContext(ctx, `SELECT
+		count(*),
+		count(*) FILTER (WHERE status = 'active'),
+		count(*) FILTER (WHERE status = 'pending'),
+		count(*) FILTER (WHERE status = 'revoked'),
+		count(*) FILTER (WHERE (created_at AT TIME ZONE 'Asia/Manila')::date = (now() AT TIME ZONE 'Asia/Manila')::date)
+		FROM users WHERE role = 'user'`).Scan(&st.Total, &st.Active, &st.Pending, &st.Revoked, &st.Today)
+	return st, err
 }
 
 const userColumns = `id, role, status, email, password_hash, full_name_enc, birth_date_enc, address_enc, phone_enc, id_number_hash, device_id, consent_at, created_at, updated_at`
@@ -159,11 +177,11 @@ func (r *UserRepository) scanOne(ctx context.Context, q string, arg any) (*user.
 
 func (r *UserRepository) scanRow(row scannable) (*user.User, error) {
 	var (
-		id, role, status, email, passHash string
+		id, role, status, email, passHash    string
 		nameEnc, birthEnc, addrEnc, phoneEnc string
-		idHash, deviceID string
-		consent sql.NullTime
-		created, updated time.Time
+		idHash, deviceID                     string
+		consent                              sql.NullTime
+		created, updated                     time.Time
 	)
 	if err := row.Scan(&id, &role, &status, &email, &passHash, &nameEnc, &birthEnc, &addrEnc, &phoneEnc, &idHash, &deviceID, &consent, &created, &updated); err != nil {
 		return nil, err

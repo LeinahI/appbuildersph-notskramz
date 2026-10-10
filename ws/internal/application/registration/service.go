@@ -87,13 +87,13 @@ func (s *Service) Me(ctx context.Context, adminID string) (*admin.Admin, error) 
 }
 
 type RegisterInput struct {
-	FullName     string
-	BirthDate    time.Time
-	Address      user.Address
-	Phone        string
-	IDNumber     string
-	ConsentAt    *time.Time
-	AdminID      string
+	FullName  string
+	BirthDate time.Time
+	Address   user.Address
+	Phone     string
+	IDNumber  string
+	ConsentAt *time.Time
+	AdminID   string
 }
 
 func (s *Service) RegisterUser(ctx context.Context, in RegisterInput) (*user.User, error) {
@@ -126,6 +126,10 @@ func (s *Service) RegisterUser(ctx context.Context, in RegisterInput) (*user.Use
 
 func (s *Service) ListUsers(ctx context.Context, filter user.ListFilter) ([]*user.User, error) {
 	return s.users.List(ctx, filter)
+}
+
+func (s *Service) UserStats(ctx context.Context) (user.Stats, error) {
+	return s.users.Stats(ctx)
 }
 
 func (s *Service) GetUser(ctx context.Context, id string) (*user.User, error) {

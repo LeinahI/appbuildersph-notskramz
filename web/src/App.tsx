@@ -13,6 +13,7 @@ import {
   describeOutcome,
   detectCrop,
   dropRepeatedQuestions,
+  dropRepeatedSteps,
   findViolations,
   fitPlantPart,
   fixedReply,
@@ -48,7 +49,7 @@ import { HighlightedText } from './components/HighlightedText';
 import { HomePage } from './components/HomePage';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { useConversationSidebar } from './components/useConversationSidebar';
-import { notify } from './components/ToastHost';
+import { dismissNotify, notify } from './components/ToastHost';
 import { SymptomPicker } from './components/SymptomPicker';
 import { KNOWLEDGE, KNOWLEDGE_BY_ID } from './config/knowledge';
 import { DEFAULT_UI_LANGUAGE, L } from './config/labels';
@@ -71,6 +72,7 @@ import { phoneLaya, type LayaState } from './lib/laya';
 import { phoneAi, phoneAiFit, type PhoneAiState } from './lib/llm';
 import { NATIVE_AI } from './lib/native-llm';
 import { photoSrc, shrinkPhoto } from './lib/photo';
+import { ensureHub } from './lib/hub-discovery';
 import { hubCapabilities, hubReachable, syncQueue } from './lib/sync';
 import { symptomTile } from './symptoms';
 import { voiceNoticeIsInline } from './lib/voice-notice';
@@ -218,7 +220,8 @@ export default function App() {
   const [listKey, setListKey] = useState(0);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [ai, setAi] = useState<PhoneAiState>({ status: 'idle', device: '', progress: '', error: '' });
-  const hubUrl = loadHubUrl();
+  // The hub the app found on the phone's Wi-Fi (lib/hub-discovery). It starts with the last one used.
+  const [hubUrl, setHubUrl] = useState(loadHubUrl);
   const [, setHubOnline] = useState<boolean | null>(null);
   const [notice, setNotice] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -237,6 +240,8 @@ export default function App() {
   const draftCreation = useRef<{ version: number; promise: Promise<ConversationRow> } | null>(null);
   const helpDialog = useRef<HTMLDialogElement>(null);
   const scrolledToMatch = useRef('');
+  /** The voice problem on screen, closed when the farmer tries the mic again. */
+  const voiceToast = useRef<string | null>(null);
 
   const conversationId = conversation?.id ?? '';
   const focusUid = searchParams.get('m') ?? '';
@@ -312,12 +317,23 @@ export default function App() {
     };
   }, [routeId, navigate, routeLoadKey]);
 
-  const syncNow = useCallback(async (version = navigationVersion.current, id = currentId.current) => {
-    const result = await syncQueue(hubUrl);
+  const syncNow = useCallback(async (version = navigationVersion.current, id = currentId.current, url: string = hubUrl) => {
+    const result = await syncQueue(url);
     setHubOnline(result.reachable);
     if (result.sent && version === navigationVersion.current) setNotice(L.hubSent(result.sent));
     await refresh(id);
   }, [hubUrl, refresh]);
+
+  // On start and whenever the phone gets a network: find the hub on this Wi-Fi, with no address for the farmer to type.
+  useEffect(() => {
+    const connect = () =>
+      void ensureHub().then((found) => {
+        if (found) setHubUrl(found.url);
+      });
+    connect();
+    window.addEventListener('online', connect);
+    return () => window.removeEventListener('online', connect);
+  }, []);
 
   useEffect(() => {
     if (!hubUrl) return;
@@ -504,7 +520,10 @@ export default function App() {
     await refresh(active.id);
 
     // Hub premises: ONNX on the browser / hub Q4_0+ONNX multimodal. Away: LiteRT on the phone when native.
-    const online = Boolean(hubUrl && (await hubReachable(hubUrl)));
+    // The hub may have moved (another hotspot, another port): find it again if the last one does not answer.
+    const found = await ensureHub();
+    if (found && found.url !== hubUrl) setHubUrl(found.url);
+    const online = Boolean(found);
     const route = resolveAiRoute({ hubOnline: online, native: NATIVE_AI });
     const useHub = preferHubAsk(route, Boolean(image), phoneAi.ready);
 
@@ -519,10 +538,10 @@ export default function App() {
       } finally {
         setBusyId(current => current === id ? null : current);
       }
-    } else if (useHub && hubUrl) {
+    } else if (useHub && found) {
       if (id !== undefined && stillHere()) setBusyId(id);
       try {
-        await syncNow(version, active.id);
+        await syncNow(version, active.id, found.url);
       } catch {
         if (stillHere()) setNotice(L.aiRequestError);
       } finally {
@@ -646,8 +665,8 @@ export default function App() {
         grounded === null
           ? null
           : clear || bestGuess
-            ? withProblemName(tidyReply(dropRepeatedQuestions(grounded, earlierReplies), text), entries[0]!.name, clear, lang)
-            : tidyReply(dropRepeatedQuestions(grounded, earlierReplies), text);
+            ? withProblemName(tidyReply(dropRepeatedSteps(dropRepeatedQuestions(grounded, earlierReplies), earlierReplies), text), entries[0]!.name, clear, lang)
+            : tidyReply(dropRepeatedSteps(dropRepeatedQuestions(grounded, earlierReplies), earlierReplies), text);
       // Prompt leaks (persona / system text) become INJECTION_REPLY.
       const raw = tidied === null ? null : guardPromptLeak(tidied);
       await db.questions.update(id, {
@@ -683,7 +702,11 @@ export default function App() {
       ungroundedProblems(generated, KNOWLEDGE, named ? [named] : [], guide ? `${text} ${guide.steps.join(' ')}` : text).length > 0
         ? null
         : generated;
-    const tidied = grounded === null || fixed ? grounded : tidyReply(dropRepeatedQuestions(grounded, turns.map((t) => t.reply)), text, guide ? { urgent: false } : {});
+    const tidied = grounded === null || fixed ? grounded : tidyReply(
+            dropRepeatedSteps(dropRepeatedQuestions(grounded, turns.map((t) => t.reply)), turns.map((t) => t.reply)),
+            text,
+            guide ? { urgent: false } : {},
+          );
     // With the model's words blocked, a guide question still gets the guide's own steps.
     const raw = tidied === null ? (guide ? guideReply(guide, replyLanguage(text)) : null) : guardPromptLeak(tidied);
     await db.questions.update(id, {
@@ -719,10 +742,12 @@ export default function App() {
 
   /** Voice progress stays inline; voice problems show as a toast. */
   function voiceNotice(message: string) {
+    if (voiceToast.current) dismissNotify(voiceToast.current);
+    voiceToast.current = null;
     if (voiceNoticeIsInline(message, L)) setNotice(message);
     else {
       setNotice('');
-      notify({ title: L.voiceStart, description: message, type: 'error' });
+      voiceToast.current = notify({ title: L.voiceStart, description: message, type: 'error' });
     }
   }
 

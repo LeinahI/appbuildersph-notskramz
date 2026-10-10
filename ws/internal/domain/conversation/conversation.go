@@ -87,13 +87,13 @@ func (c *Conversation) Touch() {
 	c.updatedAt = time.Now().UTC()
 }
 
-func (c *Conversation) ID() string            { return c.id }
-func (c *Conversation) UserID() string        { return c.userID }
-func (c *Conversation) Title() string         { return c.title }
-func (c *Conversation) Pinned() bool          { return c.pinned }
-func (c *Conversation) PinnedAt() *time.Time  { return c.pinnedAt }
-func (c *Conversation) CreatedAt() time.Time  { return c.createdAt }
-func (c *Conversation) UpdatedAt() time.Time  { return c.updatedAt }
+func (c *Conversation) ID() string           { return c.id }
+func (c *Conversation) UserID() string       { return c.userID }
+func (c *Conversation) Title() string        { return c.title }
+func (c *Conversation) Pinned() bool         { return c.pinned }
+func (c *Conversation) PinnedAt() *time.Time { return c.pinnedAt }
+func (c *Conversation) CreatedAt() time.Time { return c.createdAt }
+func (c *Conversation) UpdatedAt() time.Time { return c.updatedAt }
 
 func NewMessage(conversationID string, role Role, body, clientUID string, meta json.RawMessage) (*Message, error) {
 	if role != RoleUser && role != RoleAssistant {

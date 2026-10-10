@@ -1,8 +1,9 @@
 import { createElement } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import AdminHub from '../src/admin/AdminHub';
+import * as ws from '../src/config/ws';
 
 vi.mock('../src/admin/AdminApp', async (importOriginal) => {
   const mod = await importOriginal<typeof import('../src/admin/AdminApp')>();
@@ -12,26 +13,32 @@ vi.mock('../src/admin/AdminApp', async (importOriginal) => {
   };
 });
 
-describe('admin SPA routes (FrontEnd AdminApp)', () => {
-  it('mounts AdminHub for /admin/overview', () => {
-    const html = renderToStaticMarkup(
+function render(path: string): string {
+  return renderToStaticMarkup(
+    createElement(
+      MemoryRouter,
+      { initialEntries: [path] },
       createElement(
-        MemoryRouter,
-        { initialEntries: ['/admin/overview'] },
-        createElement(Routes, null, createElement(Route, { path: '/admin/:page', element: createElement(AdminHub) })),
+        Routes,
+        null,
+        createElement(Route, { path: '/admin/:page', element: createElement(AdminHub) }),
       ),
-    );
-    expect(html).toContain('data-admin-page="overview"');
+    ),
+  );
+}
+
+afterEach(() => vi.restoreAllMocks());
+
+describe('admin SPA routes (FrontEnd AdminApp)', () => {
+  it.each(['overview', 'users', 'qr', 'activity'])('mounts AdminHub for /admin/%s when signed in', (page) => {
+    vi.spyOn(ws, 'loadAdminToken').mockReturnValue('jwt-token');
+    expect(render(`/admin/${page}`)).toContain(`data-admin-page="${page}"`);
   });
 
-  it('mounts AdminHub for /admin/users', () => {
-    const html = renderToStaticMarkup(
-      createElement(
-        MemoryRouter,
-        { initialEntries: ['/admin/users'] },
-        createElement(Routes, null, createElement(Route, { path: '/admin/:page', element: createElement(AdminHub) })),
-      ),
-    );
-    expect(html).toContain('data-admin-page="users"');
+  it('sends a visitor without a token to the login page', () => {
+    vi.spyOn(ws, 'loadAdminToken').mockReturnValue('');
+    // <Navigate> renders nothing on the server; the login route itself still mounts.
+    expect(render('/admin/users')).not.toContain('data-admin-page');
+    expect(render('/admin/login')).toContain('data-admin-page="login"');
   });
 });

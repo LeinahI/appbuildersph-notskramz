@@ -17,14 +17,18 @@ const hooks = vi.hoisted(() => ({
   canBrowserSpeech: false,
   recorder: null as null | { stop: () => Promise<string>; cancel: () => void },
   transcript: { status: 'ok', text: 'nanilaw ang dahon' } as { status: string; text?: string },
-  browserStart: null as null | {
-    lang: string | string[];
-    onFinal: (text: string) => void;
-    onInterim?: (text: string) => void;
-    onError: (kind: 'denied' | 'empty' | 'failed') => void;
-    onEnd: () => void;
-  },
+  nativeSpeech: false,
+  browserStart: null as null | SessionOptions,
+  nativeStart: null as null | SessionOptions,
 }));
+
+type SessionOptions = {
+  lang: string | string[];
+  onFinal: (text: string) => void;
+  onInterim?: (text: string) => void;
+  onError: (kind: 'denied' | 'empty' | 'offline' | 'failed') => void;
+  onEnd: () => void;
+};
 
 vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>();
@@ -59,6 +63,14 @@ vi.mock('../src/lib/sync', () => ({
 vi.mock('../src/lib/recorder', () => ({
   canRecord: () => hooks.canRecord,
   startRecorder: async () => hooks.recorder,
+}));
+
+vi.mock('../src/lib/native-speech', () => ({
+  canUseNativeSpeech: async () => hooks.nativeSpeech,
+  startNativeSpeech: (opts: SessionOptions) => {
+    hooks.nativeStart = opts;
+    return { stop: vi.fn(), abort: vi.fn() };
+  },
 }));
 
 vi.mock('../src/lib/browser-speech', () => ({
@@ -102,6 +114,8 @@ beforeEach(() => {
   hooks.recorder = null;
   hooks.transcript = { status: 'ok', text: 'nanilaw ang dahon' };
   hooks.browserStart = null;
+  hooks.nativeStart = null;
+  hooks.nativeSpeech = false;
 });
 
 afterEach(() => {
@@ -172,8 +186,7 @@ describe('composer voice input, Capacitor hub path', () => {
     expect(start.button.props.title).toContain(LABELS.tl.voiceHubHint);
 
     start.button.props.onClick();
-    await Promise.resolve();
-    await Promise.resolve();
+    await settle();
     expect(mode()).toBe('recording');
 
     const stop = renderVoice('tl', onTranscript, onNotice);
@@ -243,12 +256,61 @@ describe('composer voice input, Capacitor hub path', () => {
     await Promise.resolve();
     await Promise.resolve();
     renderVoice('tl', onTranscript, onNotice).button.props.onClick();
-    await Promise.resolve();
-    await Promise.resolve();
+    await settle();
     renderVoice('tl', onTranscript, onNotice).button.props.onClick();
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(onNotice).toHaveBeenLastCalledWith(LABELS.tl.voiceEmpty);
     expect(onTranscript).not.toHaveBeenCalled();
+  });
+});
+
+describe('composer voice input, phone speech recognizer', () => {
+  it('uses the phone recognizer in the app, before the hub', async () => {
+    hooks.native = true;
+    hooks.nativeSpeech = true;
+    hooks.hubVoice = true;
+    hooks.canRecord = true;
+    const onTranscript = vi.fn();
+    const { button } = renderVoice('tl', onTranscript);
+    button.props.onClick();
+    await settle();
+    expect(mode()).toBe('recording');
+    expect(hooks.nativeStart).not.toBeNull();
+    expect(hooks.browserStart).toBeNull();
+    hooks.nativeStart?.onInterim?.('may uod');
+    hooks.nativeStart?.onFinal('may uod sa mais');
+    hooks.nativeStart?.onEnd();
+    expect(onTranscript).toHaveBeenCalledWith('may uod sa mais');
+    expect(mode()).toBe('idle');
+  });
+
+  it('falls back to the hub when the phone recognizer has no internet', async () => {
+    hooks.native = true;
+    hooks.nativeSpeech = true;
+    hooks.hubVoice = true;
+    hooks.canRecord = true;
+    hooks.recorder = { stop: async () => 'pcm', cancel: vi.fn() };
+    const { button } = renderVoice();
+    button.props.onClick();
+    await settle();
+    hooks.nativeStart?.onError('offline');
+    hooks.nativeStart?.onEnd();
+    await settle();
+    expect(mode()).toBe('recording');
+    expect(hooks.states[2]).toBe('hub');
+  });
+
+  it('says voice needs the internet when there is no hub to fall back on', async () => {
+    hooks.native = true;
+    hooks.nativeSpeech = true;
+    const { button, onNotice } = renderVoice();
+    button.props.onClick();
+    await settle();
+    hooks.nativeStart?.onError('offline');
+    hooks.nativeStart?.onEnd();
+    await settle();
+    expect(onNotice).toHaveBeenLastCalledWith(LABELS.tl.voiceOffline);
+    expect(mode()).toBe('idle');
   });
 });
 

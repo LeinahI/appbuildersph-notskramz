@@ -110,6 +110,12 @@ export function listUsers(q?: string, status?: string) {
   return request<UserDTO[]>(`/api/v1/users${qs ? `?${qs}` : ''}`);
 }
 
+export type UserStatsDTO = { total: number; active: number; pending: number; revoked: number; today: number };
+
+export function userStats() {
+  return request<UserStatsDTO>('/api/v1/users/stats');
+}
+
 export function getUser(id: string) {
   return request<UserDTO>(`/api/v1/users/${id}`);
 }

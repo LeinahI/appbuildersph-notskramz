@@ -7,7 +7,7 @@ const webRoot = fileURLToPath(new URL('..', import.meta.url));
 
 /**
  * Vite maps `admin.html` to both `/admin.html` and `/admin`. The staff portal routes
- * (`RequireAdmin`, `/admin/login`) live in `index.html`, so a root `admin.html` steals
+ * (`/admin/:page`, `/admin/login`) live in `index.html`, so a root `admin.html` steals
  * `/admin` and loops with AdminApp's `location.replace('/admin')`.
  */
 describe('admin HTML entry', () => {

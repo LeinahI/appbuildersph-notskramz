@@ -562,6 +562,46 @@ export function dropRepeatedQuestions(text: string, earlierReplies: readonly str
   return dropped && kept ? kept : text;
 }
 
+const STEP_LINE = /^\s*\d+[.)]\s+(.*)$/;
+
+/**
+ * Drops numbered steps the farmer already got earlier in this chat, and numbers the rest again. A small model
+ * repeats its whole list when the farmer adds a detail ("may kagat po e"); the farmer needs only what is new. A line
+ * that only introduced the dropped list ("Narito ang mga hakbang:") goes too. With no new step, the prose is kept.
+ */
+export function dropRepeatedSteps(text: string, earlierReplies: readonly string[]): string {
+  const given = new Set(
+    earlierReplies.flatMap((reply) => reply.split('\n').map((line) => STEP_LINE.exec(line)?.[1]).filter((s): s is string => !!s).map(normalize)),
+  );
+  if (given.size === 0) return text;
+  const lines = text.split('\n');
+  let dropped = false;
+  let n = 0;
+  const kept: string[] = [];
+  for (const line of lines) {
+    const step = STEP_LINE.exec(line)?.[1];
+    if (step === undefined) {
+      kept.push(line);
+      continue;
+    }
+    if (given.has(normalize(step))) {
+      dropped = true;
+      continue;
+    }
+    kept.push(`${++n}. ${step}`);
+  }
+  if (!dropped) return text;
+  // An intro whose list is now empty ("Ang mga unang hakbang ay ito:") says nothing. The sentences before it stay.
+  const out = kept
+    .map((line, i) => {
+      if (!line.trim().endsWith(':')) return line;
+      const next = kept.slice(i + 1).find((l) => l.trim() !== '');
+      return next !== undefined && STEP_LINE.test(next) ? line : line.replace(/[^.!?]*:\s*$/, '').trim();
+    })
+    .filter((line, i, all) => line.trim() !== '' || (i > 0 && all[i - 1]!.trim() !== ''));
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() || text;
+}
+
 const URGENT =
   /\b(lahat|buong|kalahati|karamihan|half|kumakalat|mabilis|namamatay|nalalanta|bumabagsak|emergency|wala nang natira|tanan|tibuok|katunga|nangamatay|mokaylap|nagkaylap|paspas)\b/;
 
@@ -606,6 +646,12 @@ function shortName(name: string): string {
 export function withProblemName(reply: string, name: string, sure: boolean, lang: ReplyLanguage = 'tl'): string {
   const short = shortName(name);
   if (normalize(reply).includes(normalize(short))) return reply;
+  // "Rice bug (atangya)": a reply that only says "atangya" gets the name beside it, "atangya (Rice bug)", instead of
+  // a separate opening sentence that says the same thing twice.
+  for (const local of name.split(/ \(|\)| \/ /).slice(1).map((n) => n.trim()).filter((n) => n.length >= 3)) {
+    const at = new RegExp(`\\b${local.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').exec(reply);
+    if (at) return `${reply.slice(0, at.index + at[0].length)} (${short})${reply.slice(at.index + at[0].length)}`;
+  }
   if (lang === 'ceb') return `${sure ? 'Lagmit' : 'Posible nga'} ${short} kini. ${reply}`;
   if (lang === 'en') return `This is ${sure ? 'likely' : 'possibly'} ${short}. ${reply}`;
   return `${sure ? 'Malamang' : 'Posibleng'} ${short} po ito. ${reply}`;

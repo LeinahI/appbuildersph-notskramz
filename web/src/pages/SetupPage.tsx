@@ -9,8 +9,9 @@ import { phoneLaya, type LayaState } from '../lib/laya';
 import { NO_GPU_MESSAGE, canUseWebGpu } from '../lib/gpu';
 import { NATIVE_AI, NATIVE_MODEL_BYTES } from '../lib/native-llm';
 import { phoneAi, phoneAiFit, type PhoneAiState } from '../lib/llm';
+import { ensureHub } from '../lib/hub-discovery';
 import { prepareModels } from '../lib/prepare';
-import { hubCapabilities, type HubCapabilities } from '../lib/sync';
+import { type HubCapabilities } from '../lib/sync';
 
 /** How often the connect step asks the hub again while the phone is not on its Wi-Fi. */
 const POLL_MS = 3000;
@@ -61,11 +62,13 @@ function AiProgress({ percent, text, tone }: { percent: number; text: string; to
 
 /**
  * First setup on the phone: 1. join the hub's Wi-Fi (the laptop), 2. download the AI from the hub, 3. a success alert.
+ * It configures itself: the app finds the hub on the Wi-Fi it joined (no address to type) and starts the download.
  * A phone without the memory for the AI skips the download and keeps the offline notes. Nothing uses the internet.
  */
 export default function SetupPage() {
   const navigate = useNavigate();
-  const hubUrl = loadHubUrl();
+  // The hub the app found on this Wi-Fi. Starts with the last one used, or the build's address.
+  const [hubUrl, setHubUrl] = useState(loadHubUrl);
   const fit = phoneAiFit();
   // Gemma runs only on the phone's GPU (WebGPU). Checked before offering the 5 GB download.
   const [gpu, setGpu] = useState<boolean | null>(null);
@@ -84,13 +87,16 @@ export default function SetupPage() {
   useEffect(() => phoneAi.subscribe(setAi), []);
   useEffect(() => phoneLaya.subscribe(setLaya), []);
 
-  // Step 1: ask the hub until the phone reaches it, so joining the Wi-Fi is all the farmer does.
+  // Step 1: look for the hub until the phone reaches it, so joining the Wi-Fi is all the farmer does. The search tries
+  // the Wi-Fi's gateway and the usual hotspot addresses, and keeps the hub it finds.
   useEffect(() => {
     if (hub.status === 'online') return;
     let cancelled = false;
     const check = async () => {
-      const caps = await hubCapabilities(hubUrl);
-      if (!cancelled) setHub(caps ? { status: 'online', caps } : { status: 'offline' });
+      const found = await ensureHub();
+      if (cancelled) return;
+      if (found) setHubUrl(found.url);
+      setHub(found ? { status: 'online', caps: found.caps } : { status: 'offline' });
     };
     void check();
     const timer = setInterval(() => void check(), POLL_MS);
@@ -98,7 +104,7 @@ export default function SetupPage() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [hub.status, hubUrl]);
+  }, [hub.status]);
 
   const caps = hub.status === 'online' ? hub.caps : null;
   const layaOffered = caps?.phoneLaya === true && caps.layaThreshold !== null;
@@ -131,6 +137,14 @@ export default function SetupPage() {
     setStarted(true);
     prepareModels(hubUrl, layaOffered ? caps!.layaThreshold : null);
   }
+
+  // Found the hub and the phone can run the AI: the download starts on its own. A failed download waits for a tap.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (autoStarted.current || started || finished || !canDownload || hub.status !== 'online') return;
+    autoStarted.current = true;
+    download();
+  });
 
   function skip() {
     saveSetup({ ai: 'skipped', layaThreshold: null, hubUrl });

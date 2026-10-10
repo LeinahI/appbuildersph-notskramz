@@ -1,4 +1,4 @@
-import { NO_SIGNS, OTHER_CROP, matchKeywords, type Crop, type KnowledgeEntry } from '@ugatan/shared';
+import { NO_SIGNS, OTHER_CROP, matchKeywords, onlyVagueSigns, type Crop, type KnowledgeEntry } from '@ugatan/shared';
 import type { LayaOutcome } from './laya';
 
 /** What the phone's matcher decided. The same shape as the hub's MatchOutcome. */
@@ -56,6 +56,11 @@ export async function matchOnPhone(text: string, crop: Crop | 'any', deps: Hybri
   if (english) {
     fromEnglish = keyword(english, crop, deps.knowledge, 2);
     if (fromEnglish.clear) return withEnglish(fromEnglish);
+  }
+  // "Dilaw ang dahon" alone fits many problems and no keyword. Laya would still pick one, so nothing is matched:
+  // the chat asks for a telling detail instead, as on the hub.
+  if (first.ids.length === 0 && (fromEnglish?.ids.length ?? 0) === 0 && onlyVagueSigns(text, english ?? '')) {
+    return withEnglish({ ids: [], clear: false, matchedOn: [] });
   }
 
   let second: LayaOutcome = { ids: [], clear: false };

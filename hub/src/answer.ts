@@ -8,6 +8,7 @@ import {
   cropOfChat,
   detectCrop,
   dropRepeatedQuestions,
+  dropRepeatedSteps,
   findViolations,
   fitPlantPart,
   fixedReply,
@@ -395,7 +396,8 @@ async function answerOnce(req: AskRequest, deps: AnswerDeps): Promise<AskRespons
         // A sure match or a best guess always says the problem's name.
         // A question the app already asked in this chat is dropped, so the farmer is never asked the same thing twice.
         // A how-to ("lahat ng butil dilaw na") is not an emergency, so a guide answer never opens with "call now".
-        const tidied = tidyReply(dropRepeatedQuestions(result.text, history.map((t) => t.reply)), asked, guide ? { urgent: false } : {});
+        const earlierReplies = history.map((t) => t.reply);
+        const tidied = tidyReply(dropRepeatedSteps(dropRepeatedQuestions(result.text, earlierReplies), earlierReplies), asked, guide ? { urgent: false } : {});
         const reply = clear || bestGuess ? withProblemName(tidied, entries[0]!.name, clear, replyLanguage(asked)) : tidied;
         // The output rail: the reply may name only the problems it was given notes for (the one just explained, or
         // the one the app already named in this chat). Anything else is a model guess and never leaves the hub.

@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { FormEvent, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { A } from './copy';
 import { DisplayPreferencesPanel } from '../components/DisplayPreferencesPanel';
 import { DisplayPreferencesIcon } from '../components/DisplayPreferencesIcon';
+import { DEFAULT_WS_URL, loadAdminToken, saveAdminToken } from '../config/ws';
+import { listAudit, listUsers, login, me, userStats, WsApiError, type AuditDTO, type UserDTO, type UserStatsDTO } from '../lib/ws-api';
 import { AdminDialog, AdminIcon, type IconName } from './AdminDialog';
 import { RegistrationDialog } from './RegistrationDialog';
+import { StatusPill, UserDrawer, formatDate } from './UserPanel';
 
 export const pages = ['login', 'overview', 'users', 'qr', 'activity'] as const;
 export type AdminPage = (typeof pages)[number];
@@ -65,22 +68,87 @@ function Navigation({
   );
 }
 
-export function UserList({ qr = false }: { qr?: boolean }) {
+type Connection = 'checking' | 'connected' | 'offline';
+/** ws returns at most this many users per list. */
+const LIST_LIMIT = 50;
+export type Load<T> = { data: T | null; error: boolean };
+
+/** Loads `fetcher` whenever `deps` change; keeps the last good data and flags a failed load. */
+function useLoad<T>(fetcher: () => Promise<T>, deps: unknown[], onUnauthorized: () => void): Load<T> {
+  const [state, setState] = useState<Load<T>>({ data: null, error: false });
+  useEffect(() => {
+    let live = true;
+    fetcher()
+      .then((data) => {
+        if (live) setState({ data, error: false });
+      })
+      .catch((err) => {
+        if (!live) return;
+        if (err instanceof WsApiError && err.status === 401) onUnauthorized();
+        setState((prev) => ({ data: prev.data, error: true }));
+      });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- callers list what should trigger a reload
+  }, deps);
+  return state;
+}
+
+function EmptyState({ icon, title, body }: { icon: IconName; title: string; body?: string }) {
+  return (
+    <div className='admin-empty'>
+      <span className='admin-icon-tile'>
+        <AdminIcon name={icon} />
+      </span>
+      <h3>{title}</h3>
+      {body ? <p>{body}</p> : null}
+    </div>
+  );
+}
+
+export function UserList({
+  qr = false,
+  users = null,
+  error = false,
+  query = '',
+  status = '',
+  onQuery,
+  onStatus,
+  onOpen,
+}: {
+  qr?: boolean;
+  users?: UserDTO[] | null;
+  error?: boolean;
+  query?: string;
+  status?: string;
+  onQuery?: (value: string) => void;
+  onStatus?: (value: string) => void;
+  onOpen?: (id: string) => void;
+}) {
+  const filtered = !!query.trim() || (!qr && !!status);
+  const icon = qr ? 'qr' : 'users';
   return (
     <section className='admin-panel' aria-labelledby='admin-list-heading'>
       <div className='admin-panel-heading'>
         <h2 id='admin-list-heading'>{qr ? A.accessList : A.allUsers}</h2>
+        {qr ? <p className='admin-description'>{A.pendingOnly}</p> : null}
         <div className='admin-filters'>
           <label className='admin-field flex-1'>
             {A.search}
-            <input type='search' disabled aria-describedby='admin-data-unavailable' />
+            <input type='search' value={query} onChange={(e) => onQuery?.(e.target.value)} />
           </label>
-          <label className='admin-field'>
-            {A.filter}
-            <select disabled aria-describedby='admin-data-unavailable'>
-              <option>{A.allStatuses}</option>
-            </select>
-          </label>
+          {qr ? null : (
+            <label className='admin-field'>
+              {A.filter}
+              <select value={status} onChange={(e) => onStatus?.(e.target.value)}>
+                <option value=''>{A.allStatuses}</option>
+                <option value='pending'>{A.pending}</option>
+                <option value='active'>{A.active}</option>
+                <option value='revoked'>{A.revoked}</option>
+              </select>
+            </label>
+          )}
         </div>
       </div>
       <div className='admin-table-head' aria-hidden='true'>
@@ -88,13 +156,31 @@ export function UserList({ qr = false }: { qr?: boolean }) {
         <span>{A.statusColumn}</span>
         <span>{A.registeredColumn}</span>
       </div>
-      <div className='admin-empty'>
-        <span className='admin-icon-tile'>
-          <AdminIcon name={qr ? 'qr' : 'users'} />
-        </span>
-        <h3>{A.noUsers}</h3>
-        <p id='admin-data-unavailable'>{A.unavailableList}</p>
-      </div>
+      {users && users.length > 0 ? (
+        <ul className='admin-rows'>
+          {users.map((user) => (
+            <li key={user.id}>
+              <button type='button' className='admin-row' onClick={() => onOpen?.(user.id)} aria-haspopup='dialog'>
+                <span>
+                  <strong>{user.fullName}</strong>
+                  <small>{[user.address?.barangay, user.address?.city].filter(Boolean).join(', ') || user.phone || '—'}</small>
+                </span>
+                <span>
+                  <StatusPill status={user.status} />
+                </span>
+                <span>{formatDate(user.createdAt)}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : error ? (
+        <EmptyState icon={icon} title={A.noUsers} body={A.unavailableList} />
+      ) : users ? (
+        <EmptyState icon={icon} title={filtered ? A.noMatches : A.noUsers} />
+      ) : (
+        <EmptyState icon={icon} title={A.loading} />
+      )}
+      {users && users.length >= LIST_LIMIT ? <p className='admin-description admin-list-cap'>{A.listCapped}</p> : null}
       <p className='admin-panel-footer'>
         <AdminIcon name='privacy' />
         {A.privacy}
@@ -103,17 +189,60 @@ export function UserList({ qr = false }: { qr?: boolean }) {
   );
 }
 
-function Overview({ onRegister }: { onRegister: () => void }) {
-  const metrics: { label: string; icon: IconName }[] = [
-    { label: A.registered, icon: 'registered-count' },
-    { label: A.active, icon: 'active-count' },
-    { label: A.pending, icon: 'pending-count' },
-    { label: A.today, icon: 'today-count' },
+export function ActivityList({
+  items,
+  error = false,
+  names,
+  limit,
+}: {
+  items: AuditDTO[] | null;
+  error?: boolean;
+  names?: Map<string, string>;
+  limit?: number;
+}) {
+  if (!items) {
+    return <EmptyState icon='activity' title={error ? A.noActivity : A.loading} body={error ? A.unavailableList : undefined} />;
+  }
+  if (items.length === 0) return <EmptyState icon='activity' title={A.noActivity} />;
+  return (
+    <ol className='admin-rows'>
+      {items.slice(0, limit).map((event) => (
+        <li key={event.id} className='admin-row admin-row-static'>
+          <span>
+            <strong>{A.events[event.eventType] ?? event.eventType}</strong>
+            <small>{names?.get(event.subjectId) ?? (event.subjectId ? event.subjectId.slice(0, 8) : '—')}</small>
+          </span>
+          <span />
+          <span>{formatDate(event.createdAt)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+export function Overview({
+  stats,
+  activity,
+  names,
+  onRegister,
+  viewAll,
+}: {
+  stats: Load<UserStatsDTO | null>;
+  activity: Load<AuditDTO[]>;
+  names?: Map<string, string>;
+  onRegister: () => void;
+  viewAll?: ReactNode;
+}) {
+  const metrics: { label: string; icon: IconName; value?: number }[] = [
+    { label: A.registered, icon: 'registered-count', value: stats.data?.total },
+    { label: A.active, icon: 'active-count', value: stats.data?.active },
+    { label: A.pending, icon: 'pending-count', value: stats.data?.pending },
+    { label: A.today, icon: 'today-count', value: stats.data?.today },
   ];
   return (
     <>
       <div className='admin-metrics'>
-        {metrics.map(({ label, icon }) => (
+        {metrics.map(({ label, icon, value }) => (
           <section className='admin-metric' key={label}>
             <div>
               <h2>{label}</h2>
@@ -121,10 +250,17 @@ function Overview({ onRegister }: { onRegister: () => void }) {
                 <AdminIcon name={icon} />
               </span>
             </div>
-            <p className='admin-metric-value' aria-label={A.noMetrics}>
-              —
-            </p>
-            <p className='admin-description'>{A.noMetrics}</p>
+            {value === undefined ? (
+              <>
+                {/* Unknown is shown as a dash, never as zero. */}
+                <p className='admin-metric-value' aria-label={A.noMetrics}>
+                  —
+                </p>
+                <p className='admin-description'>{stats.error ? A.noMetrics : A.loading}</p>
+              </>
+            ) : (
+              <p className='admin-metric-value'>{value.toLocaleString('en-PH')}</p>
+            )}
           </section>
         ))}
       </div>
@@ -141,13 +277,11 @@ function Overview({ onRegister }: { onRegister: () => void }) {
         </button>
       </section>
       <section className='admin-panel'>
-        <div className='admin-panel-heading'>
-          <h2>{A.hubActivity}</h2>
+        <div className='admin-panel-heading admin-panel-heading-row'>
+          <h2>{A.recentActivity}</h2>
+          {viewAll}
         </div>
-        <div className='admin-empty'>
-          <p>{A.noActivity}</p>
-          <p>{A.unavailableList}</p>
-        </div>
+        <ActivityList items={activity.data} error={activity.error} names={names} limit={5} />
       </section>
     </>
   );
@@ -165,7 +299,33 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
   );
   const page = pageProp ?? hashPage;
   const [dialog, setDialog] = useState<'registration' | 'menu' | 'help' | 'hub' | 'display' | null>(null);
+  const [openUser, setOpenUser] = useState<string | null>(null);
+  const [connection, setConnection] = useState<Connection>('checking');
+  const [admin, setAdmin] = useState<UserDTO | null>(null);
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
+  // Bumped after a save, revoke, or retry so every list reloads.
+  const [version, setVersion] = useState(0);
   const heading = useRef<HTMLHeadingElement>(null);
+  const workspace = page !== 'login';
+
+  const hrefFor = (id: AdminPage) => (onNavigate ? (id === 'login' ? '/admin/login' : `/admin/${id}`) : `#${id}`);
+  const go = (id: AdminPage, event?: MouseEvent) => {
+    if (!onNavigate) return;
+    event?.preventDefault();
+    onNavigate(id);
+  };
+  function signOut() {
+    saveAdminToken('');
+    setAdmin(null);
+    setDialog(null);
+    setOpenUser(null);
+    if (onNavigate) onNavigate('login');
+    else window.location.hash = '#login';
+  }
+  const refresh = () => setVersion((v) => v + 1);
+  const register = () => setDialog('registration');
 
   useEffect(() => {
     if (pageProp !== undefined) return;
@@ -184,13 +344,77 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
     heading.current?.focus();
   }, [page]);
 
-  const hrefFor = (id: AdminPage) => id === 'login' ? '/admin/login' : onNavigate ? `/admin/${id}` : `#${id}`;
-  const go = (id: AdminPage, event?: MouseEvent) => {
-    if (!onNavigate) return;
-    event?.preventDefault();
-    onNavigate(id);
-  };
-  const register = () => setDialog('registration');
+  // Confirm the saved token with ws. A rejected token signs out; an unreachable ws only shows offline.
+  useEffect(() => {
+    if (!workspace) return;
+    let live = true;
+    setConnection('checking');
+    me()
+      .then((value) => {
+        if (!live) return;
+        setAdmin(value);
+        setConnection('connected');
+      })
+      .catch((err) => {
+        if (!live) return;
+        if (err instanceof WsApiError && err.status === 401) signOut();
+        else setConnection('offline');
+      });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recheck on entering the workspace or after a retry
+  }, [workspace, version]);
+
+  // Typing waits a moment before asking ws.
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(query.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const listed = page === 'users' || page === 'qr';
+  const listStatus = page === 'qr' ? 'pending' : status;
+  // Overview and activity also load users, to put names beside activity entries.
+  const users = useLoad(
+    () => (workspace ? listUsers(listed ? search : undefined, listed ? listStatus : undefined) : Promise.resolve([])),
+    [page, search, listStatus, version],
+    signOut,
+  );
+  const stats = useLoad(() => (page === 'overview' ? userStats() : Promise.resolve(null)), [page, version], signOut);
+  const activity = useLoad(
+    () => (page === 'overview' || page === 'activity' ? listAudit() : Promise.resolve([])),
+    [page, version],
+    signOut,
+  );
+  const names = new Map((users.data ?? []).map((user) => [user.id, user.fullName]));
+  const connectionText = connection === 'connected' ? A.connected : connection === 'checking' ? A.checking : A.disconnected;
+
+  const sideActions = (
+    <>
+      <button
+        type='button'
+        className='admin-nav-action'
+        onClick={() => setDialog('display')}
+        aria-haspopup='dialog'
+        aria-controls='admin-display'
+      >
+        <DisplayPreferencesIcon />
+        <span>Display preferences</span>
+      </button>
+      <button type='button' className='admin-nav-action' onClick={() => setDialog('hub')}>
+        <AdminIcon name='settings' />
+        {A.hubInfo}
+      </button>
+      <button type='button' className='admin-nav-action' onClick={() => setDialog('help')}>
+        <AdminIcon name='help' />
+        {A.help}
+      </button>
+      <button type='button' className='admin-nav-action' onClick={signOut}>
+        <AdminIcon name='lock' />
+        {A.logout}
+      </button>
+    </>
+  );
 
   if (page === 'login') return <main className='p-6'><a className='admin-text-button' href='/admin/login'>{A.login}</a></main>;
 
@@ -216,33 +440,15 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
               <AdminIcon name='hub' />
               <span>
                 {A.hubTitle}
-                <small>{A.notConfigured}</small>
+                <small>{admin?.email || admin?.fullName || connectionText}</small>
               </span>
             </div>
             <Navigation page={page} hrefFor={hrefFor} onNavigate={onNavigate} />
-            <div className='admin-sidebar-bottom'>
-              <button
-                type='button'
-                className='admin-nav-action'
-                onClick={() => setDialog('display')}
-                aria-haspopup='dialog'
-                aria-controls='admin-display'
-              >
-                <DisplayPreferencesIcon />
-                <span>Display preferences</span>
-              </button>
-              <button type='button' className='admin-nav-action' onClick={() => setDialog('hub')}>
-                <AdminIcon name='settings' />
-                {A.hubInfo}
-              </button>
-              <button type='button' className='admin-nav-action' onClick={() => setDialog('help')}>
-                <AdminIcon name='help' />
-                {A.help}
-              </button>
-              <a className='admin-nav-action' href={hrefFor('login')} onClick={(e) => go('login', e)}>
-                {A.login}
-              </a>
-            </div>
+            <p className='admin-connection' role='status' data-state={connection}>
+              <AdminIcon name='lock' />
+              <span>{connection === 'connected' ? A.connectedDescription : connectionText}</span>
+            </p>
+            <div className='admin-sidebar-bottom'>{sideActions}</div>
           </aside>
           <div className='admin-workspace'>
             <header className='admin-header'>
@@ -260,6 +466,9 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
                 <span aria-hidden='true'>/</span>
                 <strong>{A[page]}</strong>
               </p>
+              <span className='admin-status-badge' data-state={connection}>
+                {connectionText}
+              </span>
               <button
                 type='button'
                 className='chat-icon-button ml-auto lg:hidden'
@@ -290,23 +499,44 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
                   {A.register}
                 </button>
               </div>
+              {connection === 'offline' ? (
+                <p className='admin-status-notice' role='alert'>
+                  {A.unavailableList}{' '}
+                  <button type='button' className='admin-text-button' onClick={refresh}>
+                    {A.retry}
+                  </button>
+                </p>
+              ) : null}
               {page === 'overview' ? (
-                <Overview onRegister={register} />
+                <Overview
+                  stats={stats}
+                  activity={activity}
+                  names={names}
+                  onRegister={register}
+                  viewAll={
+                    <a className='admin-text-button' href={hrefFor('activity')} onClick={(e) => go('activity', e)}>
+                      {A.viewAll}
+                    </a>
+                  }
+                />
               ) : page === 'activity' ? (
                 <section className='admin-panel'>
                   <div className='admin-panel-heading'>
                     <h2>{A.hubActivity}</h2>
                   </div>
-                  <div className='admin-empty'>
-                    <span className='admin-icon-tile'>
-                      <AdminIcon name='activity' />
-                    </span>
-                    <h3>{A.noActivity}</h3>
-                    <p>{A.unavailableList}</p>
-                  </div>
+                  <ActivityList items={activity.data} error={activity.error} names={names} />
                 </section>
               ) : (
-                <UserList qr={page === 'qr'} />
+                <UserList
+                  qr={page === 'qr'}
+                  users={users.data}
+                  error={users.error}
+                  query={query}
+                  status={status}
+                  onQuery={setQuery}
+                  onStatus={setStatus}
+                  onOpen={setOpenUser}
+                />
               )}
               <footer className='admin-footer'>
                 <span>{A.adminTitle}</span>
@@ -315,38 +545,12 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
             </main>
           </div>
         </div>
-      {dialog === 'registration' && <RegistrationDialog onClose={() => setDialog(null)} />}
+      {dialog === 'registration' && <RegistrationDialog onClose={() => setDialog(null)} onSaved={refresh} />}
+      {openUser && <UserDrawer userId={openUser} onClose={() => setOpenUser(null)} onChanged={refresh} />}
       {dialog === 'menu' && (
         <AdminDialog id='admin-menu' title={A.menuTitle} drawer='left' onClose={() => setDialog(null)}>
           <Navigation page={page} hrefFor={hrefFor} onNavigate={onNavigate} onSelect={() => setDialog(null)} />
-          <button
-            type='button'
-            className='admin-nav-action'
-            onClick={() => setDialog('display')}
-            aria-haspopup='dialog'
-            aria-controls='admin-display'
-          >
-            <DisplayPreferencesIcon />
-            <span>Display preferences</span>
-          </button>
-          <button type='button' className='admin-nav-action' onClick={() => setDialog('hub')}>
-            <AdminIcon name='settings' />
-            {A.hubInfo}
-          </button>
-          <button type='button' className='admin-nav-action' onClick={() => setDialog('help')}>
-            <AdminIcon name='help' />
-            {A.help}
-          </button>
-          <a
-            className='admin-nav-action'
-            href={hrefFor('login')}
-            onClick={(e) => {
-              go('login', e);
-              setDialog(null);
-            }}
-          >
-            {A.login}
-          </a>
+          {sideActions}
         </AdminDialog>
       )}
       {dialog === 'display' && (
@@ -370,18 +574,25 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
           <dl className='admin-details'>
             <div>
               <dt>{A.hubName}</dt>
-              <dd>{A.notConfigured}</dd>
+              <dd>{A.hubTitle}</dd>
             </div>
             <div>
-              <dt>{A.location}</dt>
-              <dd>{A.notConfigured}</dd>
+              <dt>{A.apiAddress}</dt>
+              <dd className='font-mono text-xs'>{DEFAULT_WS_URL}</dd>
+            </div>
+            <div>
+              <dt>{A.status}</dt>
+              <dd>{connectionText}</dd>
+            </div>
+            <div>
+              <dt>{A.signedInAs}</dt>
+              <dd>{admin?.email || admin?.fullName || '—'}</dd>
             </div>
             <div>
               <dt>{A.qr}</dt>
               <dd>{A.qrPolicy}</dd>
             </div>
           </dl>
-          <p className='admin-callout'>{A.actionUnavailable}</p>
         </AdminDialog>
       )}
     </>

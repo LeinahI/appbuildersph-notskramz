@@ -18,6 +18,9 @@ import {
   routeFor,
   signChoices,
   smallTalkReply,
+  dropRepeatedSteps,
+  withProblemName,
+  buildMessages,
   tidyReply,
   type KnowledgeEntry,
 } from '../src/index';
@@ -189,5 +192,38 @@ describe('found in the made-up farmer questions', () => {
   it('does not open a harvest how-to with "call now", even when "lahat" is in it', () => {
     expect(tidyReply('Pwede na po.', 'dilaw na po halos lahat ng butil', { urgent: false })).toBe('Pwede na po.');
     expect(tidyReply('Ano po ang nakikita ninyo?', 'lahat ng palay namamatay')).toMatch(/^Tawagan po agad/);
+  });
+});
+
+describe('found when testing the app', () => {
+  it('puts the name beside the local one instead of saying it twice', () => {
+    expect(withProblemName('Ang pinaka-posibleng problema ay atangya.', 'Rice bug (atangya)', false)).toBe('Ang pinaka-posibleng problema ay atangya (Rice bug).');
+    expect(withProblemName('Gawin ito.', 'Rice bug (atangya)', false)).toBe('Posibleng Rice bug po ito. Gawin ito.');
+  });
+
+  it('tells the model not to list the same steps again', () => {
+    const history = [{ question: 'ano po pwedeng gawin ko', reply: 'Posibleng atangya.\n1. Magbunot ng damo.\n2. Silipin ang uhay.' }];
+    expect(buildMessages('uhay po. may kagat po e', 'rice', [byId('rice-bug')], { sure: false, bestGuess: true, history })[1]!.content).toContain(
+      'You already gave numbered steps above. Do not list them again',
+    );
+    expect(buildMessages('uhay po', 'rice', [byId('rice-bug')], { sure: false, history: [{ question: 'x', reply: 'Ano po?' }] })[1]!.content).not.toContain(
+      'You already gave numbered steps',
+    );
+  });
+});
+
+describe('steps the farmer already got', () => {
+  const earlier = ['Ang posibleng problema ay atangya. Ang mga unang hakbang ay ito:\n1. Magbunot ng damo sa palayan.\n2. Magtanim nang sabay.\n3. Silipin ang mga uhay.'];
+
+  it('are not listed again; only the new step stays, numbered from 1', () => {
+    const reply = 'Ang posibleng problema ay atangya. Ang mga unang hakbang ay ito:\n\n1. Magbunot ng damo sa palayan.\n2. Magtanim nang sabay.\n3. Silipin ang mga uhay.\n4. Saluhin sila sa lambat.\n\nTingnan ang butil.';
+    expect(dropRepeatedSteps(reply, earlier)).toBe('Ang posibleng problema ay atangya. Ang mga unang hakbang ay ito:\n\n1. Saluhin sila sa lambat.\n\nTingnan ang butil.');
+  });
+
+  it('drop the intro line when no new step is left, and keep the rest', () => {
+    const reply = 'Malamang atangya po ito. Ito ang gagawin:\n1. Magbunot ng damo sa palayan.\n2. Silipin ang mga uhay.\nTawagan ang agriculturist kung kumakalat.';
+    expect(dropRepeatedSteps(reply, earlier)).toBe('Malamang atangya po ito.\nTawagan ang agriculturist kung kumakalat.');
+    expect(dropRepeatedSteps('1. Bago ito.', earlier)).toBe('1. Bago ito.');
+    expect(dropRepeatedSteps(reply, [])).toBe(reply);
   });
 });

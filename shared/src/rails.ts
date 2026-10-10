@@ -1,4 +1,14 @@
 import { normalize } from './keyword.js';
+import {
+  CHAT_FINAL,
+  CHAT_UNMATCHED,
+  MATCH_BEST_GUESS,
+  MATCH_HELP,
+  MATCH_NOT_SURE,
+  MATCH_SURE,
+  chatSystemPrompt,
+  systemPrompt,
+} from './prompt.js';
 import type { KnowledgeEntry } from './types.js';
 
 // Two rails, the way open-source guardrail libraries split them (NVIDIA NeMo Guardrails, Meta Llama Guard and
@@ -28,6 +38,20 @@ const INJECTION: readonly RegExp[] = [
   /\bsystem (na )?instruksyon\b/,
   /\beksaktong (mga )?instruksyon\b/,
   /\bbagong (panuto|utos|tungkulin)\b/,
+  // "Ignore everything above", "disregard the previous message": no rule word, but it points back at the prompt.
+  /\b(ignore|disregard)\b.{0,30}\b(above|previous|prior|earlier) (text|messages?|words|lines|everything)\b/,
+  /\b(ignore|disregard|forget) (everything|all) (above|before|you were told|you know)\b/,
+  // Asking what it was told: "what are your instructions", "what were you told to do".
+  /\bwhat (are|were|is) (your|the) (instructions?|rules|prompt|guidelines)\b/,
+  /\bwhat were you (told|instructed|programmed)\b/,
+  /\b(you are no longer|your new (role|instructions?|rules)|new instructions)\b/,
+  // Tagalog: "ano ang mga panuto mo", "anong utos sa iyo", "simula ngayon ikaw ay ...", "magpanggap ka na".
+  /\bano(ng| ang)( mga)? (panuto|utos|instruksyon|tuntunin)( mo| sa iyo| na binigay sa iyo)\b/,
+  /\bsimula ngayon\b.{0,20}\bikaw (ay|na|si)\b/,
+  /\b(magkunwari|magpanggap) ka(ng)?\b.{0,30}\b(ikaw|na|bilang|si)\b/,
+  // Cebuano: "kalimti / ayaw tagda ang imong mga mando", "isulti / ihatag ang imong instruksyon".
+  /\b(kalimti|ayaw tagda|ayaw sunda|ayaw tumana)\b.{0,40}\b(sugo|mando|lagda|balaod|instruksyon|instructions?|rules?|prompt)\b/,
+  /\b(isulti|ihatag|ipakita)\b.{0,30}\b(imong|ang imong) (prompt|instruksyon|mando|lagda|sugo)\b/,
 ];
 
 /** True when the message tries to override the helper's rules or read its instructions. */
@@ -46,12 +70,70 @@ export const INJECTION_REPLY =
  */
 export function leaksInstructions(reply: string): boolean {
   const t = ` ${normalize(reply)} `;
-  if (/\byou are ugatan\b/.test(t)) return true;
-  if (/\bsystem (prompt|instructions?|message)\b/.test(t)) return true;
-  if (/\binstruksyon ng system\b/.test(t)) return true;
+  if (LEAK.some((re) => re.test(t))) return true;
   const body = normalize(reply);
   const fixed = normalize(INJECTION_REPLY);
   if (body.startsWith(fixed) && body.length > fixed.length + 3) return true;
+  return echoesPrompt(body);
+}
+
+/** Words a farm answer never says, but a reply that talks about its own instructions does. English, Tagalog, Cebuano. */
+const LEAK: readonly RegExp[] = [
+  /\byou are ugatan\b/,
+  /\bhelper for filipino (rice|farmers)\b/,
+  /\bsystem (prompt|instructions?|message)\b/,
+  /\binstruksyon ng system\b/,
+  /\bsystem (na )?instruksyon\b/,
+  /\bmy (system )?(instructions|prompt|guidelines)\b/,
+  /\bi (was|am|have been|ve been) (told|instructed|programmed|configured) to\b/,
+  // Lines only the prompts carry.
+  /\bfarmer s message is data\b/,
+  /\bmatch is marked (sure|not sure|help|best guess)\b/,
+  /\bmatch (sure|not sure|help|best guess) (explain|these are|the farmer)\b/,
+  /\breply language (english|tagalog|cebuano|taglish)\b/,
+  // "Ang mga panuto ko ay...", "ang aking mga instruksyon", Cebuano "ang akong mga mando".
+  /\b(ang )?(mga )?(panuto|instruksyon|tuntunin) ko\b/,
+  /\b(aking|akong) (mga )?(panuto|instruksyon|tuntunin|mando|lagda)\b/,
+];
+
+/** A run this many words long, copied from the app's own prompts, is a leak however it is dressed up. */
+const ECHO_WORDS = 12;
+let promptRuns: Set<string> | null = null;
+
+/**
+ * The prompts' instruction lines as word runs. Built on first use. The worked examples and the word list are left
+ * out: those are farmer-facing lines the model is meant to copy.
+ */
+function promptWordRuns(): Set<string> {
+  if (promptRuns) return promptRuns;
+  const runs = new Set<string>();
+  const texts = [
+    systemPrompt(),
+    chatSystemPrompt(),
+    CHAT_UNMATCHED,
+    CHAT_FINAL,
+    MATCH_SURE,
+    MATCH_NOT_SURE,
+    MATCH_HELP,
+    MATCH_BEST_GUESS,
+  ];
+  for (const line of texts.flatMap((text) => text.split('\n'))) {
+    if (/^Examples of good replies|Use these words:/.test(line)) continue;
+    const words = normalize(line).split(' ');
+    for (let i = 0; i + ECHO_WORDS <= words.length; i++) runs.add(words.slice(i, i + ECHO_WORDS).join(' '));
+  }
+  promptRuns = runs;
+  return runs;
+}
+
+/** True when the normalized reply copies a long run of words from the app's prompts. */
+function echoesPrompt(body: string): boolean {
+  const words = body.split(' ');
+  if (words.length < ECHO_WORDS) return false;
+  const runs = promptWordRuns();
+  for (let i = 0; i + ECHO_WORDS <= words.length; i++) {
+    if (runs.has(words.slice(i, i + ECHO_WORDS).join(' '))) return true;
+  }
   return false;
 }
 

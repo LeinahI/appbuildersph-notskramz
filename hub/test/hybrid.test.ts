@@ -129,4 +129,22 @@ describe('hybrid matcher with Gemma describing first', () => {
       });
     }
   });
+
+  it('matches nothing on vague words alone, instead of letting Laya pick an unrelated problem', async () => {
+    // Regression: "dilaw ang dahon" (yellow leaves) came back as armyworm.
+    const vague = 'dilaw ang dahon';
+    const yellow = 'Yellow leaves on the corn plant.';
+    const laya = byText('laya', { [vague]: { ids: ['corn-armyworm'], clear: true }, [yellow]: { ids: ['corn-armyworm'], clear: true } });
+    const withGemma = await createHybridMatcher(byText('keyword', {}), laya, { describe: async () => yellow }).match(vague, 'any');
+    expect(withGemma).toEqual({ ids: [], clear: false, english: yellow });
+    const withoutGemma = await createHybridMatcher(byText('keyword', {}), laya).match(vague, 'any');
+    expect(withoutGemma).toEqual({ ids: [], clear: false });
+    expect(laya.seen).toEqual([]);
+  });
+
+  it('still asks Laya when the vague words come with a telling sign', async () => {
+    const text = 'dilaw ang dahon at may maliliit na kulisap na tumatalon';
+    const laya = byText('laya', { [text]: { ids: ['green-leafhopper'], clear: true } });
+    expect(await createHybridMatcher(byText('keyword', {}), laya).match(text, 'rice')).toEqual({ ids: ['green-leafhopper'], clear: true });
+  });
 });

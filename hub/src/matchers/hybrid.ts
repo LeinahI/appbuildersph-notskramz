@@ -1,4 +1,4 @@
-import { NO_SIGNS, OTHER_CROP, type Crop } from '@ugatan/shared';
+import { NO_SIGNS, OTHER_CROP, onlyVagueSigns, type Crop } from '@ugatan/shared';
 import type { MatchOutcome, Matcher } from './index.js';
 
 /**
@@ -50,6 +50,11 @@ export function createHybridMatcher(keyword: Matcher, laya: Matcher, { describe,
       if (english) {
         fromEnglish = await englishKeyword.match(english, crop);
         if (fromEnglish.clear) return withEnglish(fromEnglish);
+      }
+      // "Dilaw ang dahon" alone fits many problems and no keyword. Laya would still pick one (armyworm), so nothing
+      // is matched: the chat asks for a telling detail instead.
+      if (first.ids.length === 0 && (fromEnglish?.ids.length ?? 0) === 0 && onlyVagueSigns(text, english ?? '')) {
+        return withEnglish({ ids: [], clear: false });
       }
 
       let second: MatchOutcome = { ids: [], clear: false };

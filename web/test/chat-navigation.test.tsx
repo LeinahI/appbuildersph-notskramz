@@ -30,6 +30,7 @@ vi.mock('../src/lib/db', () => ({ db: { questions: { add: env.add, update: vi.fn
 vi.mock('../src/lib/llm', () => ({ phoneAi: { ready: false, subscribe: () => () => {} }, phoneAiFit: () => 'ok' }));
 vi.mock('../src/config/hub', () => ({ loadHubUrl: () => env.hubUrl }));
 vi.mock('../src/lib/sync', () => ({ hubReachable: env.reachable, syncQueue: env.sync }));
+vi.mock('../src/lib/hub-discovery', () => ({ ensureHub: async () => (await env.reachable(env.hubUrl) ? { url: env.hubUrl, caps: {} } : null) }));
 vi.mock('../src/lib/photo', () => ({ shrinkPhoto: env.shrink, photoSrc: (s: string) => s }));
 
 const old = { id: 'old-chat', title: 'Bagong usapan', pinned: false, sessionId: 'session', createdAt: '', updatedAt: '' };
@@ -53,7 +54,7 @@ beforeEach(() => {
   env.hubUrl = ''; env.reachable.mockResolvedValue(true); env.sync.mockResolvedValue({ reachable: true, sent: 1 });
   env.ensure.mockResolvedValue(null);
   env.routeId = undefined; env.resolve.mockResolvedValue(null);
-  vi.stubGlobal('window', { matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) });
+  vi.stubGlobal('window', { addEventListener() {}, removeEventListener() {}, matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) });
   vi.stubGlobal('localStorage', { getItem: () => null, setItem: vi.fn() });
   vi.stubGlobal('document', { documentElement: { lang: '' }, getElementById: () => ({ focus: env.focus }) });
   vi.stubGlobal('requestAnimationFrame', (fn: () => void) => { fn(); return 1; });
@@ -103,7 +104,7 @@ describe('protected chat navigation', () => {
     expect(home().photo).toBeNull();
   });
   it('starts with a closed drawer on a tablet even if desktop was open', () => {
-    vi.stubGlobal('window', { matchMedia: (query: string) => ({ matches: !query.includes('1024') }) });
+    vi.stubGlobal('window', { addEventListener() {}, removeEventListener() {}, matchMedia: (query: string) => ({ matches: !query.includes('1024') }) });
     expect(sidebar().open).toBe(false);
     expect(sidebar().desktop).toBe(false);
   });

@@ -16,6 +16,8 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // Gemma on the phone itself (LiteRT-LM), for phones whose GPU cannot run it in the web view.
         registerPlugin(LocalLlmPlugin.class);
+        // The phone's speech recognizer for the mic button: fast, and it stops by itself when the farmer is done.
+        registerPlugin(SpeechPlugin.class);
         super.onCreate(savedInstanceState);
         useWifiForTheHub();
     }

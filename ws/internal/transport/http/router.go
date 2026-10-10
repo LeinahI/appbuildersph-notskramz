@@ -46,6 +46,7 @@ func NewRouter(cfg *config.Config, db *sql.DB) (http.Handler, error) {
 	mux.Handle("GET /api/v1/auth/me", adminOnly(http.HandlerFunc(reg.Me)))
 	mux.Handle("POST /api/v1/users", adminOnly(http.HandlerFunc(reg.Register)))
 	mux.Handle("GET /api/v1/users", adminOnly(http.HandlerFunc(reg.ListUsers)))
+	mux.Handle("GET /api/v1/users/stats", adminOnly(http.HandlerFunc(reg.UserStats)))
 	mux.Handle("GET /api/v1/users/{id}", adminOnly(http.HandlerFunc(reg.GetUser)))
 	mux.Handle("POST /api/v1/users/{id}/invites", adminOnly(http.HandlerFunc(reg.CreateInvite)))
 	mux.Handle("POST /api/v1/users/{id}/invites/regenerate", adminOnly(http.HandlerFunc(reg.RegenerateInvite)))

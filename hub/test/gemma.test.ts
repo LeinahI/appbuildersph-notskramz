@@ -41,8 +41,17 @@ describe.skipIf(!modelDir)('gemma explainer with a local model', () => {
 
   it('answers two requests that arrive together, one after the other', async () => {
     const input = { text: 'Dilaw ang dahon ng mais', crop: 'corn' as const, entries: [], clear: false };
-    const [a, b] = await Promise.all([explainer.explain(input), explainer.explain(input)]);
-    expect(a.status).toBe('ok');
-    expect(b.text).toBe(a.text);
+    // The queue answers them one at a time, first come first served. Greedy decoding with KV-cache prefix reuse on the
+    // GPU is not bit-exact, so the two texts may differ: both must succeed, in the order they came.
+    const finished: string[] = [];
+    const [a, b] = await Promise.all([
+      explainer.explain(input).then((r) => (finished.push('a'), r)),
+      explainer.explain(input).then((r) => (finished.push('b'), r)),
+    ]);
+    expect(finished).toEqual(['a', 'b']);
+    for (const r of [a, b]) {
+      expect(r.status).toBe('ok');
+      expect(r.text?.trim()).toBeTruthy();
+    }
   }, 480_000);
 });

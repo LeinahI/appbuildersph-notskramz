@@ -348,7 +348,8 @@ describe('after the app named a problem', () => {
 describe('naming the problem in an answer', () => {
   it('adds the name when the model left it out, and leaves it when it is there', () => {
     expect(withProblemName('Ang problema ay bulok na leeg ng uhay.', 'Rice blast', true)).toBe('Malamang Rice blast po ito. Ang problema ay bulok na leeg ng uhay.');
-    expect(withProblemName('May kuhol at itlog.', 'Golden apple snail (kuhol)', false)).toMatch(/^Posibleng Golden apple snail po ito/);
+    // The local name alone gets the problem's name beside it, so the farmer still hears which problem it is.
+    expect(withProblemName('May kuhol at itlog.', 'Golden apple snail (kuhol)', false)).toBe('May kuhol (Golden apple snail) at itlog.');
     expect(withProblemName('Rice blast ang problema.', 'Rice blast', true)).toBe('Rice blast ang problema.');
   });
 

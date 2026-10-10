@@ -3,13 +3,21 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminApp, adminPage } from '../src/admin/AdminApp';
 import { AdminDialog } from '../src/admin/AdminDialog';
-import { RegistrationDialog, QrInvitation } from '../src/admin/RegistrationDialog';
+import { RegistrationDialog } from '../src/admin/RegistrationDialog';
+import { QrInvitation } from '../src/admin/UserPanel';
 import { A } from '../src/admin/copy';
 import { setDisplayPreferences, resetDisplayPreferences } from '../src/config/displayPreferences';
-import { emptyDraft, fields, hasDraft, validateDraft } from '../src/admin/registration';
+import { emptyDraft, fields, hasDraft, optional, toRegisterBody, validateDraft } from '../src/admin/registration';
+import * as ws from '../src/config/ws';
+import { WsApiError, type UserDTO } from '../src/lib/ws-api';
 import { sileo } from 'sileo';
 
 const hooks = vi.hoisted(() => ({ slots: [] as unknown[], index: 0, effects: [] as (() => void)[] }));
+const api = vi.hoisted(() => ({ registerUser: vi.fn() }));
+vi.mock('../src/lib/ws-api', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../src/lib/ws-api')>(),
+  registerUser: api.registerUser,
+}));
 vi.mock('react', async (importOriginal) => ({
   ...await importOriginal<typeof import('react')>(),
   useEffect: (effect: () => void) => { hooks.effects.push(effect); },
@@ -23,7 +31,14 @@ vi.mock('react', async (importOriginal) => ({
   },
 }));
 
-const complete = { fullName: 'QA farmer', age: '15', barangay: 'Test barangay', municipality: 'Test town', province: 'Test province', consent: true };
+const complete = {
+  fullName: 'QA farmer', birthDate: '1980-05-01', phone: '', line1: 'Purok 3', barangay: 'Test barangay',
+  municipality: 'Test town', province: 'Test province', consent: true,
+};
+const savedUser: UserDTO = {
+  id: 'u-1', role: 'user', status: 'pending', fullName: 'QA farmer', createdAt: '2026-10-10T00:00:00Z',
+  birthDate: '1980-05-01', address: { line1: 'Purok 3', line2: '', barangay: 'Test barangay', city: 'Test town', province: 'Test province', postalCode: '' },
+};
 const onClose = vi.fn();
 function wizard() { hooks.index = 0; return RegistrationDialog({ onClose }); }
 function find(node: ReactNode, matches: (element: ReactElement) => boolean): ReactElement {
@@ -50,7 +65,7 @@ function submitReview() {
   find(wizard(), (element) => element.type === 'form').props.onSubmit({ preventDefault: vi.fn() });
 }
 beforeEach(() => {
-  hooks.slots = []; hooks.index = 0; hooks.effects = []; onClose.mockClear();
+  hooks.slots = []; hooks.index = 0; hooks.effects = []; onClose.mockClear(); api.registerUser.mockReset();
   vi.stubGlobal('requestAnimationFrame', vi.fn());
 });
 describe('admin presentation cleanup', () => {
@@ -73,25 +88,36 @@ describe('admin presentation cleanup', () => {
     const html = renderToStaticMarkup(wizard());
     expect(html).not.toContain('This preview');
     expect(html).toContain(A.consent);
-    submitReview();
-    expect(button(wizard(), A.confirm).props.disabled).toBe(true);
-    expect(renderToStaticMarkup(wizard())).toContain('id="admin-save-unavailable"');
   });
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe('registration validation without an age cutoff', () => {
-  it.each(['0', '12', '15', '17', '18', '75'])('accepts age %s with complete details and consent', (age) => {
-    expect(validateDraft({ ...complete, age })).toEqual({});
+describe('registration validation', () => {
+  it.each(['1950-01-31', '1980-05-01', '2008-10-10'])('accepts birth date %s with complete details and consent', (birthDate) => {
+    expect(validateDraft({ ...complete, birthDate }, '2026-10-10')).toEqual({});
   });
-  it.each(['-1', '1.5', 'not a number', 'Infinity'])('rejects invalid numeric age %s', (age) => {
-    expect(validateDraft({ ...complete, age }).age).toBe(A.ageInvalid);
+  it.each(['2026-02-31', '10/05/1980', 'not a date', '2026-10-11', '1800-01-01'])('rejects birth date %s', (birthDate) => {
+    expect(validateDraft({ ...complete, birthDate }, '2026-10-10').birthDate).toBe(A.birthDateInvalid);
   });
-  it('requires consent and complete address fields', () => {
-    expect(Object.keys(validateDraft(emptyDraft()))).toHaveLength(6);
-    expect(validateDraft({ ...complete, province: '   ', consent: false })).toEqual({ province: A.required, consent: A.consentRequired });
+  it('leaves the minimum age to ws and checks an optional phone only when given', () => {
+    // ws rejects under-18 users; the form does not keep its own copy of that rule.
+    expect(validateDraft({ ...complete, birthDate: '2015-01-01' }, '2026-10-10')).toEqual({});
+    expect(validateDraft({ ...complete, phone: '0917 123 4567' }, '2026-10-10')).toEqual({});
+    expect(validateDraft({ ...complete, phone: 'call me' }, '2026-10-10').phone).toBe(A.phoneInvalid);
+  });
+  it('requires consent and every field except phone', () => {
+    expect(Object.keys(validateDraft(emptyDraft()))).toHaveLength(fields.length - optional.size + 1);
+    expect(validateDraft({ ...complete, province: '   ', consent: false }, '2026-10-10')).toEqual({ province: A.required, consent: A.consentRequired });
     expect(hasDraft(emptyDraft())).toBe(false);
     expect(hasDraft(complete)).toBe(true);
+  });
+  it('builds the ws request from the draft', () => {
+    const now = new Date('2026-10-10T01:02:03Z');
+    expect(toRegisterBody({ ...complete, fullName: '  QA farmer ' }, now)).toEqual({
+      fullName: 'QA farmer', birthDate: '1980-05-01', phone: undefined,
+      address: { line1: 'Purok 3', line2: '', barangay: 'Test barangay', city: 'Test town', province: 'Test province', postalCode: '' },
+      consentAt: '2026-10-10T01:02:03.000Z',
+    });
   });
 });
 
@@ -102,7 +128,11 @@ describe('admin pages and backend boundaries', () => {
     const html = renderToStaticMarkup(<AdminApp />);
     expect(html).not.toMatch(/Carla|Elena|Juan Dela|UG-001|18 or older|Simulate/);
     expect(html).not.toContain('figma.com/api/mcp/asset');
-    expect(html).not.toMatch(/UI preview|Front.?end only|admin-preview-/i);
+    if (page !== 'login') {
+      expect(html).toContain(A.logout);
+      expect(html).toContain(A.checking);
+      expect(html).not.toMatch(/UI preview|Frontend only/);
+    }
   });
   it('falls back to login for unknown fragments', () => {
     expect(adminPage('#admin-main')).toBe('login');
@@ -124,14 +154,22 @@ describe('admin pages and backend boundaries', () => {
     expect(A.confirm).toBe('Confirm and save');
     expect(A.discardTitle).toBe('Discard this draft?');
     expect(A.helpSteps[0]).toBe('Choose manual entry or ID scan and ask for the user’s consent.');
+    expect(A.qrPolicy).toBe('Single-use · Valid for 24 hours');
   });
-  it('never presents a fake QR or enables access mutations', () => {
-    const html = renderToStaticMarkup(<QrInvitation />);
+  it('never presents a sample QR: a pending user without an invitation can only generate one', () => {
+    const html = renderToStaticMarkup(<QrInvitation user={savedUser} />);
     expect(html).toContain(A.qrUnavailable);
-    expect(html).not.toMatch(/<canvas|data:image|14:46|Simulate/);
-    for (const action of [A.generateQr, A.regenerateQr, A.downloadQr]) {
-      expect(button(QrInvitation(), action).props.disabled).toBe(true);
-    }
+    expect(html).not.toMatch(/<canvas|data:image|Simulate/);
+    hooks.index = 0;
+    const view = QrInvitation({ user: savedUser });
+    expect(button(view, A.generateQr).props.disabled).toBe(false);
+    expect(() => button(view, A.regenerateQr)).toThrow();
+  });
+  it('does not offer an invitation to a revoked user', () => {
+    hooks.index = 0;
+    const view = QrInvitation({ user: { ...savedUser, status: 'revoked' } });
+    expect(button(view, A.generateQr).props.disabled).toBe(true);
+    expect(renderToStaticMarkup(view)).toContain(A.qrNotPending);
   });
   it('uses native dialog cancellation with a labelled heading', () => {
     const close = vi.fn();
@@ -161,10 +199,6 @@ describe('registration draft interactions', () => {
     fillDraft();
     expect(wizard().props.drawer).toBe('right');
     submitReview();
-    expect(wizard().props.drawer).toBe('right');
-    button(wizard(), A.previewRecord).props.onClick();
-    expect(wizard().props.drawer).toBe('right');
-    find(wizard(), (element) => typeof element.props.onQr === 'function').props.onQr();
     expect(wizard().props.drawer).toBe('right');
     wizard().props.onClose();
     expect(wizard().props.drawer).toBe('right');
@@ -211,7 +245,8 @@ describe('registration draft interactions', () => {
     manual.props.onClick();
     const view = wizard();
     expect(find(view, (element) => element.props.id === 'registration-consent').props.checked).toBe(false);
-    expect(find(view, (element) => element.props.id === 'registration-age').props.min).toBe(0);
+    expect(find(view, (element) => element.props.id === 'registration-birthDate').props.type).toBe('date');
+    expect(find(view, (element) => element.props.id === 'registration-phone').props.required).toBe(false);
     for (const { key } of fields) expect(find(view, (element) => element.props.id === 'registration-' + key).props.value).toBe('');
   });
   it('blocks review until fields and consent are valid', () => {
@@ -222,24 +257,41 @@ describe('registration draft interactions', () => {
     expect(html).toContain('role="alert"');
     expect(html).not.toContain(A.confirm);
   });
-  it('reviews an under-18 draft, preserves edits, and cannot save it', () => {
+  it('reviews a draft and preserves edits before saving', () => {
     fillDraft(); submitReview();
     expect(renderToStaticMarkup(wizard())).toContain(complete.fullName);
-    expect(button(wizard(), A.confirm).props.disabled).toBe(true);
     button(wizard(), A.edit).props.onClick();
-    expect(find(wizard(), (element) => element.props.id === 'registration-age').props.value).toBe('15');
+    expect(find(wizard(), (element) => element.props.id === 'registration-birthDate').props.value).toBe(complete.birthDate);
     expect(find(wizard(), (element) => element.props.id === 'registration-consent').props.checked).toBe(true);
+    expect(api.registerUser).not.toHaveBeenCalled();
   });
-  it('opens record and QR previews using only the entered draft', () => {
+  it('saves through ws, then shows the saved record and its QR step', async () => {
+    api.registerUser.mockResolvedValue(savedUser);
+    const success = vi.spyOn(sileo, 'success');
     fillDraft(); submitReview();
-    button(wizard(), A.previewRecord).props.onClick();
-    expect(renderToStaticMarkup(wizard())).toContain(A.recordPreviewNotice);
-    expect(renderToStaticMarkup(wizard())).toContain(complete.fullName);
-    // DraftRecord is a child component; invoke its explicit preview action.
-    const record = find(wizard(), (element) => typeof element.props.onQr === 'function');
-    record.props.onQr();
+    await button(wizard(), A.confirm).props.onClick();
+    expect(api.registerUser).toHaveBeenCalledWith(expect.objectContaining({ fullName: 'QA farmer', birthDate: '1980-05-01' }));
+    const html = renderToStaticMarkup(wizard());
+    expect(html).toContain(A.savedNotice);
+    expect(html).toContain('u-1');
+    expect(success).toHaveBeenCalledWith(expect.objectContaining({ title: A.savedTitle }));
+    button(wizard(), A.openQr).props.onClick();
     expect(renderToStaticMarkup(wizard())).toContain(A.qrUnavailable);
-    expect(renderToStaticMarkup(wizard())).not.toContain('UG-001');
+    // A saved record has no draft left to discard.
+    wizard().props.onClose();
+    expect(onClose).toHaveBeenCalledOnce();
+    success.mockRestore();
+    sileo.clear();
+  });
+  it('keeps the draft and explains a duplicate or rejected record', async () => {
+    api.registerUser.mockRejectedValue(new WsApiError(409, 'user already registered'));
+    fillDraft(); submitReview();
+    await button(wizard(), A.confirm).props.onClick();
+    expect(renderToStaticMarkup(wizard())).toContain(A.duplicate);
+    api.registerUser.mockRejectedValue(new WsApiError(400, 'user must be at least 18 years old'));
+    await button(wizard(), A.confirm).props.onClick();
+    expect(renderToStaticMarkup(wizard())).toContain('User must be at least 18 years old.');
+    expect(renderToStaticMarkup(wizard())).toContain(complete.fullName);
   });
   it('requires explicit discard and preserves the draft when cancelled', () => {
     fillDraft();

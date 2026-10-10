@@ -132,6 +132,18 @@ func (h *RegistrationHandler) ListUsers(w http.ResponseWriter, r *http.Request) 
 	response.JSON(w, http.StatusOK, out)
 }
 
+// UserStats returns the counts for the staff overview.
+func (h *RegistrationHandler) UserStats(w http.ResponseWriter, r *http.Request) {
+	st, err := h.svc.UserStats(r.Context())
+	if err != nil {
+		writeRegError(w, err)
+		return
+	}
+	response.JSON(w, http.StatusOK, map[string]int{
+		"total": st.Total, "active": st.Active, "pending": st.Pending, "revoked": st.Revoked, "today": st.Today,
+	})
+}
+
 func (h *RegistrationHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	u, err := h.svc.GetUser(r.Context(), r.PathValue("id"))
 	if err != nil {

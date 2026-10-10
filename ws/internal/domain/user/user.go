@@ -52,7 +52,7 @@ type User struct {
 	address      Address
 	phone        string
 	idNumberHash string // SHA-256 hex of normalized government ID; empty if none
-	deviceID      string // set on QR claim
+	deviceID     string // set on QR claim
 	consentAt    *time.Time
 	createdAt    time.Time
 	updatedAt    time.Time
@@ -130,7 +130,7 @@ func Reconstruct(
 		address:      address,
 		phone:        phone,
 		idNumberHash: idNumberHash,
-		deviceID:      deviceID,
+		deviceID:     deviceID,
 		consentAt:    consentAt,
 		createdAt:    createdAt,
 		updatedAt:    updatedAt,
@@ -176,27 +176,36 @@ func (u *User) MarkClaimed(deviceID string) error {
 	return nil
 }
 
-func (u *User) ID() string              { return u.id }
-func (u *User) Role() Role              { return u.role }
-func (u *User) Status() Status          { return u.status }
-func (u *User) Email() string           { return u.email }
-func (u *User) PasswordHash() string    { return u.passwordHash }
-func (u *User) FullName() string        { return u.fullName }
-func (u *User) BirthDate() time.Time    { return u.birthDate }
-func (u *User) Address() Address        { return u.address }
-func (u *User) Phone() string           { return u.phone }
-func (u *User) IDNumberHash() string    { return u.idNumberHash }
-func (u *User) DeviceID() string        { return u.deviceID }
-func (u *User) ConsentAt() *time.Time   { return u.consentAt }
-func (u *User) CreatedAt() time.Time    { return u.createdAt }
-func (u *User) UpdatedAt() time.Time    { return u.updatedAt }
-func (u *User) Age() int                { return ageYears(u.birthDate, time.Now().UTC()) }
+func (u *User) ID() string            { return u.id }
+func (u *User) Role() Role            { return u.role }
+func (u *User) Status() Status        { return u.status }
+func (u *User) Email() string         { return u.email }
+func (u *User) PasswordHash() string  { return u.passwordHash }
+func (u *User) FullName() string      { return u.fullName }
+func (u *User) BirthDate() time.Time  { return u.birthDate }
+func (u *User) Address() Address      { return u.address }
+func (u *User) Phone() string         { return u.phone }
+func (u *User) IDNumberHash() string  { return u.idNumberHash }
+func (u *User) DeviceID() string      { return u.deviceID }
+func (u *User) ConsentAt() *time.Time { return u.consentAt }
+func (u *User) CreatedAt() time.Time  { return u.createdAt }
+func (u *User) UpdatedAt() time.Time  { return u.updatedAt }
+func (u *User) Age() int              { return ageYears(u.birthDate, time.Now().UTC()) }
 
 type ListFilter struct {
 	Query  string
 	Role   Role
 	Status Status
 	Limit  int
+}
+
+// Stats are the counts the staff overview shows. Today is the Philippine calendar day.
+type Stats struct {
+	Total   int
+	Active  int
+	Pending int
+	Revoked int
+	Today   int
 }
 
 type Repository interface {
@@ -207,4 +216,5 @@ type Repository interface {
 	FindByIDNumberHash(ctx context.Context, hash string) (*User, error)
 	FindByDeviceID(ctx context.Context, deviceID string) (*User, error)
 	List(ctx context.Context, filter ListFilter) ([]*User, error)
+	Stats(ctx context.Context) (Stats, error)
 }

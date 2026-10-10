@@ -44,6 +44,17 @@ describe('the phone hybrid matcher, as on the hub', () => {
     expect([...unsupported.ids].sort()).toEqual(['holes', 'yellowing']);
   });
 
+  it('matches nothing on vague words alone, instead of letting Laya pick an unrelated problem', async () => {
+    // Regression: "dilaw ang dahon" (yellow leaves) came back as armyworm. Here no note has a keyword for it.
+    const none = [entry('holes', ['holes', 'butas'])];
+    const laya = vi.fn(async () => ({ ids: ['armyworm'], clear: true }));
+    const withGemma = await matchOnPhone('dilaw ang dahon', 'any', { knowledge: none, describe: async () => 'Yellow leaves.', laya });
+    expect(withGemma).toMatchObject({ ids: [], clear: false, english: 'Yellow leaves.' });
+    const withoutGemma = await matchOnPhone('dilaw ang dahon', 'any', { knowledge: none, laya });
+    expect(withoutGemma).toMatchObject({ ids: [], clear: false });
+    expect(laya).not.toHaveBeenCalled();
+  });
+
   it('falls back to keyword candidates when Laya fails', async () => {
     const outcome = await matchOnPhone('dilaw at butas', 'any', {
       knowledge,

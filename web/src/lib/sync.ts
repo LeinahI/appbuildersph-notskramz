@@ -86,6 +86,8 @@ export interface HubCapabilities {
   /** The hub serves the Android app's native model (gemma-4-E2B-it.litertlm). */
   phoneLitert: boolean;
   layaThreshold: number | null;
+  /** The hub answers with its AI (Gemma), not with the matched notes only. */
+  explainer: boolean;
 }
 
 export async function hubCapabilities(hubUrl: string): Promise<HubCapabilities | null> {
@@ -94,6 +96,9 @@ export async function hubCapabilities(hubUrl: string): Promise<HubCapabilities |
     const res = await fetch(`${hubUrl}/health`, { signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
     if (!res.ok) return null;
     const info = (await res.json()) as {
+      ok?: boolean;
+      matcher?: string;
+      explainer?: string;
       vision?: string;
       voice?: string;
       phoneModel?: string;
@@ -101,8 +106,11 @@ export async function hubCapabilities(hubUrl: string): Promise<HubCapabilities |
       phoneLitert?: string;
       layaThreshold?: number;
     };
+    // Only an Ugatan hub: another service on the same address (a router page) is not a hub.
+    if (info.ok !== true || typeof info.matcher !== 'string') return null;
     const threshold = typeof info.layaThreshold === 'number' ? info.layaThreshold : null;
     return {
+      explainer: typeof info.explainer === 'string' && info.explainer !== 'off',
       vision: info.vision === 'on',
       voice: info.voice === 'on',
       phoneModel: info.phoneModel === 'on',

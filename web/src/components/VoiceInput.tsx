@@ -5,14 +5,17 @@ import {
   canUseBrowserSpeech,
   speechLangCandidates,
   startBrowserSpeech,
+  type BrowserSpeechError,
   type BrowserSpeechHandle,
+  type SpeechSessionOptions,
 } from '../lib/browser-speech';
+import { canUseNativeSpeech, startNativeSpeech } from '../lib/native-speech';
 import { hubCapabilities, transcribeOnHub } from '../lib/sync';
 import { canRecord, startRecorder, type Recorder } from '../lib/recorder';
 import { VoiceOverlay } from './VoiceOverlay';
 
 type Mode = 'idle' | 'recording' | 'working';
-type Path = 'hub' | 'browser' | null;
+type Path = 'hub' | 'browser' | 'native' | null;
 
 interface VoiceInputProps {
   labels: Labels;
@@ -28,24 +31,30 @@ interface VoiceInputProps {
 
 /**
  * Mic button for the composer. Speaks the question into the text box; the farmer checks the words before sending.
+ * Listening ends by itself when the farmer stops talking.
  *
- * Browser/PWA: Web Speech API (needs internet in Chrome). Capacitor native (or browser without SpeechRecognition):
- * phone records and the hub writes it down when hub voice is on.
+ * Android app: the phone's own speech recognizer (fast, words appear as they speak). Browser/PWA: Web Speech API
+ * (needs internet in Chrome). When neither works — no recognizer, or no internet — the phone records and the hub
+ * writes it down, when hub voice is on.
  */
 export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice, labeled = false, labelClass = '' }: VoiceInputProps) {
   const [mode, setMode] = useState<Mode>('idle');
   const [hubVoice, setHubVoice] = useState(false);
   const [path, setPath] = useState<Path>(null);
   const [liveText, setLiveText] = useState('');
+  const [speaking, setSpeaking] = useState(false);
   const recorder = useRef<Recorder | null>(null);
-  const browserSpeech = useRef<BrowserSpeechHandle | null>(null);
-  const browserSession = useRef(0);
+  const speech = useRef<BrowserSpeechHandle | null>(null);
+  const speechSession = useRef(0);
   const pathRef = useRef<Path>(null);
   const modeRef = useRef<Mode>('idle');
   const transcriptCallback = useRef(onTranscript);
   transcriptCallback.current = onTranscript;
   const noticeCallback = useRef(onNotice);
   noticeCallback.current = onNotice;
+  /** Mic level for the overlay's meter, written many times a second without re-rendering. */
+  const level = useRef(0);
+  const nativeSpeech = useRef(false);
 
   function setModeBoth(next: Mode) {
     modeRef.current = next;
@@ -68,14 +77,22 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice, l
   }, [hubUrl]);
 
   useEffect(() => {
+    // Ask once up front, so the tap starts listening at once.
+    void canUseNativeSpeech().then((ok) => {
+      nativeSpeech.current = ok;
+    });
+  }, []);
+
+  useEffect(() => {
     setModeBoth('idle');
     setPathBoth(null);
     setLiveText('');
     return () => {
       recorder.current?.cancel();
       recorder.current = null;
-      browserSpeech.current?.abort();
-      browserSpeech.current = null;
+      speechSession.current += 1;
+      speech.current?.abort();
+      speech.current = null;
     };
   }, [language]);
 
@@ -83,6 +100,8 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice, l
     setModeBoth('idle');
     setPathBoth(null);
     setLiveText('');
+    setSpeaking(false);
+    level.current = 0;
   }
 
   async function finishHubRecording() {
@@ -92,21 +111,22 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice, l
     try {
       const audio = await active.stop();
       if (audio === null) {
-        onNotice(labels.voiceEmpty);
+        noticeCallback.current(labels.voiceEmpty);
         closeOverlay();
         return;
       }
       setModeBoth('working');
-      onNotice(labels.voiceWorking);
+      level.current = 0;
+      noticeCallback.current(labels.voiceWorking);
       const result = await transcribeOnHub(hubUrl, audio);
       if (result.status === 'ok' && result.text) {
         transcriptCallback.current(result.text);
-        onNotice('');
+        noticeCallback.current('');
       } else {
-        onNotice(result.status === 'empty' ? labels.voiceEmpty : labels.voiceFailed);
+        noticeCallback.current(result.status === 'empty' ? labels.voiceEmpty : labels.voiceFailed);
       }
     } catch {
-      onNotice(labels.voiceFailed);
+      noticeCallback.current(labels.voiceFailed);
     } finally {
       closeOverlay();
     }
@@ -116,53 +136,80 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice, l
     try {
       setPathBoth('hub');
       setModeBoth('recording');
-      onNotice('');
+      setLiveText('');
+      noticeCallback.current('');
       recorder.current = await startRecorder(
         () => void finishHubRecording(),
         () => void finishHubRecording(),
+        (value) => {
+          level.current = value;
+        },
       );
     } catch {
       closeOverlay();
-      onNotice(labels.voiceDenied);
+      noticeCallback.current(labels.voiceDenied);
     }
   }
 
-  function startBrowserPath() {
-    const session = ++browserSession.current;
-    setPathBoth('browser');
+  /** Listening through the phone's recognizer or the browser's; both report the same way. */
+  function startSpeechPath(kind: 'browser' | 'native') {
+    const session = ++speechSession.current;
+    const current = () => speechSession.current === session;
+    let failure: BrowserSpeechError | null = null;
+    setPathBoth(kind);
     setModeBoth('recording');
     setLiveText('');
-    onNotice('');
+    setSpeaking(false);
+    level.current = 0;
+    noticeCallback.current('');
 
-    browserSpeech.current = startBrowserSpeech({
+    const options: SpeechSessionOptions = {
       lang: speechLangCandidates(language),
       onInterim: (text) => {
-        if (browserSession.current !== session) return;
-        setLiveText(text);
+        if (current()) setLiveText(text);
+      },
+      onSpeaking: (value) => {
+        if (current()) setSpeaking(value);
+      },
+      onLevel: (value) => {
+        if (current()) level.current = value;
       },
       onFinal: (text) => {
-        if (browserSession.current !== session) return;
+        if (!current()) return;
         transcriptCallback.current(text);
         noticeCallback.current('');
       },
-      onError: (kind) => {
-        if (browserSession.current !== session) return;
-        const message =
-          kind === 'denied' ? labels.voiceDenied : kind === 'empty' ? labels.voiceEmpty : labels.voiceFailed;
-        noticeCallback.current(message);
+      onError: (error) => {
+        if (!current()) return;
+        failure = error;
+        if (error !== 'offline') {
+          const message = error === 'denied' ? labels.voiceDenied : error === 'empty' ? labels.voiceEmpty : labels.voiceFailed;
+          noticeCallback.current(message);
+        }
       },
       onEnd: () => {
-        if (browserSession.current !== session) return;
-        browserSpeech.current = null;
+        if (!current()) return;
+        speech.current = null;
         closeOverlay();
+        // No internet (or no language pack): let the hub write it down instead, when it can.
+        if (failure === 'offline') void fallBackToHub();
       },
-    });
+    };
+    speech.current = kind === 'native' ? startNativeSpeech(options) : startBrowserSpeech(options);
+  }
+
+  async function fallBackToHub() {
+    if ((await probeHubVoice()) && canRecord() && modeRef.current === 'idle') {
+      void startHubRecording();
+      return;
+    }
+    noticeCallback.current(labels.voiceOffline);
   }
 
   function stopCurrent() {
     // Prefer the live handle over React state — state can lag one frame behind the overlay button.
-    if (browserSpeech.current || pathRef.current === 'browser') {
-      browserSpeech.current?.stop();
+    if (speech.current) {
+      speech.current.stop();
       return;
     }
     if (pathRef.current === 'hub' && modeRef.current === 'recording') {
@@ -171,10 +218,10 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice, l
   }
 
   function dismissCurrent() {
-    if (browserSpeech.current || pathRef.current === 'browser') {
-      browserSession.current += 1;
-      browserSpeech.current?.abort();
-      browserSpeech.current = null;
+    if (speech.current || pathRef.current === 'browser' || pathRef.current === 'native') {
+      speechSession.current += 1;
+      speech.current?.abort();
+      speech.current = null;
       closeOverlay();
       onNotice('');
       return;
@@ -203,9 +250,16 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice, l
 
     const native = Capacitor.isNativePlatform();
 
-    // Browser STT does not need the hub — start immediately (no await) so speech is not missed.
-    if (!native && canUseBrowserSpeech()) {
-      startBrowserPath();
+    // Start at once (no await when it can be helped) so the first word is not missed.
+    if (native && (nativeSpeech.current || (await canUseNativeSpeech()))) {
+      if (modeRef.current !== 'idle') return;
+      nativeSpeech.current = true;
+      startSpeechPath('native');
+      return;
+    }
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    if (!native && canUseBrowserSpeech() && !(offline && hubVoice)) {
+      startSpeechPath('browser');
       return;
     }
 
@@ -235,7 +289,7 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice, l
     <>
       <button
         type='button'
-        className={`${labeled ? 'chat-action-button' : 'chat-icon-button'} ${listening ? 'animate-pulse bg-leaf text-white' : ''} ${working ? 'opacity-50' : ''}`}
+        className={`${labeled ? 'chat-action-button' : 'chat-icon-button'} ${listening ? 'bg-leaf text-white' : ''} ${working ? 'opacity-50' : ''}`}
         onClick={() => void onClick()}
         disabled={working}
         aria-label={working ? workingLabel : listening ? labels.voiceStop : labels.voiceStart}
@@ -261,6 +315,8 @@ export function VoiceInput({ labels, language, hubUrl, onTranscript, onNotice, l
         phase={working ? 'working' : 'listening'}
         workingLabel={workingLabel}
         liveText={liveText}
+        speaking={speaking}
+        level={level}
         onStop={stopCurrent}
         onDismiss={dismissCurrent}
       />

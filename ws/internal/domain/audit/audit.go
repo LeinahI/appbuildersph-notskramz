@@ -62,12 +62,12 @@ func Reconstruct(id, eventType, actorID, subjectID string, metadata json.RawMess
 	}
 }
 
-func (e *Event) ID() string                 { return e.id }
-func (e *Event) EventType() string          { return e.eventType }
-func (e *Event) ActorID() string            { return e.actorID }
-func (e *Event) SubjectID() string          { return e.subjectID }
-func (e *Event) Metadata() json.RawMessage  { return e.metadata }
-func (e *Event) CreatedAt() time.Time       { return e.createdAt }
+func (e *Event) ID() string                { return e.id }
+func (e *Event) EventType() string         { return e.eventType }
+func (e *Event) ActorID() string           { return e.actorID }
+func (e *Event) SubjectID() string         { return e.subjectID }
+func (e *Event) Metadata() json.RawMessage { return e.metadata }
+func (e *Event) CreatedAt() time.Time      { return e.createdAt }
 
 type ListFilter struct {
 	Limit int

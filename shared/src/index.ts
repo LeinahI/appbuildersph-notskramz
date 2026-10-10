@@ -52,7 +52,7 @@ export {
   type PromptOptions,
 } from './prompt.js';
 export { CROP_NAME, LAST_RESORT, STAGE_NAME, insectFacts, type InsectFacts } from './insect.js';
-export { normalize, matchKeywords, keywordHits } from './keyword.js';
+export { normalize, matchKeywords, keywordHits, onlyVagueSigns } from './keyword.js';
 export { cropOfChat, detectCrop } from './crop.js';
 export { PESTICIDE_NAMES, findViolations, isSafeText, type GuardViolation } from './guard.js';
 export {
@@ -72,6 +72,7 @@ export {
   carriesNotice,
   dropEchoQuestions,
   dropRepeatedQuestions,
+  dropRepeatedSteps,
   fitPlantPart,
   fixedReply,
   isAboutLastAnswer,
