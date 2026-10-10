@@ -13,6 +13,10 @@ import { createHubServer } from '../src/server';
 const apk = join(mkdtempSync(join(tmpdir(), 'ugatan-apk-')), 'app-debug.apk');
 writeFileSync(apk, Buffer.alloc(2_000_000, 1));
 
+async function waitFor(pred: () => boolean): Promise<void> {
+  for (let i = 0; i < 20 && !pred(); i++) await new Promise((r) => setTimeout(r, 10));
+}
+
 function start(apkFile: string | null): Promise<{ server: Server; base: string }> {
   const server = createHubServer({
     matcher: createKeywordMatcher([]),
@@ -66,6 +70,38 @@ describe('setting up a phone from the hub', () => {
     expect(await (await fetch(`${without.base}/app`)).text()).toContain('Wala pang app');
     expect((await fetch(`${without.base}${APK_PATH}`)).status).toBe(404);
     expect((await (await fetch(`${without.base}/health`)).json()).app).toBe('off');
+  });
+
+  it('notifies when an APK download finishes, not on HEAD or a later range', async () => {
+    const file = join(mkdtempSync(join(tmpdir(), 'ugatan-apk-notify-')), 'app-debug.apk');
+    writeFileSync(file, Buffer.alloc(64, 1));
+    let n = 0;
+    const server = createHubServer({
+      matcher: createKeywordMatcher([]),
+      explainer: offExplainer,
+      knowledge: [],
+      logger: silentLogger,
+      apkFile: file,
+      onApkDownloaded: () => {
+        n += 1;
+      },
+      info: { matcher: 'keyword', explainer: 'off', vision: 'off', voice: 'off', phoneModel: 'off' },
+    });
+    const base = await new Promise<string>((resolve) => {
+      server.listen(0, '127.0.0.1', () => resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`));
+    });
+    try {
+      expect((await fetch(`${base}${APK_PATH}`, { method: 'HEAD' })).status).toBe(200);
+      expect(n).toBe(0);
+      expect((await fetch(`${base}${APK_PATH}`, { headers: { Range: 'bytes=10-20' } })).status).toBe(206);
+      expect(n).toBe(0);
+      const res = await fetch(`${base}${APK_PATH}`);
+      await res.arrayBuffer();
+      await waitFor(() => n === 1);
+      expect(n).toBe(1);
+    } finally {
+      await new Promise<void>((r) => server.close(() => r()));
+    }
   });
 
   it('lists the laptop hotspot address first and never loopback or link-local', () => {

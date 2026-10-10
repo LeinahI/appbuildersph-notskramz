@@ -1,9 +1,10 @@
+import { statSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { KnowledgeEntry } from '@ugatan/shared';
 import type { AudioTranscriber } from './explain/index.js';
 import { parseTranscribeRequest, transcribeSpeech } from './transcribe.js';
 import { APK_PATH, appPage, apkSizeMb, hubPage } from './app-page.js';
-import { LAYA_PREFIX, LITERT_PATH, MODEL_PREFIX, modelFile, sendModelFile } from './models.js';
+import { LAYA_PREFIX, LITERT_PATH, MODEL_PREFIX, byteRange, modelFile, sendModelFile } from './models.js';
 import { answerQuestion, MAX_BODY_BYTES, MAX_IMAGE_BODY_BYTES, parseAskRequest, type AnswerDeps } from './answer.js';
 
 export interface HubInfo {
@@ -38,6 +39,10 @@ export interface HubDeps extends AnswerDeps {
   apkFile?: string | null;
   /** The port the hub listens on, for the QR codes on its own page. */
   port?: number;
+  /** Registration API. A finished APK download POSTs /api/v1/invites/downloaded here. */
+  wsUrl?: string;
+  /** Test hook for a finished APK download. Production uses wsUrl. */
+  onApkDownloaded?: () => void;
 }
 
 function sendHtml(res: ServerResponse, html: string): void {
@@ -53,6 +58,24 @@ const CORS_HEADERS = {
   'access-control-allow-headers': 'content-type',
   'access-control-max-age': '600',
 };
+
+/** A full GET, or a range that starts at byte 0. Later range chunks and HEAD do not count. */
+function apkDownloadCounts(req: IncomingMessage, file: string): boolean {
+  if (req.method !== 'GET') return false;
+  const raw = req.headers.range;
+  const header = Array.isArray(raw) ? raw[0] : raw;
+  if (!header?.trim()) return true;
+  const range = byteRange(header, statSync(file).size);
+  return !range || range.start === 0;
+}
+
+function notifyApkDownloaded(deps: HubDeps): void {
+  deps.onApkDownloaded?.();
+  const base = deps.wsUrl?.replace(/\/+$/, '');
+  if (!base) return;
+  // The file is already on the phone. A missed status update must not fail the download.
+  void fetch(`${base}/api/v1/invites/downloaded`, { method: 'POST' }).catch(() => {});
+}
 
 function send(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { ...CORS_HEADERS, 'content-type': 'application/json; charset=utf-8' });
@@ -116,11 +139,17 @@ export function createHubServer(deps: HubDeps): Server {
     }
     if ((req.method === 'GET' || req.method === 'HEAD') && path === APK_PATH) {
       if (deps.apkFile && apkSizeMb(deps.apkFile) !== null) {
+        const count = apkDownloadCounts(req, deps.apkFile);
         sendModelFile(req, res, deps.apkFile, {
           ...CORS_HEADERS,
           'content-type': 'application/vnd.android.package-archive',
           'content-disposition': 'attachment; filename="Ugatan.apk"',
         });
+        if (count) {
+          res.on('close', () => {
+            if (res.writableFinished) notifyApkDownloaded(deps);
+          });
+        }
       } else {
         send(res, 404, { error: 'The app has not been built on this hub.' });
       }

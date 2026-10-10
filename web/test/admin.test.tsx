@@ -24,7 +24,7 @@ vi.mock('react', async (importOriginal) => ({
   },
 }));
 
-const complete = { fullName: 'QA farmer', age: '15', barangay: 'Test barangay', municipality: 'Test town', province: 'Test province', consent: true };
+const complete = { fullName: 'QA farmer', age: '23', barangay: 'Test barangay', municipality: 'Test town', province: 'Test province', consent: true };
 const onClose = vi.fn();
 function wizard() { hooks.index = 0; return RegistrationDialog({ onClose }); }
 function find(node: ReactNode, matches: (element: ReactElement) => boolean): ReactElement {
@@ -56,9 +56,12 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe('registration validation without an age cutoff', () => {
-  it.each(['0', '12', '15', '17', '18', '75'])('accepts age %s with complete details and consent', (age) => {
+describe('registration validation with age 18+', () => {
+  it.each(['18', '23', '75'])('accepts age %s with complete details and consent', (age) => {
     expect(validateDraft({ ...complete, age })).toEqual({});
+  });
+  it.each(['0', '12', '15', '17'])('rejects underage %s', (age) => {
+    expect(validateDraft({ ...complete, age }).age).toBe(A.ageUnderage);
   });
   it.each(['-1', '1.5', 'not a number', 'Infinity'])('rejects invalid numeric age %s', (age) => {
     expect(validateDraft({ ...complete, age }).age).toBe(A.ageInvalid);
@@ -68,6 +71,16 @@ describe('registration validation without an age cutoff', () => {
     expect(validateDraft({ ...complete, province: '   ', consent: false })).toEqual({ province: A.required, consent: A.consentRequired });
     expect(hasDraft(emptyDraft())).toBe(false);
     expect(hasDraft(complete)).toBe(true);
+  });
+  it('maps draft age to RegisterBody birthDate and address', async () => {
+    const { draftToRegisterBody } = await import('../src/admin/registration');
+    const body = draftToRegisterBody(complete, new Date(Date.UTC(2026, 9, 10)));
+    expect(body.birthDate).toBe('2003-01-01');
+    expect(body.address.line1).toBe('Test barangay');
+    expect(body.address.city).toBe('Test town');
+    expect(body.address.province).toBe('Test province');
+    expect(body.fullName).toBe('QA farmer');
+    expect(body.consentAt).toBeTruthy();
   });
 });
 
@@ -131,7 +144,8 @@ describe('admin pages and backend boundaries', () => {
     const html = renderToStaticMarkup(<QrInvitation />);
     expect(html).toContain(A.qrUnavailable);
     expect(html).not.toMatch(/<canvas|data:image|14:46|Simulate/);
-    for (const action of [A.generateQr, A.regenerateQr, A.downloadQr]) {
+    expect(html).not.toContain('Regenerate QR');
+    for (const action of [A.generateQr, A.downloadQr]) {
       expect(button(QrInvitation(), action).props.disabled).toBe(true);
     }
   });
@@ -213,7 +227,7 @@ describe('registration draft interactions', () => {
     manual.props.onClick();
     const view = wizard();
     expect(find(view, (element) => element.props.id === 'registration-consent').props.checked).toBe(false);
-    expect(find(view, (element) => element.props.id === 'registration-age').props.min).toBe(0);
+    expect(find(view, (element) => element.props.id === 'registration-age').props.min).toBe(18);
     for (const { key } of fields) expect(find(view, (element) => element.props.id === 'registration-' + key).props.value).toBe('');
   });
   it('blocks review until fields and consent are valid', () => {
@@ -224,20 +238,22 @@ describe('registration draft interactions', () => {
     expect(html).toContain('role="alert"');
     expect(html).not.toContain(A.confirm);
   });
-  it('reviews an under-18 draft, preserves edits, and cannot save it', () => {
-    fillDraft(); submitReview();
-    expect(renderToStaticMarkup(wizard())).toContain(complete.fullName);
-    expect(button(wizard(), A.confirm).props.disabled).toBe(true);
-    button(wizard(), A.edit).props.onClick();
+  it('rejects under-18 before review and keeps the draft editable', () => {
+    fillDraft();
+    find(wizard(), (element) => element.props.id === 'registration-age').props.onChange({ target: { value: '15' } });
+    submitReview();
+    expect(renderToStaticMarkup(wizard())).toContain(A.ageUnderage);
+    expect(renderToStaticMarkup(wizard())).not.toContain(A.confirm);
     expect(find(wizard(), (element) => element.props.id === 'registration-age').props.value).toBe('15');
-    expect(find(wizard(), (element) => element.props.id === 'registration-consent').props.checked).toBe(true);
   });
-  it('opens record and QR previews using only the entered draft', () => {
-    fillDraft(); submitReview();
+  it('reviews a valid draft with confirm enabled and opens draft QR preview', () => {
+    fillDraft();
+    submitReview();
+    expect(renderToStaticMarkup(wizard())).toContain(complete.fullName);
+    expect(button(wizard(), A.confirm).props.disabled).toBe(false);
     button(wizard(), A.previewRecord).props.onClick();
     expect(renderToStaticMarkup(wizard())).toContain(A.recordPreviewNotice);
     expect(renderToStaticMarkup(wizard())).toContain(complete.fullName);
-    // DraftRecord is a child component; invoke its explicit preview action.
     const record = find(wizard(), (element) => typeof element.props.onQr === 'function');
     record.props.onQr();
     expect(renderToStaticMarkup(wizard())).toContain(A.qrUnavailable);

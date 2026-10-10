@@ -28,13 +28,13 @@ func (r *UserRepository) Save(ctx context.Context, u *user.User) error {
 	}
 	const q = `
 		INSERT INTO users (
-			id, role, status, email, password_hash,
+			id, role, status,
 			full_name_enc, birth_date_enc, address_enc, phone_enc,
 			id_number_hash, device_id, consent_at, created_at, updated_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
 	`
 	_, err = r.db.ExecContext(ctx, q,
-		u.ID(), string(u.Role()), string(u.Status()), u.Email(), u.PasswordHash(),
+		u.ID(), string(u.Role()), string(u.Status()),
 		nameEnc, birthEnc, addrEnc, phoneEnc,
 		u.IDNumberHash(), u.DeviceID(), nullTime(u.ConsentAt()), u.CreatedAt(), u.UpdatedAt(),
 	)
@@ -51,13 +51,13 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 	}
 	const q = `
 		UPDATE users SET
-			role=$2, status=$3, email=$4, password_hash=$5,
-			full_name_enc=$6, birth_date_enc=$7, address_enc=$8, phone_enc=$9,
-			id_number_hash=$10, device_id=$11, consent_at=$12, updated_at=$13
+			role=$2, status=$3,
+			full_name_enc=$4, birth_date_enc=$5, address_enc=$6, phone_enc=$7,
+			id_number_hash=$8, device_id=$9, consent_at=$10, updated_at=$11
 		WHERE id=$1
 	`
 	res, err := r.db.ExecContext(ctx, q,
-		u.ID(), string(u.Role()), string(u.Status()), u.Email(), u.PasswordHash(),
+		u.ID(), string(u.Role()), string(u.Status()),
 		nameEnc, birthEnc, addrEnc, phoneEnc,
 		u.IDNumberHash(), u.DeviceID(), nullTime(u.ConsentAt()), u.UpdatedAt(),
 	)
@@ -73,10 +73,6 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 
 func (r *UserRepository) FindByID(ctx context.Context, id string) (*user.User, error) {
 	return r.scanOne(ctx, `SELECT `+userColumns+` FROM users WHERE id=$1`, id)
-}
-
-func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*user.User, error) {
-	return r.scanOne(ctx, `SELECT `+userColumns+` FROM users WHERE email=$1`, strings.ToLower(strings.TrimSpace(email)))
 }
 
 func (r *UserRepository) FindByIDNumberHash(ctx context.Context, hash string) (*user.User, error) {
@@ -123,7 +119,7 @@ func (r *UserRepository) List(ctx context.Context, filter user.ListFilter) ([]*u
 	return out, rows.Err()
 }
 
-const userColumns = `id, role, status, email, password_hash, full_name_enc, birth_date_enc, address_enc, phone_enc, id_number_hash, device_id, consent_at, created_at, updated_at`
+const userColumns = `id, role, status, full_name_enc, birth_date_enc, address_enc, phone_enc, id_number_hash, device_id, consent_at, created_at, updated_at`
 
 func (r *UserRepository) encryptPII(u *user.User) (nameEnc, birthEnc, addrEnc, phoneEnc string, err error) {
 	nameEnc, err = r.box.Encrypt(u.FullName())
@@ -159,13 +155,13 @@ func (r *UserRepository) scanOne(ctx context.Context, q string, arg any) (*user.
 
 func (r *UserRepository) scanRow(row scannable) (*user.User, error) {
 	var (
-		id, role, status, email, passHash string
+		id, role, status                     string
 		nameEnc, birthEnc, addrEnc, phoneEnc string
-		idHash, deviceID string
-		consent sql.NullTime
-		created, updated time.Time
+		idHash, deviceID                     string
+		consent                              sql.NullTime
+		created, updated                     time.Time
 	)
-	if err := row.Scan(&id, &role, &status, &email, &passHash, &nameEnc, &birthEnc, &addrEnc, &phoneEnc, &idHash, &deviceID, &consent, &created, &updated); err != nil {
+	if err := row.Scan(&id, &role, &status, &nameEnc, &birthEnc, &addrEnc, &phoneEnc, &idHash, &deviceID, &consent, &created, &updated); err != nil {
 		return nil, err
 	}
 	name, err := r.box.Decrypt(nameEnc)
@@ -196,7 +192,7 @@ func (r *UserRepository) scanRow(row scannable) (*user.User, error) {
 		t := consent.Time.UTC()
 		consentPtr = &t
 	}
-	return user.Reconstruct(id, user.Role(role), user.Status(status), email, passHash, name, birth, addr, phone, idHash, deviceID, consentPtr, created.UTC(), updated.UTC()), nil
+	return user.Reconstruct(id, user.Role(role), user.Status(status), name, birth, addr, phone, idHash, deviceID, consentPtr, created.UTC(), updated.UTC()), nil
 }
 
 func nullTime(t *time.Time) any {

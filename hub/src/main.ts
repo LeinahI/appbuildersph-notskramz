@@ -105,6 +105,7 @@ async function main(): Promise<void> {
     transcriber,
     modelDir: config.gemmaModelDir,
     apkFile: config.apkFile,
+    wsUrl: process.env.WS_URL?.trim() || 'http://127.0.0.1:8080',
     litertFile: config.litertFile,
     port: config.port,
     // Laya goes to phones only with the team's threshold, so the phone never decides "sure" on a guess.

@@ -113,4 +113,6 @@ type Repository interface {
 	FindByID(ctx context.Context, id string) (*Invite, error)
 	FindByToken(ctx context.Context, token string) (*Invite, error)
 	FindActiveByUserID(ctx context.Context, userID string) (*Invite, error)
+	// FindNewestActive is the latest unconsumed, unrevoked, unexpired invite.
+	FindNewestActive(ctx context.Context) (*Invite, error)
 }

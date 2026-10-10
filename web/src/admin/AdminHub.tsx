@@ -1,4 +1,5 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { loadAdminToken } from '../config/ws';
 import { AdminApp, type AdminPage, pages as adminPages } from './AdminApp';
 import './admin.css';
 
@@ -12,6 +13,10 @@ export default function AdminHub() {
 
   if (raw && !PAGE_SET.has(raw)) {
     return <Navigate to="/admin/overview" replace />;
+  }
+
+  if (page !== 'login' && !loadAdminToken()) {
+    return <Navigate to="/admin/login" replace />;
   }
 
   return (

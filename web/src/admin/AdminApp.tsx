@@ -3,7 +3,7 @@ import { A } from './copy';
 import { DisplayPreferencesPanel } from '../components/DisplayPreferencesPanel';
 import { DisplayPreferencesIcon } from '../components/DisplayPreferencesIcon';
 import { loadAdminToken, saveAdminToken } from '../config/ws';
-import { login, WsApiError } from '../lib/ws-api';
+import { listUsers, login, WsApiError, type UserDTO } from '../lib/ws-api';
 import { AdminDialog, AdminIcon, type IconName } from './AdminDialog';
 import { RegistrationDialog } from './RegistrationDialog';
 
@@ -69,7 +69,54 @@ function Navigation({
   );
 }
 
-export function UserList({ qr = false }: { qr?: boolean }) {
+export function UserList({
+  qr = false,
+  refreshKey = 0,
+  onOpenUser,
+}: {
+  qr?: boolean;
+  refreshKey?: number;
+  onOpenUser?: (user: UserDTO) => void;
+}) {
+  const [users, setUsers] = useState<UserDTO[]>([]);
+  const [q, setQ] = useState('');
+  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const signedIn = !!loadAdminToken();
+
+  useEffect(() => {
+    if (!signedIn) {
+      setLoading(false);
+      setError(A.signInRequired);
+      setUsers([]);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setError('');
+    void listUsers()
+      .then((items) => {
+        if (!cancelled) setUsers(items);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof WsApiError ? err.message : A.loadUsersFailed);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn, refreshKey]);
+
+  const filtered = users.filter((u) => {
+    if (status && u.status !== status) return false;
+    const needle = q.trim().toLowerCase();
+    if (!needle) return true;
+    return u.fullName.toLowerCase().includes(needle) || u.id.toLowerCase().includes(needle);
+  });
+
   return (
     <section className='admin-panel' aria-labelledby='admin-list-heading'>
       <div className='admin-panel-heading'>
@@ -77,12 +124,15 @@ export function UserList({ qr = false }: { qr?: boolean }) {
         <div className='admin-filters'>
           <label className='admin-field flex-1'>
             {A.search}
-            <input type='search' disabled aria-describedby='admin-data-unavailable' />
+            <input type='search' value={q} onChange={(e) => setQ(e.target.value)} disabled={!signedIn} />
           </label>
           <label className='admin-field'>
             {A.filter}
-            <select disabled aria-describedby='admin-data-unavailable'>
-              <option>{A.allStatuses}</option>
+            <select value={status} onChange={(e) => setStatus(e.target.value)} disabled={!signedIn}>
+              <option value=''>{A.allStatuses}</option>
+              <option value='pending'>{A.pending}</option>
+              <option value='active'>Active</option>
+              <option value='revoked'>{A.revoked}</option>
             </select>
           </label>
         </div>
@@ -92,13 +142,46 @@ export function UserList({ qr = false }: { qr?: boolean }) {
         <span>{A.statusColumn}</span>
         <span>{A.registeredColumn}</span>
       </div>
-      <div className='admin-empty'>
-        <span className='admin-icon-tile'>
-          <AdminIcon name={qr ? 'qr' : 'users'} />
-        </span>
-        <h3>{A.noUsers}</h3>
-        <p id='admin-data-unavailable'>{A.unavailableList}</p>
-      </div>
+      {loading ? (
+        <div className='admin-empty'>
+          <p>{A.loadingUsers}</p>
+        </div>
+      ) : error ? (
+        <div className='admin-empty'>
+          <p id='admin-data-unavailable'>{error}</p>
+          {!signedIn ? (
+            <a className='btn' href='/admin/login'>
+              {A.login}
+            </a>
+          ) : null}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className='admin-empty'>
+          <span className='admin-icon-tile'>
+            <AdminIcon name={qr ? 'qr' : 'users'} />
+          </span>
+          <h3>{A.noUsers}</h3>
+          <p id='admin-data-unavailable'>{A.unavailableList}</p>
+        </div>
+      ) : (
+        <ul className='admin-user-rows'>
+          {filtered.map((u) => (
+            <li key={u.id}>
+              <button type='button' className='admin-user-row' onClick={() => onOpenUser?.(u)}>
+                <span>
+                  <strong>{u.fullName}</strong>
+                  <small>
+                    {u.address?.barangay}
+                    {u.address?.city ? `, ${u.address.city}` : ''}
+                  </small>
+                </span>
+                <span className='admin-status'>{u.status}</span>
+                <span>{new Date(u.createdAt).toLocaleDateString()}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <p className='admin-panel-footer'>
         <AdminIcon name='privacy' />
         {A.privacy}
@@ -281,6 +364,8 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
   );
   const page = pageProp ?? hashPage;
   const [dialog, setDialog] = useState<'registration' | 'menu' | 'help' | 'hub' | 'display' | null>(null);
+  const [listKey, setListKey] = useState(0);
+  const [openUser, setOpenUser] = useState<UserDTO | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -302,7 +387,14 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
     event?.preventDefault();
     onNavigate(id);
   };
-  const register = () => setDialog('registration');
+  const register = () => {
+    setOpenUser(null);
+    setDialog('registration');
+  };
+  const openExisting = (user: UserDTO) => {
+    setOpenUser(user);
+    setDialog('registration');
+  };
 
   return (
     <>
@@ -425,7 +517,7 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
                   </div>
                 </section>
               ) : (
-                <UserList qr={page === 'qr'} />
+                <UserList qr={page === 'qr'} refreshKey={listKey} onOpenUser={openExisting} />
               )}
               <footer className='admin-footer'>
                 <span>{A.adminTitle}</span>
@@ -435,7 +527,18 @@ export function AdminApp({ page: pageProp, onNavigate }: AdminAppProps = {}) {
           </div>
         </div>
       )}
-      {dialog === 'registration' && <RegistrationDialog onClose={() => setDialog(null)} />}
+      {dialog === 'registration' && (
+        <RegistrationDialog
+          key={openUser?.id ?? 'new'}
+          existingUser={openUser}
+          initialStep={openUser ? 'record' : undefined}
+          onClose={() => {
+            setDialog(null);
+            setOpenUser(null);
+          }}
+          onSaved={() => setListKey((n) => n + 1)}
+        />
+      )}
       {dialog === 'menu' && (
         <AdminDialog id='admin-menu' title={A.menuTitle} drawer='left' onClose={() => setDialog(null)}>
           <Navigation page={page} hrefFor={hrefFor} onNavigate={onNavigate} onSelect={() => setDialog(null)} />

@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import {
+  clearFarmerSession,
+  loadFarmerSession,
+  updateFarmerSessionName,
+  type FarmerSession,
+} from '../config/farmerSession';
 import type { Labels } from '../config/labels';
 import type { ConversationRow } from '../lib/db';
 import {
@@ -7,7 +13,9 @@ import {
   renameConversation,
   setPinned,
 } from '../lib/conversations';
+import { farmerMe, updateFarmerName } from '../lib/ws-api';
 import { ConfirmDialog } from './ConfirmDialog';
+import { LogoutConfirmDialog } from './LogoutConfirmDialog';
 
 type Props = {
   open: boolean;
@@ -38,11 +46,34 @@ export default function ConversationSidebar({
   const [items, setItems] = useState<ConversationRow[]>([]);
   const [menuId, setMenuId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [session, setSession] = useState<FarmerSession | null>(() => loadFarmerSession());
+  const [profileOpen, setProfileOpen] = useState(false);
   const deleteDialog = useRef<HTMLDialogElement>(null);
+  const renameDialog = useRef<HTMLDialogElement>(null);
+  const renameInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     void listLocalConversations().then(setItems);
   }, [refreshKey, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const local = loadFarmerSession();
+    setSession(local);
+    // Older claims saved a JWT without fullName — refresh from ws when missing.
+    if (!local?.token || local.fullName.trim()) return;
+    let cancelled = false;
+    void farmerMe()
+      .then((me) => {
+        if (cancelled || !me.fullName?.trim()) return;
+        updateFarmerSessionName(me.fullName);
+        setSession(loadFarmerSession());
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [open, refreshKey]);
 
   function onNew() {
     onNewChat();
@@ -78,6 +109,43 @@ export default function ConversationSidebar({
     onDeleted(id);
     setItems(await listLocalConversations());
   }
+
+  function openRename() {
+    setProfileOpen(false);
+    renameDialog.current?.showModal();
+    queueMicrotask(() => {
+      if (renameInput.current) {
+        renameInput.current.value = session?.fullName ?? '';
+        renameInput.current.focus();
+        renameInput.current.select();
+      }
+    });
+  }
+
+  async function confirmRename(e: FormEvent) {
+    e.preventDefault();
+    const next = renameInput.current?.value.trim() ?? '';
+    if (!next || !session) {
+      renameDialog.current?.close();
+      return;
+    }
+    try {
+      const res = await updateFarmerName(next);
+      updateFarmerSessionName(res.fullName);
+      setSession(loadFarmerSession());
+    } catch {
+      // stay on previous name when API fails
+    }
+    renameDialog.current?.close();
+  }
+
+  function onLogout() {
+    clearFarmerSession();
+    setSession(null);
+    setProfileOpen(false);
+  }
+
+  const displayName = session?.fullName?.trim() || null;
 
   return (
     <>
@@ -204,6 +272,53 @@ export default function ConversationSidebar({
             {items.length === 0 ? <li className="px-2 py-4 text-center text-sm text-muted">{labels.searchNoChats}</li> : null}
           </ul>
         </div>
+
+        <div className="relative shrink-0 border-t border-line px-3 py-3">
+          {session ? (
+            <>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm font-medium hover:bg-soft"
+                aria-haspopup="menu"
+                aria-expanded={profileOpen}
+                onClick={() => setProfileOpen((o) => !o)}
+              >
+                <span className="min-w-0 flex-1 truncate">{displayName || 'Magsasaka'}</span>
+                <span className="shrink-0 text-muted" aria-hidden>
+                  ▾
+                </span>
+              </button>
+              {profileOpen ? (
+                <div
+                  role="menu"
+                  className="absolute bottom-full left-2 right-2 z-20 mb-1 rounded-lg border border-line bg-surface py-1 text-sm shadow-md"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="block w-full px-3 py-1.5 text-left hover:bg-soft"
+                    onClick={openRename}
+                  >
+                    Palitan ang pangalan
+                  </button>
+                  <LogoutConfirmDialog
+                    copy={{
+                      label: 'Mag-logout',
+                      title: 'Mag-logout?',
+                      body: 'Mawawala ang account sa device na ito. Mananatili ang mga chat dito.',
+                      confirm: 'Mag-logout',
+                      cancel: 'Kanselahin',
+                    }}
+                    onConfirm={onLogout}
+                    triggerClassName="block w-full px-3 py-1.5 text-left text-accent hover:bg-soft"
+                  />
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p className="px-2 py-1 text-sm text-muted">Walang account</p>
+          )}
+        </div>
       </aside>
 
       {!open ? (
@@ -232,6 +347,35 @@ export default function ConversationSidebar({
         }}
         onConfirm={() => void confirmDelete()}
       />
+
+      <dialog
+        ref={renameDialog}
+        className="w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-4 text-ink shadow-lg backdrop:bg-black/30"
+        onClose={() => undefined}
+      >
+        <form className="grid gap-3" onSubmit={(e) => void confirmRename(e)}>
+          <h2 className="m-0 font-serif text-lg font-medium">Palitan ang pangalan</h2>
+          <label className="grid gap-1 text-sm">
+            <span className="text-muted">Pangalan</span>
+            <input
+              ref={renameInput}
+              type="text"
+              name="fullName"
+              autoComplete="name"
+              className="rounded-lg border border-line bg-canvas px-3 py-2"
+              required
+            />
+          </label>
+          <div className="flex justify-end gap-2">
+            <button type="button" className="pill-btn" onClick={() => renameDialog.current?.close()}>
+              Kanselahin
+            </button>
+            <button type="submit" className="pill-btn bg-leaf text-white">
+              I-save
+            </button>
+          </div>
+        </form>
+      </dialog>
     </>
   );
 }

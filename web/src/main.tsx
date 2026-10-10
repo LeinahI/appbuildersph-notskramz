@@ -20,6 +20,7 @@ initializeDisplayPreferences();
 const NATIVE = Capacitor.isNativePlatform();
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const ClaimPage = lazy(() => import('./pages/ClaimPage'));
 const AdminHub = lazy(() => import('./admin/AdminHub'));
 
 /**
@@ -67,7 +68,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           {/* Old farmer sign-in and QR links open the landing (browser) or chat (native via /). */}
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/magsasaka/login" element={<Navigate to="/" replace />} />
-          <Route path="/claim" element={<Navigate to="/" replace />} />
+          <Route
+            path="/claim"
+            element={
+              <Suspense fallback={<div className="grid min-h-dvh place-items-center text-mist">Claiming…</div>}>
+                <ClaimPage />
+              </Suspense>
+            }
+          />
           {NATIVE ? null : (
             <>
               {/* FrontEnd AdminApp (sidebar hub UI). Old Users/Register/Audit paths redirect here. */}

@@ -16,6 +16,13 @@ Offline Taglish advisor for rice and corn farmers.
 
 Written by agents after each task. See [AGENTS.md](AGENTS.md) for the format. Newest first.
 
+- [[2026-10-10-qr-app-download]] - QR invitation drops Regenerate; link is localhost:8787/app; APK download activates the newest invite
+- [[2026-10-10-fix-sidebar-farmer-name]] - Sidebar hydrates empty fullName via GET /me; claim StrictMode dedupe
+- [[2026-10-10-claim-chat-farmer-session]] - Claim → farmer session → /chat sidebar name/rename/logout; admin JWT gate
+- [[2026-10-10-claim-sidebar-explore]] - Mapped /claim stub, no ClaimPage/farmer JWT, sidebar empty footer, Dexie chats, ws ClaimInvite shape
+- [[2026-10-10-ws-auth-register-explore]] - Mapped ws auth/register/QR: admins table, farmer PII-only register, claim JWT
+- [[2026-10-10-admin-registration-ws-gap]] - AdminApp registration is draft-only; live ws register/invite APIs unused after route redirects
+- [[2026-10-10-admin-save-invite-wire]] - AdminApp Confirm/QR call ws register+invite; users table drops email/password
 - [[2026-10-10-admin-frontend-at-admin]] - `/admin` serves FrontEnd AdminApp (overview/users/qr/activity), not old top-nav portal
 - [[2026-10-10-landing-gpu-machine-note]] - Landing benchmarks label from `node-llama-cpp inspect gpu` (Vulkan · RTX 3060)
 - [[2026-10-10-landing-benchmarks]] - Browser `/` landing (GSAP/Motion) + hub `benchmark:landing` → real `benchmarks.json`

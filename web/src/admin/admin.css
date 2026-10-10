@@ -166,3 +166,31 @@ html:has(.admin-drawer-right[open]) { overflow: hidden; }
   .admin-details > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .admin-details dd { text-align: left; }
 }
+
+.admin-user-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.admin-user-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 14px 18px;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--color-line, #d7e0d2) 80%, transparent);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.admin-user-row:hover { background: color-mix(in srgb, var(--color-leaf, #2b603e) 6%, transparent); }
+.admin-user-row strong { display: block; }
+.admin-user-row small { color: var(--color-mist, #6b7c6e); }
+@media (max-width: 720px) {
+  .admin-user-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .admin-user-row > span:last-child { display: none; }
+}

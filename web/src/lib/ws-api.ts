@@ -1,4 +1,5 @@
-// The staff portal's client for ws. Farmers never call ws: their chats stay on the phone.
+// Staff portal + farmer claim/rename client for ws. Farmer chats stay on the phone (Dexie).
+import { loadFarmerToken } from '../config/farmerSession';
 import { DEFAULT_WS_URL, loadAdminToken } from '../config/ws';
 
 export type Address = {
@@ -14,6 +15,7 @@ export type UserDTO = {
   id: string;
   role: string;
   status: string;
+  /** Present on admin login/me responses only — farmer users have no email. */
   email?: string;
   fullName: string;
   phone?: string;
@@ -51,7 +53,7 @@ export class WsApiError extends Error {
   }
 }
 
-type AuthMode = boolean | 'admin';
+type AuthMode = boolean | 'admin' | 'farmer';
 
 async function request<T>(
   path: string,
@@ -62,8 +64,11 @@ async function request<T>(
     headers.set('Content-Type', 'application/json');
   }
   const mode = opts.auth === undefined ? 'admin' : opts.auth;
-  if (mode !== false) {
+  if (mode === 'admin') {
     const token = loadAdminToken();
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+  } else if (mode === 'farmer') {
+    const token = loadFarmerToken();
     if (token) headers.set('Authorization', `Bearer ${token}`);
   }
   const res = await fetch(`${DEFAULT_WS_URL}${path}`, { ...opts, headers });
@@ -148,4 +153,33 @@ export function revokeUser(userId: string) {
 
 export function listAudit() {
   return request<AuditDTO[]>('/api/v1/audit');
+}
+
+export type ClaimResult = {
+  userId: string;
+  token: string;
+  fullName: string;
+  status: string;
+};
+
+export function claimInvite(body: { token: string; deviceId: string }) {
+  return request<ClaimResult>('/api/v1/invites/claim', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify(body),
+  });
+}
+
+export type FarmerMe = { id: string; fullName: string; status: string };
+
+export function farmerMe() {
+  return request<FarmerMe>('/api/v1/me', { auth: 'farmer' });
+}
+
+export function updateFarmerName(fullName: string) {
+  return request<FarmerMe>('/api/v1/me', {
+    method: 'PATCH',
+    auth: 'farmer',
+    body: JSON.stringify({ fullName }),
+  });
 }

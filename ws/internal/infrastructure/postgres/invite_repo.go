@@ -67,14 +67,25 @@ func (r *InviteRepository) FindActiveByUserID(ctx context.Context, userID string
 	return r.scanOne(ctx, q, userID)
 }
 
-func (r *InviteRepository) scanOne(ctx context.Context, q string, arg any) (*invite.Invite, error) {
+func (r *InviteRepository) FindNewestActive(ctx context.Context) (*invite.Invite, error) {
+	const q = `
+		SELECT id, user_id, token, single_use, expires_at, consumed_at, revoked_at, created_at
+		FROM invites
+		WHERE consumed_at IS NULL AND revoked_at IS NULL AND expires_at > NOW()
+		ORDER BY created_at DESC
+		LIMIT 1
+	`
+	return r.scanOne(ctx, q)
+}
+
+func (r *InviteRepository) scanOne(ctx context.Context, q string, args ...any) (*invite.Invite, error) {
 	var (
 		id, userID, token string
 		singleUse         bool
 		expires, created  time.Time
 		consumed, revoked sql.NullTime
 	)
-	err := r.db.QueryRowContext(ctx, q, arg).Scan(&id, &userID, &token, &singleUse, &expires, &consumed, &revoked, &created)
+	err := r.db.QueryRowContext(ctx, q, args...).Scan(&id, &userID, &token, &singleUse, &expires, &consumed, &revoked, &created)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, invite.ErrNotFound
 	}

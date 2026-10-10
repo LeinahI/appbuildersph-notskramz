@@ -31,7 +31,7 @@ func Load() (*Config, error) {
 		CORSAllowedOrigins: parseCSV(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")),
 		PIIEncryptionKey:   getEnv("PII_ENCRYPTION_KEY", ""),
 		JWTSecret:          getEnv("JWT_SECRET", ""),
-		ClaimBaseURL:       getEnv("CLAIM_BASE_URL", "http://localhost:3000"),
+		ClaimBaseURL:       getEnv("CLAIM_BASE_URL", "http://localhost:8787"),
 	}
 
 	if _, err := strconv.Atoi(cfg.HTTPPort); err != nil {

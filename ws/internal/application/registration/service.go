@@ -87,13 +87,13 @@ func (s *Service) Me(ctx context.Context, adminID string) (*admin.Admin, error) 
 }
 
 type RegisterInput struct {
-	FullName     string
-	BirthDate    time.Time
-	Address      user.Address
-	Phone        string
-	IDNumber     string
-	ConsentAt    *time.Time
-	AdminID      string
+	FullName  string
+	BirthDate time.Time
+	Address   user.Address
+	Phone     string
+	IDNumber  string
+	ConsentAt *time.Time
+	AdminID   string
 }
 
 func (s *Service) RegisterUser(ctx context.Context, in RegisterInput) (*user.User, error) {
@@ -196,8 +196,10 @@ type ClaimInput struct {
 }
 
 type ClaimResult struct {
-	UserID string
-	Token  string // farmer session JWT (role user)
+	UserID   string
+	Token    string // farmer session JWT (role user)
+	FullName string
+	Status   user.Status
 }
 
 func (s *Service) ClaimInvite(ctx context.Context, in ClaimInput) (*ClaimResult, error) {
@@ -228,7 +230,30 @@ func (s *Service) ClaimInvite(ctx context.Context, in ClaimInput) (*ClaimResult,
 		return nil, err
 	}
 	_ = s.append(ctx, audit.EventInviteClaimed, u.ID(), u.ID(), map[string]any{"invite_id": inv.ID()})
-	return &ClaimResult{UserID: u.ID(), Token: tok}, nil
+	return &ClaimResult{UserID: u.ID(), Token: tok, FullName: u.FullName(), Status: u.Status()}, nil
+}
+
+func (s *Service) GetMe(ctx context.Context, userID string) (*user.User, error) {
+	return s.users.FindByID(ctx, userID)
+}
+
+type UpdateMeInput struct {
+	UserID   string
+	FullName string
+}
+
+func (s *Service) UpdateMe(ctx context.Context, in UpdateMeInput) (*user.User, error) {
+	u, err := s.users.FindByID(ctx, in.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if err := u.Rename(in.FullName); err != nil {
+		return nil, err
+	}
+	if err := s.users.Update(ctx, u); err != nil {
+		return nil, err
+	}
+	return u, nil
 }
 
 func (s *Service) RevokeUser(ctx context.Context, adminID, userID string) error {
@@ -262,12 +287,42 @@ func (s *Service) ActiveInvite(ctx context.Context, userID string) (*InviteResul
 	return &InviteResult{Invite: inv, ClaimURL: s.claimURL(inv.Token())}, nil
 }
 
-func (s *Service) claimURL(token string) string {
+func (s *Service) claimURL(string) string {
 	base := s.claimBaseURL
 	if base == "" {
-		base = "http://localhost:3000"
+		base = "http://localhost:8787"
 	}
-	return base + "/claim?token=" + token
+	return base + "/app"
+}
+
+// MarkDownloaded activates the farmer behind the newest open invite.
+// ponytail: one finished APK download activates the newest open invite. Two outstanding QRs and one download will not match the phone that scanned first; put a token in the URL if several farmers install at once.
+func (s *Service) MarkDownloaded(ctx context.Context) error {
+	inv, err := s.invites.FindNewestActive(ctx)
+	if errors.Is(err, invite.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if err := inv.Consume(time.Now().UTC()); err != nil {
+		return err
+	}
+	u, err := s.users.FindByID(ctx, inv.UserID())
+	if err != nil {
+		return err
+	}
+	if err := u.Activate(); err != nil {
+		return err
+	}
+	if err := s.users.Update(ctx, u); err != nil {
+		return err
+	}
+	if err := s.invites.Update(ctx, inv); err != nil {
+		return err
+	}
+	_ = s.append(ctx, audit.EventInviteDownloaded, u.ID(), u.ID(), map[string]any{"invite_id": inv.ID()})
+	return nil
 }
 
 func (s *Service) append(ctx context.Context, eventType, actor, subject string, meta map[string]any) error {
